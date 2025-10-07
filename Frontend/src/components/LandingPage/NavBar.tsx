@@ -10,8 +10,6 @@ const Navbar: React.FC = () => {
         right: 0,
         zIndex: 50,
         padding: "0 24px",
-       
-       
       }}
     >
       <div
@@ -21,16 +19,20 @@ const Navbar: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "#ffffffff",
-          backdropFilter: "blur(10px)",
-          border: "1px solid #4c4b4bff",
+
+         
+          background: "rgba(255, 255, 255, 0.1)", 
+          backdropFilter: "blur(15px)",
+          WebkitBackdropFilter: "blur(15px)",
+          border: "1px solid rgba(255, 255, 255, 0.3)",
           borderRadius: "9999px",
+
+   
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
           padding: "12px 24px",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-          
         }}
       >
-        {/* Logo */}
+      
         <div
           style={{
             fontSize: "30px",
@@ -38,8 +40,8 @@ const Navbar: React.FC = () => {
             letterSpacing: "-0.5px",
           }}
         >
-          <span style={{ color: "#000000ff" }}>Contract</span>
-          <span style={{ color: "#2563eb" }}>AI</span>
+          <span style={{ color: "#fff" }}>Contract</span>
+          <span style={{ color: "#FFD60A" }}>AI</span>
         </div>
 
         <button
@@ -47,14 +49,13 @@ const Navbar: React.FC = () => {
             padding: "6px 16px",
             borderRadius: "9999px",
             border: "none",
-            backgroundColor: "#2563eb",
-            color: "#fff",
+            backgroundColor: "#FFD60A",
+            color: "#001D3D",
             fontSize: "14px",
-            fontWeight: 500,
+            fontWeight: 600,
             cursor: "pointer",
             transition: "background-color 0.2s ease",
           }}
-        
         >
           Login
         </button>

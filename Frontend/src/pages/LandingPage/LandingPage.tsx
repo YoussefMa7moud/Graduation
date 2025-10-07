@@ -49,8 +49,8 @@ const LandingPage = () => {
                 const Icon = step.icon;
                 return (
                   <Card key={index}>
-                    <div className="icon-box blue-bg">
-                      <Icon size={32} className="icon-white" />
+                    <div className="icon-box blue-bg" style={{ backgroundColor: "#FFC300" }}>
+                      <Icon size={32} className="icon-white" style={{ color: "#001D3D" }} />
                     </div>
                     <h1>{step.title}</h1>
                     <p>{step.description}</p>
@@ -61,8 +61,8 @@ const LandingPage = () => {
           </div>
         </div>
 
-        <VideoComponent />
         <HowItWorks />
+        <VideoComponent />
       </main>
 
       <Footer />

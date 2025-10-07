@@ -44,7 +44,7 @@ const HowItWorks: React.FC = () => {
           <h2 className="hiw-title">
             How It <span className="hiw-text-gradient">Works</span>
           </h2>
-          <p className="lead text-muted hiw-subtitle">
+          <p className="text-muted-hiw-subtitle">
             Four simple steps to ensure your contracts are compliant and legally sound
           </p>
         </div>
@@ -64,7 +64,7 @@ const HowItWorks: React.FC = () => {
                 <div className="hiw-content">
                   <div className="hiw-card">
                     <h3 className="hiw-card-title">{step.title}</h3>
-                    <p className="hiw-card-desc text-muted">{step.description}</p>
+                    <p  className="hiw-card-desc text-muted">{step.description}</p>
                   </div>
                 </div>
 

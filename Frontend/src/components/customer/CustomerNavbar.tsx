@@ -8,9 +8,9 @@ const CustomerNavbar: React.FC = () => {
 
   const navItems = [
     { name: "home", label: "Home", icon: Home, path: "/Home" },
-    { name: "browse", label: "Browse", icon: Compass, path: "/browse" },
-    { name: "contracts", label: "Contracts", icon: FileText, },
-    { name: "chat", label: "Chat", icon: MessageSquare,  },
+    { name: "browse", label: "Browse", icon: Compass, path: "/Browse" },
+    { name: "contracts", label: "Contracts", icon: FileText, path: "/Contracts" },
+    { name: "chat", label: "Chat", icon: MessageSquare,path: "/Chat" },
   ];
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -24,6 +24,7 @@ const CustomerNavbar: React.FC = () => {
         right: 0,
         zIndex: 50,
         padding: "0 24px",
+       
       }}
     >
       <div

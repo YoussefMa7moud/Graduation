@@ -1,0 +1,62 @@
+.company-card {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.company-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px #FFC300;
+}
+
+.company-card h4 {
+  margin-bottom: 0.5rem;
+}
+
+.company-card .category-tag {
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+/* Mobile responsiveness for card content */
+@media (max-width: 768px) {
+  .company-card {
+    min-height: 350px !important;
+    padding: 20px !important;
+  }
+  
+  .company-card h4 {
+    font-size: 20px !important;
+  }
+  
+  /* Stack header elements on mobile */
+  .company-card .d-flex.align-items-center.justify-content-between {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+  
+  .company-card .mx-3 {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-card {
+    min-height: 320px !important;
+    padding: 16px !important;
+  }
+  
+  .company-card h4 {
+    font-size: 18px !important;
+  }
+  
+  /* Make footer stack on very small screens */
+  .company-card .d-flex.align-items-center.justify-content-between:last-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+}

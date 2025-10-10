@@ -1,0 +1,133 @@
+.auth-container {
+  display: flex;
+   height: calc(100vh - 100px);
+  font-family: "Poppins", sans-serif;
+    background: linear-gradient(
+  135deg,
+  #000814 40%,
+  #001D3D 100%
+);}
+
+.error-message {
+  color: #ff4d4d;
+  font-size: 0.9rem;
+  margin-top: 5px;
+  text-align: left;
+}
+
+.auth-left {
+   flex: 1;
+ 
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  letter-spacing: -0.5px;
+}
+
+.white-text {
+  color: #fff;
+}
+
+.yellow-text {
+  color: #ffd60a;
+}
+
+.brand-tagline {
+  font-size: 1rem;
+  font-weight: 200;
+  margin-top: 1rem;
+  color: #ffffffcc;
+}
+
+.auth-right {
+   flex: 1;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.form-box {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 80%;
+  max-width: 400px;
+  margin-top: 20px; /
+}
+
+h2 {
+  color: #001d3d;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: #ffc300;
+  box-shadow: 0 0 5px rgba(255, 195, 0, 0.5);
+}
+
+.auth-btn {
+  width: 100%;
+  background-color: #ffc300;
+  color: #001d3d;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.auth-btn:hover {
+  background-color: #ffcf4d;
+}
+
+.toggle-text {
+  text-align: center;
+  margin-top: 1rem;
+  color: #666;
+}
+
+.toggle-text span {
+  color: #001d3d;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.toggle-text span:hover {
+  color: #ffc300;
+}
+
+.auth-container-wrapper {
+  margin-top: 100px; 
+}

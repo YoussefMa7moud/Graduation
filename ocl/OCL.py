@@ -20,8 +20,17 @@ load_dotenv()
 nlp = spacy.load("en_core_web_sm")
 
 DB_file = "policy.db"
-conn = sqlite3.connect(DB_file)
-cursor = conn.cursor()
+
+# Thread-local storage for database connections
+import threading
+_thread_local = threading.local()
+
+def get_db_connection():
+    """Get a thread-local database connection."""
+    if not hasattr(_thread_local, 'conn') or _thread_local.conn is None:
+        _thread_local.conn = sqlite3.connect(DB_file, check_same_thread=False)
+        _thread_local.cursor = _thread_local.conn.cursor()
+    return _thread_local.conn, _thread_local.cursor
 
 # === Template for Generated Policy Test File ===
 TEMPLATE = """from besser.BUML.metamodel.structural import (
@@ -66,9 +75,9 @@ ocl_wrapper = OCLWrapper(domain_model, context_om)
 result = ocl_wrapper.evaluate(POLICY_CONSTRAINT)
 print("Policy evaluation result:", result)
 if result:
-    print("✅ Constraint PASSED (entered data meets policy)")
+    print("[PASS] Constraint PASSED (entered data meets policy)")
 else:
-    print("❌ Constraint FAILED (entered data violates policy)")
+    print("[FAIL] Constraint FAILED (entered data violates policy)")
 """
 
 # === Named Entity Recognition Extraction ===
@@ -181,6 +190,7 @@ def suggest_test_values(policy_text, client):
 # === Database Setup ===
 def setup_database():
     try:
+        conn, cursor = get_db_connection()
         cursor.execute("PRAGMA foreign_keys = ON;")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS companies (
@@ -205,6 +215,7 @@ def setup_database():
 
 def get_or_create_company_id(company_name):
     try:
+        conn, cursor = get_db_connection()
         cursor.execute("SELECT id FROM companies WHERE name = ?", (company_name,))
         company_row = cursor.fetchone()
         if company_row:
@@ -220,6 +231,7 @@ def get_or_create_company_id(company_name):
 
 def insert_policy(company_id, policy_description, ocl_code, category, keywords):
     try:
+        conn, cursor = get_db_connection()
         cursor.execute(
             "INSERT INTO policies (company_id, policy_description, ocl_code, category, keywords) VALUES (?, ?, ?, ?, ?)",
             (company_id, policy_description, ocl_code.strip(), category, ", ".join(keywords))
@@ -239,7 +251,7 @@ def generate_ocl_constraint(user_policy, client):
     """
 
     prompt = f"""
-You are an expert OCL generator. Convert the following policy into a valid OCL constraint.
+You are an expert OCL generator. Convert the following policy into a valid OCL constraint expression.
 
 POLICY:
 "{user_policy}"
@@ -258,16 +270,26 @@ RULES:
         self.<property>.toLower().includes('<value>')
 
 3. NUMERIC POLICIES:
-   - "more than X"  →  self.<prop> > X
+   - "equals X" or "is X" or "= X"  →  self.<prop> = X
+   - "more than X" or "greater than X"  →  self.<prop> > X
    - "less than X"  →  self.<prop> < X
-   - "at least X"   →  self.<prop> >= X
-   - "at most X"    →  self.<prop> <= X
+   - "at least X" or "greater than or equal to X"  →  self.<prop> >= X
+   - "at most X" or "less than or equal to X"  →  self.<prop> <= X
+   - For percentages: "50%" → 50, "100%" → 100 (convert to integer by multiplying by 100)
+   - For decimal numbers between 0 and 1: convert to integer (0.5 → 50, 0.75 → 75)
+   - Always use integers in OCL constraints, avoid decimal numbers
 
 4. DATE POLICIES:
    - Convert comparisons with dates normally:
      self.<prop> < date(2024,1,1)
 
-5. Return ONLY the OCL constraint. No explanation.
+5. IMPORTANT: 
+   - Use = for equality (not ==)
+   - Numeric literals should be written as numbers: 0, 1, 0.5, 10.5
+   - Do NOT include "context" or "inv:" - return ONLY the expression part
+   - Example: "self.age > 10" or "self.score = 0.5"
+
+6. Return ONLY the OCL constraint expression. No explanation, no context, no inv: prefix.
 """
 
     try:
@@ -276,7 +298,29 @@ RULES:
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
-        return response.choices[0].message.content.strip()
+        ocl_code = response.choices[0].message.content.strip()
+        
+        # Clean up the OCL code - remove any "context" or "inv:" prefixes if present
+        ocl_code = re.sub(r'^context\s+\w+\s+inv\s*:\s*', '', ocl_code, flags=re.IGNORECASE)
+        ocl_code = ocl_code.strip()
+        
+        # Remove any code block markers if present
+        ocl_code = re.sub(r'^```(?:ocl)?\s*\n?', '', ocl_code, flags=re.IGNORECASE)
+        ocl_code = re.sub(r'\n?```\s*$', '', ocl_code, flags=re.IGNORECASE)
+        ocl_code = ocl_code.strip()
+        
+        # Ensure proper spacing around operators for better parsing
+        # Add spaces around =, >, <, >=, <= if not present (handle self.property format)
+        ocl_code = re.sub(r'(self\.\w+)([=<>!]+)(\d+\.?\d*)', r'\1 \2 \3', ocl_code)
+        ocl_code = re.sub(r'(\d+\.?\d*)([=<>!]+)(self\.\w+)', r'\1 \2 \3', ocl_code)
+        # Also handle cases without self.
+        ocl_code = re.sub(r'(\w+)([=<>!]+)(\d+\.?\d*)', r'\1 \2 \3', ocl_code)
+        ocl_code = re.sub(r'(\d+\.?\d*)([=<>!]+)(\w+)', r'\1 \2 \3', ocl_code)
+        # Fix any double spaces
+        ocl_code = re.sub(r'\s+', ' ', ocl_code)
+        ocl_code = ocl_code.strip()
+        
+        return ocl_code
 
     except Exception as e:
         print(f"⚠️ OCL generation failed: {e}")
@@ -286,8 +330,39 @@ RULES:
 def extract_properties(ocl_expression):
     return set(re.findall(r"self\.([a-zA-Z_][a-zA-Z0-9_]*)", ocl_expression))
 
+def extract_property_types(ocl_expression, properties):
+    """
+    Extract property types from OCL expression based on usage patterns.
+    Returns a dictionary mapping property names to their types.
+    """
+    prop_types = {}
+    expression_part = ocl_expression.split("inv:")[-1].strip() if "inv:" in ocl_expression else ocl_expression
+    
+    for prop in properties:
+        if re.search(fr"{prop}\s*=\s*'[^']*'", expression_part):
+            prop_type = "StringType"
+        elif any(x in prop.lower() for x in [
+            "country", "city", "name", "type", "category", "role",
+            "department", "position", "region", "location", "company"
+        ]):
+            prop_type = "StringType"
+        elif "date" in prop.lower():
+            prop_type = "DateType"
+        elif any(x in prop.lower() for x in [
+            "salary", "age", "amount", "price", "days", "count",
+            "quantity", "score", "id", "number", "total", "limit"
+        ]):
+            prop_type = "IntegerType"
+        elif re.search(fr"{prop}\s*(>=|>|<=|<)", expression_part):
+            prop_type = "IntegerType"
+        else:
+            prop_type = "StringType"
+        prop_types[prop] = prop_type
+    
+    return prop_types
+
 # === Generate Dynamic Test File ===
-def generate_policy_test_file(policy_id, company_name, policy_description, ocl_code, client):
+def generate_policy_test_file(policy_id, company_name, policy_description, ocl_code, client, prop_values=None, prop_types=None):
     print(f"   Generating model for Policy #{policy_id}...")
     try:
         ocl_code_clean = ocl_code.strip()
@@ -305,7 +380,7 @@ def generate_policy_test_file(policy_id, company_name, policy_description, ocl_c
         properties = extract_properties(expression_part)
         context_properties_def = ""
         props_list = []
-        prop_types = {}  # store prop name → type mapping
+        prop_types_dict = {}  # store prop name → type mapping (inferred)
 
         # --- Smart property type inference ---
         if properties:
@@ -322,8 +397,14 @@ def generate_policy_test_file(policy_id, company_name, policy_description, ocl_c
                 elif "date" in prop.lower():
                     prop_type = "DateType"
                 elif any(x in prop.lower() for x in [
+                    "score", "rate", "ratio", "percentage", "percent", "coverage", 
+                    "test", "ratio", "fraction", "decimal"
+                ]):
+                    # Use RealType for decimal numbers (but besser uses IntegerType, so we'll use IntegerType and handle conversion)
+                    prop_type = "IntegerType"  # Note: besser may not have RealType, so we use IntegerType
+                elif any(x in prop.lower() for x in [
                     "salary", "age", "amount", "price", "days", "count",
-                    "quantity", "score", "id", "number", "total", "limit"
+                    "quantity", "id", "number", "total", "limit"
                 ]):
                     prop_type = "IntegerType"
                 elif re.search(fr"{prop}\s*(>=|>|<=|<)", expression_part):
@@ -331,47 +412,86 @@ def generate_policy_test_file(policy_id, company_name, policy_description, ocl_c
                 else:
                     prop_type = "StringType"
 
-                prop_types[prop] = prop_type
+                prop_types_dict[prop] = prop_type
                 context_properties_def += f"{prop_var} = Property(name=\"{prop}\", type={prop_type})\n"
                 props_list.append(prop_var)
 
             props_str = ", ".join(props_list)
             context_properties_def += f"{context_class_var}.attributes = {{{props_str}}}\n"
 
-        # --- Combine NER + LLM suggestions ---
-        ner_values = extract_entities_from_description(policy_description)
-        llm_values = suggest_test_values(policy_description, client)
-        suggestions = {**llm_values, **ner_values}
+        # --- Use provided prop_types or infer them ---
+        if prop_types is None:
+            prop_types = prop_types_dict.copy()
+        else:
+            # Merge with inferred types for any missing ones
+            for prop in sorted(properties):
+                if prop not in prop_types:
+                    prop_types[prop] = prop_types_dict.get(prop, "StringType")
 
         # --- Dynamic input & parsing code ---
         dynamic_input_code = """
-print("\\n--- Enter test data for this policy ---")
+print("\\n--- Setting test data for this policy ---")
 from datetime import date
 import re
 import spacy
+import sys
+import io
+
+# Set UTF-8 encoding for stdout to handle any special characters
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
 nlp = spacy.load("en_core_web_sm")
 
 def extract_value_from_text(text, dtype):
-    doc = nlp(text)
-
     if dtype == "IntegerType":
+        # First, try to convert directly if it's already a number string
+        text_stripped = text.strip()
+        try:
+            # Try direct conversion
+            if text_stripped.replace('-', '').replace('+', '').isdigit():
+                result = int(text_stripped)
+                print(f"[OK] Direct number conversion: {result}")
+                return result
+        except:
+            pass
+        
+        # Try to extract number from text (handles percentages, etc.)
+        # Remove % sign and extract number
+        text_clean = text_stripped.replace('%', '').strip()
+        try:
+            # Try to convert after removing %
+            if text_clean.replace('-', '').replace('+', '').isdigit():
+                result = int(text_clean)
+                print(f"[OK] Extracted number (after removing %): {result}")
+                return result
+        except:
+            pass
+        
+        # Use spacy to extract numbers
+        doc = nlp(text)
         for ent in doc.ents:
             if ent.label_ in ["MONEY", "CARDINAL", "QUANTITY"]:
                 num = re.sub(r"[^0-9]", "", ent.text)
                 if num:
-                    print(f"✅ Extracted number: {num}")
+                    print(f"[OK] Extracted number from entity: {num}")
                     return int(num)
+        
+        # Fallback: extract all digits
         all_nums = re.findall(r"\\d+", text)
         if all_nums:
-            print(f"✅ Extracted number: {all_nums[-1]}")
-            return int(all_nums[-1])
-        print("⚠️ No number found, using 0.")
+            result = int(all_nums[-1])
+            print(f"[OK] Extracted number (regex): {result}")
+            return result
+        
+        print("[WARNING] No number found, using 0.")
         return 0
 
     elif dtype == "DateType":
+        doc = nlp(text)
         for ent in doc.ents:
             if ent.label_ == "DATE":
-                print(f"✅ Extracted date: {ent.text}")
+                print(f"[OK] Extracted date: {ent.text}")
                 digits = re.findall(r"\\d+", ent.text)
                 if len(digits) == 3:
                     try:
@@ -385,36 +505,74 @@ def extract_value_from_text(text, dtype):
         if match:
             digits = [int(x) for x in re.split("[-/]", match.group(1))]
             return date(*reversed(digits)) if digits[0] > 31 else date(*digits)
-        print("⚠️ No date found, using today's date.")
+        print("[WARNING] No date found, using today's date.")
         return date.today()
 
     else:  # StringType
+        doc = nlp(text)
         for ent in doc.ents:
             if ent.label_ in ["GPE", "LOC", "ORG", "PERSON"]:
-                print(f"✅ Extracted text: {ent.text}")
+                print(f"[OK] Extracted text: {ent.text}")
                 return ent.text
         return text.strip()
 
 def parse_value(value, dtype):
     if not value:
         return None
+    
+    # For IntegerType, try direct conversion first
+    if dtype == "IntegerType":
+        value_str = str(value).strip()
+        # Try direct integer conversion
+        try:
+            # Remove % if present
+            value_clean = value_str.replace('%', '').strip()
+            if value_clean.replace('-', '').replace('+', '').isdigit():
+                return int(value_clean)
+        except:
+            pass
+    
     if dtype in ["DateType", "IntegerType", "StringType"]:
-        return extract_value_from_text(value, dtype)
+        return extract_value_from_text(str(value), dtype)
     return value
 
 dynamic_obj = {context_var}("obj1").build()
 """.replace("{context_var}", context_class_var)
 
-        # --- Use previously inferred types here ---
+        # --- Use provided values or fallback to suggestions ---
+        if prop_values is None:
+            # Fallback: use suggestions if no values provided
+            ner_values = extract_entities_from_description(policy_description)
+            llm_values = suggest_test_values(policy_description, client)
+            suggestions = {**llm_values, **ner_values}
+            prop_values = suggestions
+
+        # --- Assign property values ---
         for prop in sorted(properties):
             dtype = prop_types.get(prop, "StringType")
-            default = suggestions.get(prop, "")
-            prompt_text = f"Enter value for '{prop}' ({dtype})"
-            if default:
-                prompt_text += f" [suggested: {default}]"
-            dynamic_input_code += f"""
-value = input("{prompt_text}: ") or "{default}"
-dynamic_obj.{prop} = parse_value(value, "{dtype}")
+            value = prop_values.get(prop, "")
+            if value:
+                dynamic_input_code += f"""
+value = parse_value("{value}", "{dtype}")
+dynamic_obj.{prop} = value
+print(f"Set {prop} = {{value}}")
+"""
+            else:
+                # Default fallback
+                if dtype == "IntegerType":
+                    dynamic_input_code += f"""
+dynamic_obj.{prop} = 0
+print(f"Set {prop} = 0 (default)")
+"""
+                elif dtype == "DateType":
+                    dynamic_input_code += f"""
+dynamic_obj.{prop} = date.today()
+print(f"Set {prop} = date.today() (default)")
+"""
+                else:
+                    dynamic_input_code += f"""
+dynamic_obj.{prop} = ""
+print(f"Set {prop} = '' (default)")
 """
         dynamic_input_code += f"\ncontext_om = ObjectModel(name=\"{context_part}Model\", objects={{dynamic_obj}})\n"
 
@@ -434,46 +592,55 @@ dynamic_obj.{prop} = parse_value(value, "{dtype}")
         with open(file_name, "w", encoding="utf-8") as f:
             f.write(model_code)
         print(f"   ✅ Dynamic model code generated and saved as: {file_name}")
+        return file_name
 
     except Exception as e:
         print(f"   ❌ Error generating model for policy #{policy_id}: {e}")
+        return None
 
 # === MAIN SCRIPT ===
-setup_database()
+# Only run this code when the script is executed directly, not when imported
+if __name__ == "__main__":
+    setup_database()
 
-company_name = input("Enter the company name: ")
-if not company_name:
-    print("Company name cannot be empty. Exiting.")
-    conn.close(); exit()
+    company_name = input("Enter the company name: ")
+    if not company_name:
+        print("Company name cannot be empty. Exiting.")
+        conn, _ = get_db_connection()
+        conn.close()
+        exit()
 
-user_policy = input(f"Enter your policy for '{company_name}': ")
-if not user_policy:
-    print("Policy cannot be empty. Exiting.")
-    conn.close(); exit()
+    user_policy = input(f"Enter your policy for '{company_name}': ")
+    if not user_policy:
+        print("Policy cannot be empty. Exiting.")
+        conn, _ = get_db_connection()
+        conn.close()
+        exit()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-try:
-    print("\nGenerating OCL code...")
-    ocl_code = generate_ocl_constraint(user_policy, client)
+    try:
+        print("\nGenerating OCL code...")
+        ocl_code = generate_ocl_constraint(user_policy, client)
 
-    print("\n--- Generated OCL Constraint ---")
-    print(ocl_code)
-    print("--------------------------------")
+        print("\n--- Generated OCL Constraint ---")
+        print(ocl_code)
+        print("--------------------------------")
 
 
-    category, keywords = extract_metadata(user_policy, client)
-    print(f"🧠 Detected Category: {category}")
-    print(f"🔑 Keywords: {', '.join(keywords)}")
+        category, keywords = extract_metadata(user_policy, client)
+        print(f"🧠 Detected Category: {category}")
+        print(f"🔑 Keywords: {', '.join(keywords)}")
 
-    company_id = get_or_create_company_id(company_name)
-    if company_id:
-        new_policy_id = insert_policy(company_id, user_policy, ocl_code, category, keywords)
-        if new_policy_id:
-            generate_policy_test_file(new_policy_id, company_name, user_policy, ocl_code, client)
+        company_id = get_or_create_company_id(company_name)
+        if company_id:
+            new_policy_id = insert_policy(company_id, user_policy, ocl_code, category, keywords)
+            if new_policy_id:
+                generate_policy_test_file(new_policy_id, company_name, user_policy, ocl_code, client)
 
-except Exception as e:
-    print(f"\n An error occurred during API call: {e}")
-finally:
-    conn.close()
-    print("\nDatabase connection closed.")
+    except Exception as e:
+        print(f"\n An error occurred during API call: {e}")
+    finally:
+        conn, _ = get_db_connection()
+        conn.close()
+        print("\nDatabase connection closed.")

@@ -1,0 +1,91 @@
+Metadata-Version: 2.4
+Name: bocl
+Version: 0.3.1
+Summary: B-OCL
+Author: Luxembourg Institute of Science and Technology
+License: MIT
+Project-URL: Documentation, https://b-ocl-interpreter.readthedocs.io/en/latest/
+Project-URL: Source Code, https://github.com/BESSER-PEARL/B-OCL-Interpreter
+Project-URL: Bug Tracker, https://github.com/BESSER-PEARL/B-OCL-Interpreter/issues
+Keywords: uml,code generation,python
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: Arpeggio==2.0.2
+Requires-Dist: colorama==0.4.6
+Requires-Dist: iniconfig==2.0.0
+Requires-Dist: packaging
+Requires-Dist: pluggy==1.2.0
+Requires-Dist: pytest==7.4.0
+Requires-Dist: setuptools==68.2.2
+Requires-Dist: textX==3.1.1
+Requires-Dist: jinja2==3.1.2
+Requires-Dist: antlr4-python3-runtime==4.13.1
+Requires-Dist: requests==2.31.0
+Requires-Dist: fastapi==0.110.0
+Requires-Dist: pydantic==2.6.3
+Requires-Dist: uvicorn==0.28.0
+Requires-Dist: besser
+
+# BESSER Object Constraint Language Interpreter
+
+**B-OCL** is a tool designed to parse and evaluate the OCL constraints designed on **BESSER** models.
+It is a python based implementation, that utilises parser and listener generated with the ANTLR4 grammer.
+
+**BESSER** is a low-modeling low-code open-source platform built on top 
+of our Python-based personal interpretation of a "Universal Modeling Language"
+
+## Basic Installation
+We have tested B-OCL with python 3.9+. We recommend creating a virtual environment using `venv <https://docs.python.org/3/tutorial/venv.html>`_, or
+`conda <https://docs.conda.io/en/latest/>`_).
+
+Dependencies
+************
+B-OCL depends on BESSER for parsing the OCL constraints and providing a concrete syntax tree (CST) to evaluate. The latest stable version of BESSER is available in the Python Package Index (PyPi) and can be installed using
+
+
+    $ pip install besser
+
+
+# B-OCL Installation
+
+
+Stable version of B-OCL interpreter can be installed via
+
+    $ pip install bocl
+
+## Building From Source
+
+To obtain the full code, including examples and tests, you can clone the git repository.
+
+    $ git clone https://github.com/BESSER-PEARL/b-ocl-Interpreter
+    $ cd b-ocl-Interpreter
+
+To install the reqs please run the following commands in virtual environment (recommended)
+
+    $ pip install -r requirements.txt
+
+## Contributing
+
+We encourage contributions from the community and any comment is welcome!
+
+If you are interested in contributing to this project, please read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+
+## Code of Conduct
+
+At BESSER, our commitment is centered on establishing and maintaining development environments that are welcoming, inclusive, safe and free from all forms of harassment. All participants are expected to voluntarily respect and support our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Governance
+
+The development of this project follows the governance rules described in the [GOVERNANCE.md](GOVERNANCE.md) document.
+
+## Contact
+You can reach us at: [info@besser-pearl.org](mailto:info@besser-pearl-org)
+
+Website: https://besser-pearl.github.io/website/
+
+## Documentation
+More details about B-OCL can be found here https://b-ocl-interpreter.readthedocs.io/en/latest/
+
+## License
+
+This project is licensed under the [MIT](https://mit-license.org/) license.

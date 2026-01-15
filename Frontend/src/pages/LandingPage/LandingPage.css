@@ -1,4 +1,5 @@
-body {
+/* Body styles moved to .landing-page to avoid global conflicts */
+.landing-page {
   margin: 0;
   padding: 0;
   background: linear-gradient(
@@ -6,7 +7,6 @@ body {
   #000814 40%,
   #001D3D 100%
 );
-
   min-height: 100vh;
   background-attachment: fixed;
 }

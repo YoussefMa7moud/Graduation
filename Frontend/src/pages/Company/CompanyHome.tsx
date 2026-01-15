@@ -80,14 +80,7 @@ const CompanyHome: React.FC = () => {
           </tbody>
         </table>
 
-        {/* Footer */}
-        <div className="p-4 bg-white d-flex justify-content-between align-items-center border-top">
-          <small className="text-muted">Showing 4 of 18 Project Managers</small>
-          <div className="pagination-btns">
-            <button className="btn btn-sm btn-outline-secondary me-2">Previous</button>
-            <button className="btn btn-sm btn-outline-secondary">Next</button>
-          </div>
-        </div>
+       
       </div>
     </div>
     </>

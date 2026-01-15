@@ -6,13 +6,25 @@ const Sidebar: React.FC = () => {
   return (
     <div className="sidebar d-flex flex-column justify-content-between">
       <div className="top-section">
-        {/* Branding */}
-        <div className="brand p-4">
-          <h4 className="fw-bold m-0 text-white">LexGuard AI</h4>
-          <small className="text-muted text-uppercase" style={{ fontSize: '10px', letterSpacing: '1px' }}>
-            MENA Legal Unit
-          </small>
-        </div>
+       {/* Branding - Enhanced Logo Version */}
+<div className="brand-logo-container">
+  <div className="logo-flex">
+    {/* Shield Icon Box */}
+    <div className="logo-icon-box">
+      <i className="bi bi-shield-lock-fill"></i>
+    </div>
+
+    {/* Brand Text Wrapper */}
+    <div className="logo-text-wrapper">
+      <h2 className="brand-name">
+        LexGuard <span className="brand-accent">AI</span>
+      </h2>
+      <small className="brand-subtext">
+        MENA Legal Unit
+      </small>
+    </div>
+  </div>
+</div>
 
         {/* Navigation Links */}
         <nav className="nav flex-column px-2 mt-3">
@@ -22,7 +34,7 @@ const Sidebar: React.FC = () => {
           <NavLink to="/ClientRequests" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-person-lines-fill me-3"></i> Client Requests
           </NavLink>
-          <NavLink to="/contracts" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
+          <NavLink to="/ContractRepository" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-file-earmark-text-fill me-3"></i> Contract Repository
           </NavLink>
           <NavLink to="/PolicyConverter" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
@@ -31,24 +43,24 @@ const Sidebar: React.FC = () => {
           <NavLink to="/MyPolicyRepository" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-database me-3"></i> My Policy Repository
           </NavLink>
-          
+        
           <div className="mt-5 pt-4">
-            <NavLink to="/settings" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
+            <NavLink to="/CompanySettings" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
               <i className="bi bi-gear-fill me-3"></i> System Settings
             </NavLink>
           </div>
         </nav>
       </div>
 
-      {/* Bottom Action Section */}
-      <div className="bottom-section p-3">
-        <div className="scan-card p-3 rounded text-center">
-          <small className="text-muted d-block mb-2" style={{ fontSize: '10px' }}>Egyptian DPL Module v1.4</small>
-          <button className="btn btn-light w-100 fw-bold py-2 shadow-sm">
-            New Compliance Scan
-          </button>
-        </div>
-      </div>
+     {/* Bottom Action Section */}
+<div className="bottom-section p-3">
+
+  {/* NEW: Logout Button */}
+  <button className="logout-button w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+    <i className="bi bi-box-arrow-left"></i>
+    <span>Sign Out</span>
+  </button>
+</div>
     </div>
   );
 };

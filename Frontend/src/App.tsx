@@ -8,6 +8,8 @@ import DashboardLayout from './components/Company/DashboardLayout';
 import PolicyConverter from './pages/Company/PolicyConverter';
 import MyPolicyRepository from './pages/Company/MyPolicyRepository';
 import ClientRequests from './pages/Company/ClientRequests';
+import CompanySettings from './pages/Company/CompanySettings';
+import ContractRepository from './pages/Company/ContractRepository';
 
 function App() {
   return (
@@ -37,6 +39,26 @@ function App() {
           <Route path="/ClientRequests" element={
           <DashboardLayout>
             <ClientRequests />
+          </DashboardLayout>
+        } />
+
+
+         <Route path="/ClientRequests" element={
+          <DashboardLayout>
+            <ClientRequests />
+          </DashboardLayout>
+        } />
+
+         <Route path="/CompanySettings" element={
+          <DashboardLayout>
+            <CompanySettings />
+          </DashboardLayout>
+        } />
+
+
+         <Route path="/ContractRepository" element={
+          <DashboardLayout>
+            <ContractRepository />
           </DashboardLayout>
         } />
 

@@ -52,3 +52,94 @@ main::-webkit-scrollbar-thumb {
   font-size: 13px;
   color: #17253b;
 }
+
+
+/* Container Spacing */
+.brand-logo-container {
+  padding: 24px;
+  margin-bottom: 8px;
+}
+
+/* Alignment Magic */
+.logo-flex {
+  display: flex;
+  align-items: center; /* This aligns icon and text vertically */
+  gap: 12px;           /* Space between icon and text */
+}
+
+/* Icon Styling */
+.logo-icon-box {
+  width: 45px;
+  height: 45px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Prevents icon from squishing */
+}
+
+.logo-icon-box i {
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+/* Text Styling */
+.logo-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brand-name {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.brand-accent {
+  color: #10b981; /* Your brand mint color */
+}
+
+.brand-subtext {
+  color: #94a3b8; /* Muted gray */
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+/* Logout Button Styling */
+.logout-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8; /* Muted gray to match sidebar links */
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.logout-button i {
+  font-size: 1.1rem;
+}
+
+/* Hover Effect */
+.logout-button:hover {
+  background-color: rgba(239, 68, 68, 0.1); /* Subtle red tint */
+  color: #ef4444; /* Bright red text */
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Optional: Animation for the icon */
+.logout-button:hover i {
+  transform: translateX(-3px);
+  transition: transform 0.2s ease;
+}

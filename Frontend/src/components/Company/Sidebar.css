@@ -1,0 +1,54 @@
+/* Force the root containers to respect the 100% height limit */
+html, body, #root {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevents the 'body' from ever scrolling */
+}
+
+.sidebar {
+  background-color: #17253b;
+  height: 100vh; /* Ensures the background color fills the screen */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Optional: Make the scrollbar in the main content look cleaner */
+main::-webkit-scrollbar {
+  width: 6px;
+}
+main::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 10px;
+}
+
+.nav-link {
+  color: #a0aec0;
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.nav-link.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  box-shadow: inset 4px 0 0 #fff; /* White line indicator */
+}
+
+.scan-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-light {
+  font-size: 13px;
+  color: #17253b;
+}

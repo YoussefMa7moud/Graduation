@@ -1,0 +1,70 @@
+/* Ensure the parent doesn't center the content */
+.w-100 {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* NORMAL TABLE - No moving/scaling on hover */
+.table-hover tbody tr:hover {
+    background-color: #f8fafd !important;
+    transform: none !important; /* This removes the movement */
+    transition: none !important;
+    box-shadow: none !important;
+}
+
+/* Rule Badges */
+.badge-rule {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+.badge-ocl { background-color: #e3fcef; color: #059669; }
+.badge-ai { background-color: #f3e8ff; color: #7c3aed; }
+
+/* Status Styles */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-active { background-color: #10b981; }
+.dot-draft { background-color: #cbd5e1; }
+.status-text { font-size: 13px; font-weight: 500; }
+.text-active { color: #10b981; }
+.text-draft { color: #64748b; }
+
+
+/* Existing CSS... */
+
+/* New Stat Card Styles */
+.stat-card {
+    min-height: 120px;
+}
+
+.icon-container {
+    width: 64px;
+    height: 64px;
+}
+
+.bg-mint-light {
+    background-color: #e6f7f1;
+}
+
+.bg-blue-light {
+    background-color: #e6efff;
+}
+
+.text-mint {
+    color: #00a87e;
+}
+
+.text-blue {
+    color: #0056b3;
+}
+
+.stat-title {
+    letter-spacing: 0.5px;
+    color: #8997a6;
+}
+
+.stat-count {
+    color: #1e293b;
+    font-size: 2.5rem;
+}

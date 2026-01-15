@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { LegalFramework, type PolicyInput } from '../PolicyConverter/Data/types';
+import'./style.css';
 
 interface PolicyInputPanelProps {
   inputs: PolicyInput[];
@@ -134,11 +135,12 @@ const PolicyInputPanel: React.FC<PolicyInputPanelProps> = ({
         </div>
       </div>
 
+
       <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-background-dark">
         <button 
           disabled={isGenerating || !inputs.some(i => i.text.trim())}
           onClick={onGenerate}
-          className="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:bg-slate-800 transition-all disabled:opacity-50"
+          className="btn-lex-primary w-full bg-primary text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg hover:bg-slate-800 transition-all disabled:opacity-50"
         >
           {isGenerating ? (
             <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

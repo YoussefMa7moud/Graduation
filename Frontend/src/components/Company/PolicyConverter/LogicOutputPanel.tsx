@@ -2,6 +2,8 @@
 import React from 'react';
 import type { OCLGenerationResponse } from './Data/types';
 import CodeEditor from './CodeEditor';
+import'./style.css';
+
 
 interface LogicOutputPanelProps {
   result: OCLGenerationResponse | null;
@@ -20,14 +22,7 @@ const LogicOutputPanel: React.FC<LogicOutputPanelProps> = ({ result, isGeneratin
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">Verification logic mapped to Egyptian legal standards.</p>
         </div>
-        <div className="flex gap-2">
-          <button className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 transition-colors">
-            <span className="material-symbols-outlined text-lg">content_copy</span>
-          </button>
-          <button className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 transition-colors">
-            <span className="material-symbols-outlined text-lg">fullscreen</span>
-          </button>
-        </div>
+       
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -93,7 +88,7 @@ const LogicOutputPanel: React.FC<LogicOutputPanelProps> = ({ result, isGeneratin
           </button>
           <button 
             disabled={!result}
-            className="flex-[1.5] py-3 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className=" btn-lex-primary flex-[1.5] py-3 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-lg">save</span>
             Save as Rule

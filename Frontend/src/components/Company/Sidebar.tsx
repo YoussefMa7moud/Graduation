@@ -19,14 +19,17 @@ const Sidebar: React.FC = () => {
           <NavLink to="/CompanyHome" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-grid-fill me-3"></i> Home
           </NavLink>
-          <NavLink to="/clients" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
-            <i className="bi bi-person-lines-fill me-3"></i> Client Directory
+          <NavLink to="/ClientRequests" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
+            <i className="bi bi-person-lines-fill me-3"></i> Client Requests
           </NavLink>
           <NavLink to="/contracts" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-file-earmark-text-fill me-3"></i> Contract Repository
           </NavLink>
           <NavLink to="/PolicyConverter" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-ui-checks me-3"></i> Policy Converter
+          </NavLink>
+          <NavLink to="/MyPolicyRepository" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
+            <i className="bi bi-database me-3"></i> My Policy Repository
           </NavLink>
           
           <div className="mt-5 pt-4">

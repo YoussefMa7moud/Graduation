@@ -6,6 +6,8 @@ import Auth from './pages/Auth/AuthPage';
 import CompanyHome from './pages/Company/CompanyHome';
 import DashboardLayout from './components/Company/DashboardLayout';
 import PolicyConverter from './pages/Company/PolicyConverter';
+import MyPolicyRepository from './pages/Company/MyPolicyRepository';
+import ClientRequests from './pages/Company/ClientRequests';
 
 function App() {
   return (
@@ -23,6 +25,18 @@ function App() {
         <Route path="/PolicyConverter" element={
           <DashboardLayout>
             <PolicyConverter />
+          </DashboardLayout>
+        } />
+
+        <Route path="/MyPolicyRepository" element={
+          <DashboardLayout>
+            <MyPolicyRepository />
+          </DashboardLayout>
+        } />
+
+          <Route path="/ClientRequests" element={
+          <DashboardLayout>
+            <ClientRequests />
           </DashboardLayout>
         } />
 

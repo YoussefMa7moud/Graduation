@@ -1,1 +1,10 @@
-/* App-specific styles - global styles are in index.css */
+/* App-specific styles - global styles are in index.css *//* Global Animation Definition */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); } /* Added a slight upward slide for a better look */
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Global Utility Class */
+.page-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}

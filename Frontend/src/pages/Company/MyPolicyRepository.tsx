@@ -17,6 +17,7 @@ const MyPolicyRepository: React.FC = () => {
 
   return (
     <div className="w-100 p-0 m-0">
+       <div className="container page-fade-in">
       {/* Search Header (No Changes) */}
       <div className="bg-white p-3 rounded-3 shadow-sm border mb-4 d-flex align-items-center justify-content-between">
         <div className="position-relative flex-grow-1 me-4">
@@ -35,6 +36,20 @@ const MyPolicyRepository: React.FC = () => {
           <button className="btn btn-light border"><i className="bi bi-sliders"></i></button>
         </div>
       </div>
+
+
+       {/* NEW: Stat Cards Section */}
+      <div className="row g-4">
+        <div className="col-md-6">
+          <StatCard title="Total Rules" count={totalRules} isActive={false} />
+        </div>
+        <div className="col-md-6">
+          <StatCard title="Active Rules" count={activeRules} isActive={true} />
+        </div>
+      </div>
+
+
+      <br />
 
       {/* THE TABLE (No Changes) */}
       <div className="bg-white rounded-3 shadow-sm border overflow-hidden w-100 mb-4">
@@ -76,27 +91,10 @@ const MyPolicyRepository: React.FC = () => {
           </tbody>
         </table>
 
-        {/* Footer */}
-        <div className="p-3 border-top d-flex justify-content-between align-items-center">
-          <span className="text-muted small">Showing 1-4 of 24 policies</span>
-          <div className="btn-group">
-            <button className="btn btn-outline-secondary btn-sm px-3 border-light"><i className="bi bi-chevron-left"></i></button>
-            <button className="btn btn-dark btn-sm px-3" style={{backgroundColor: '#17253b'}}>1</button>
-            <button className="btn btn-outline-secondary btn-sm px-3 border-light">2</button>
-            <button className="btn btn-outline-secondary btn-sm px-3 border-light"><i className="bi bi-chevron-right"></i></button>
-          </div>
-        </div>
+      
       </div>
 
-      {/* NEW: Stat Cards Section */}
-      <div className="row g-4">
-        <div className="col-md-6">
-          <StatCard title="Total Rules" count={totalRules} isActive={false} />
-        </div>
-        <div className="col-md-6">
-          <StatCard title="Active Rules" count={activeRules} isActive={true} />
-        </div>
-      </div>
+     </div>
 
     </div>
   );

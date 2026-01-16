@@ -49,7 +49,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch }) => {
             </div>
           </div>
 
-          <button className="btn btn-dark w-100 py-2 mb-4 d-flex justify-content-center align-items-center">
+          <button className="btn btn-dark w-100 py-3 mb-4 d-flex justify-content-center align-items-center">
             Sign in to LexAI <i className="bi bi-arrow-right ms-2"></i>
           </button>
 

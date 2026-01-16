@@ -13,6 +13,7 @@ const AuthPage: React.FC = () => {
     <div className="auth-container">
       <div className={`auth-content-wrapper ${isLogin ? 'show-login' : 'show-signup'}`}>
         
+        
         {/* Sidebar Section */}
         <div className="sidebar-section">
           <InfoSidebar />

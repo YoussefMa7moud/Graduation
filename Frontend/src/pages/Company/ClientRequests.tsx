@@ -54,6 +54,7 @@ const ClientRequests: React.FC = () => {
 
   return (
     <div style={styles.container}>
+      <div className="container page-fade-in">
       {/* 1. TOP HEADER */}
       <div className="d-flex justify-content-between align-items-start" style={styles.header}>
         <div>
@@ -145,7 +146,9 @@ const ClientRequests: React.FC = () => {
           </table>
         </div>
       </div>
+      </div>
     </div>
+    
   );
 };
 

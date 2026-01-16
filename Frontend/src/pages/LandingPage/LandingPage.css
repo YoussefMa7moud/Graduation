@@ -1,172 +1,236 @@
-/* Body styles moved to .landing-page to avoid global conflicts */
-.landing-page {
+/* COLOR VARIABLES & GLOBALS */
+:root {
+  --navy: #111b27;
+  --mint: #10b981;
+  --bg-dark: #0f172a;
+  --gray-text: #64748b;
+}
+
+/* FIX: Ensure scrolling is enabled */
+html, body {
   margin: 0;
   padding: 0;
-  background: linear-gradient(
-  135deg,
-  #000814 40%,
-  #001D3D 100%
-);
-  min-height: 100vh;
-  background-attachment: fixed;
+  overflow-x: hidden; /* Only hide horizontal scroll */
+  overflow-y: auto !important; /* Force vertical scroll to be auto */
+  height: auto;
 }
 
-
-
-.hero-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  padding: 4rem 2rem;
-  min-height: 100vh;
-  margin-bottom: -150px;
-  padding-top: 170px;
-
-}
-
-.hero-text {
-  flex: 1;
-  max-width: 50%;
-  text-align: left; 
-  padding-bottom: 450px;
-}
-
-.hero-text h1 {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  font-style: bold;
-
-}
-
-.hero-text p {
-  font-size: 1rem;
-  color: #65758b;
-}
-
-
-.hero-section .card-section {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0;
-  height: auto; 
-}
-
-
-.card-section {
-  height: 600px;
+.lexguard-landing-page {
+  font-family: 'Inter', sans-serif;
+  color: var(--navy);
+  width: 100%;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 3rem 0;
-  
+  overflow-y: visible !important; /* Ensure the wrapper doesn't block scroll */
 }
 
+.bg-navy { background-color: var(--navy) !important; }
+.text-mint { color: var(--mint) !important; }
+.x-small { font-size: 11px; }
+.x-small-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; }
 
-.card {
-  width: 300px;
-  height: 400px;
+/* NAVBAR */
+.navbar {
+  background-color: var(--navy);
+  padding: 15px 0;
+  z-index: 1000;
+}
+
+.navbar .nav-link {
+  color: #e2e8f0;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 0 15px !important;
+}
+
+.logo-icon {
+  background-color: var(--mint);
+  color: white;
+  padding: 5px 8px;
+  border-radius: 6px;
+  margin-right: 2px;
+}
+
+.brand-sub {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--gray-text);
+  margin-left: 36px;
+  margin-top: -4px;
+}
+
+.navbar-brand { color: white !important; font-size: 18px; }
+.login-link { color: #e2e8f0; font-size: 14px; text-decoration: none; font-weight: 600; }
+
+/* HERO SECTION */
+.hero-section {
+  background-color: var(--navy);
+  color: white;
+  padding: 80px 0 120px;
+  position: relative;
+}
+
+.badge-law {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--mint);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 50px;
+  display: inline-block;
+}
+
+.hero-main-title {
+  font-size: 3.5rem;
+  line-height: 1.1;
+  margin-top: 10px;
+}
+
+.text-highlight {
+  color: #4382cc; /* Blue from image */
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+/* BUTTONS */
+.btn-navy { background: #1e293b; color: white; border: none; font-weight: 600; font-size: 14px; padding: 10px 20px; border-radius: 8px;}
+.btn-mint { background: var(--mint); color: white; border: none; font-weight: 700; border-radius: 8px; }
+.btn-outline-white { border: 1.5px solid rgba(255,255,255,0.2); color: white; background: transparent; border-radius: 8px; }
+
+/* DASHBOARD PREVIEW */
+.dashboard-preview-wrapper {
+  position: relative;
+  background-color: #558784; 
+  padding: 40px;
+  border-radius: 20px;
+}
+
+.floating-compliance-card {
+  position: absolute;
+  bottom: -20px;
+  left: -20px;
+  background: white;
+  color: var(--navy);
+  padding: 20px 25px;
+  border-radius: 12px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.check-icon-circle {
+  width: 40px; height: 40px; background: #ecfdf5; color: var(--mint); 
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+}
+
+/* SECTIONS GRID */
+.section-title-big { font-size: 2.2rem; }
+.section-subtitle { max-width: 600px; color: var(--gray-text); font-size: 0.95rem; }
+
+.feature-item-box {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  padding: 2rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  transition: transform 0.4s ease, opacity 0.4s ease;
-
+  border: 1px solid #f1f5f9;
+  transition: 0.3s;
 }
 
-
-
-.card.active {
-  opacity: 1;
-  transform: translateX(0);
+/* WORKFLOW */
+.workflow-icon-circle {
+  width: 60px; height: 60px; background: #f0fdf4; color: var(--mint);
+  display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto;
+  font-size: 24px;
 }
 
-.card.left {
-  opacity: 0;
-  transform: translateX(-100%) rotate(-10deg);
+.workflow-path-container { position: relative; }
+.workflow-step { position: relative; padding: 20px; }
+
+.workflow-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50px;
+  right: -25%;
+  width: 50%;
+  height: 2px;
+  border-top: 2px dashed #e2e8f0;
+  z-index: -1;
 }
 
-.card.right {
-  opacity: 0;
-  transform: translateX(100%) rotate(10deg);
+/* NAVY COMPLIANCE SECTION */
+.compliance-section-navy { background-color: #0f172a; }
+.compliance-dark-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
 }
 
+.expert-box { background: rgba(255,255,255,0.05); border-radius: 10px; }
+.expert-avatar { width: 35px; height: 35px; background: #10b981; border-radius: 50%; }
 
-.section {
+/* FOOTER */
+.footer-section { background: #0b111a; padding-top: 80px; }
+.logo-icon-small { background: var(--mint); color: white; padding: 3px 6px; border-radius: 4px; font-size: 12px; }
+.footer-label { color: white; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+.footer-links li { color: #94a3b8; font-size: 13px; margin-bottom: 12px; cursor: pointer; }
+.footer-divider { border-color: rgba(255,255,255,0.05); margin-top: 60px; }
+
+/* ANIMATIONS */
+.page-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 991px) {
+  .hero-main-title { font-size: 2.2rem; }
+  .workflow-step:not(:last-child)::after { display: none; }
+  .dashboard-preview-wrapper { margin-top: 50px; }
+}
+
+/* --- EMERGENCY SCROLL RESET --- */
+/* These lines override any hidden scrollbars from other files */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: auto !important; /* Forces height to grow with content */
+  min-height: 100% !important;
+  overflow-y: auto !important; /* Forces vertical scrollbar to appear */
+  overflow-x: hidden !important; /* Prevents side-scrolling */
+}
+
+/* If you are using a standard React setup, the #root div might be the trap */
+#root {
+  height: auto !important;
+  min-height: 100vh !important;
+  display: block !important;
+}
+
+.lexguard-landing-page {
+  font-family: 'Inter', sans-serif;
+  color: #111b27;
   width: 100%;
-  padding: 4rem 2rem;
-  background: #fff;
-  text-align: center;
-}
-
-
-
-.icon-box {
-  width: 90px;
-  height: 90px;
-  border-radius: 20%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem auto; 
-}
-
-
-
-.footer-custom {
-  background: rgba(0, 8, 20, 0.4); /* semi-transparent dark navy tint */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-
-  padding: 2rem 0;
-  width: 99.6vw;
-  margin-left: calc(-50vw + 50%);
-  padding-top: 60px;
-
   position: relative;
-  bottom: -100px;
+  /* Ensure the wrapper itself isn't trapping the height */
+  height: auto !important; 
+  min-height: 100vh;
+  overflow: visible !important; 
+}
+/* --- END RESET --- */
 
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+/* Rest of your styling... */
+:root {
+  --navy: #111b27;
+  --mint: #10b981;
 }
 
-.footer-content {
-  max-width: 1200px;   
-  margin: 0 auto;
-  padding: 0 2rem;
-  text-align: center;
+.hero-section {
+  background-color: var(--navy);
+  color: white;
+  padding: 100px 0;
+  min-height: 700px; /* Use min-height, never fixed height */
 }
 
-.footer-logo {
-  font-weight: bold;
-  margin-bottom: 1rem;
-}
-
-.footer-links li {
-  margin: 0 1rem;
-}
-
-.footer-links a {
-  color: #e0e0e0;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.footer-links a:hover {
-  color: #ffffff;
-}
-
-.footer-copy {
-  font-size: 0.9rem;
-  color: #d1d5db;
-  margin-top: 1rem;
+/* Ensure all sections are block-level and visible */
+section {
+  display: block;
+  position: relative;
+  width: 100%;
 }

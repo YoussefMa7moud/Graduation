@@ -19,7 +19,8 @@ import ClientLayout from './components/Client/ClientLayout';
 import CreateProposal from './pages/Client/CreateProposal';
 import ClientAccountSettings from './pages/Client/ClientAccountSettings';
 import ProposalSubmission from './pages/Client/ProposalSubmission';
-
+import OngoingProjects from './pages/Client/OngoingProjects';
+import SignedProjects from './pages/Client/SignedProjects';
 
 /**
  * Component that redirects authenticated users away from auth pages
@@ -169,7 +170,26 @@ const AppRoutes: React.FC = () => {
     </ClientLayout>
   }
 />
-
+<Route 
+  path="/OngoingProjects"
+  element={
+  
+      <ClientLayout>
+        <OngoingProjects />
+      </ClientLayout>
+   
+  }
+/>
+<Route 
+  path="/SignedProjects"
+  element={
+  
+      <ClientLayout>
+        <SignedProjects />
+      </ClientLayout>
+   
+  }
+/>
       </Routes>
    
   )

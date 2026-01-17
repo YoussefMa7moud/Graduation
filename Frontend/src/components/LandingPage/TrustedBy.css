@@ -1,0 +1,23 @@
+/* TRUSTED BY */
+.trusted-by-section {
+    padding: 60px 0;
+    background-color: #f8fafc;
+  }
+  .trusted-text {
+    font-weight: 700;
+    color: var(--gray-text);
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+  }
+  .grayscale img {
+    filter: grayscale(100%);
+    opacity: 0.6;
+    transition: all 0.3s;
+    object-fit: contain;
+    max-height: 40px;
+  }
+  .grayscale img:hover {
+    filter: grayscale(0%);
+    opacity: 1;
+  }
+  

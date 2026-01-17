@@ -10,6 +10,12 @@ import MyPolicyRepository from './pages/Company/MyPolicyRepository';
 import ClientRequests from './pages/Company/ClientRequests';
 import CompanySettings from './pages/Company/CompanySettings';
 import ContractRepository from './pages/Company/ContractRepository';
+import BrowseCompanies from './pages/Client/BrowseCompanies';
+import MyProposals from './pages/Client/MyProposals';
+import ClientLayout from './components/Client/ClientLayout';
+import CreateProposal from './pages/Client/CreateProposal';
+import ClientAccountSettings from './pages/Client/ClientAccountSettings';
+
 
 function App() {
   return (
@@ -61,7 +67,25 @@ function App() {
             <ContractRepository />
           </DashboardLayout>
         } />
+<Route path="/client/companies" element={
+  <ClientLayout>
+    <BrowseCompanies />
+  </ClientLayout>
+} />
 
+<Route path="/client/proposals" element={
+  <ClientLayout>
+    <MyProposals />
+  </ClientLayout>
+} />
+<Route path="/client/proposals/new" element={
+  <ClientLayout>
+    <CreateProposal />
+  </ClientLayout>
+} />
+   <Route path="/ClientSettings" element={<ClientAccountSettings />} />
+      
+      
       </Routes>
     </Router>
   )

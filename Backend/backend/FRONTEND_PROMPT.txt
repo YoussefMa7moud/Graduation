@@ -1,0 +1,67 @@
+I need to integrate my Spring Boot backend authentication system with my frontend application. 
+
+**Backend Details:**
+- Base URL: http://localhost:8080 (should be configurable for deployment)
+- Registration endpoint: POST /api/auth/register (accepts JSON)
+- Login endpoint: POST /api/auth/login (returns JWT token)
+- All protected endpoints require: Authorization: Bearer <token>
+
+**Requirements:**
+
+1. **API Configuration:**
+   - Create a global configuration file for API base URL
+   - Support environment-based URLs (development, production)
+   - Make it easy to change the API URL for deployment
+
+2. **File Structure:**
+   - Organize authentication-related files properly
+   - Separate concerns (API calls, auth logic, components)
+   - Follow best practices for the framework I'm using
+
+3. **Authentication Features:**
+   - Registration form/component that calls the backend
+   - Login form/component that calls the backend
+   - Store JWT token securely (localStorage or sessionStorage)
+   - Store user information after login
+   - Handle token expiration and logout
+   - Redirect to login if token is invalid/expired
+
+4. **API Integration:**
+   - Create an API service/utility for authentication endpoints
+   - Set up interceptors/middleware to automatically add Authorization header to requests
+   - Handle 401 errors (unauthorized) by clearing token and redirecting to login
+   - Handle errors gracefully with user-friendly messages
+
+5. **State Management:**
+   - Manage authentication state (logged in/out, user info)
+   - Make authentication state available throughout the app
+   - Provide methods to check if user is authenticated
+
+6. **Components/Pages:**
+   - Registration page/component with form validation
+   - Login page/component with form validation
+   - Protected route wrapper (redirect to login if not authenticated)
+   - Optional: User profile display component
+
+**Please:**
+- Ask me what frontend framework I'm using (React, Vue, Angular, Next.js, etc.)
+- Create a proper file structure
+- Use TypeScript if applicable
+- Include error handling
+- Add comments explaining the code
+- Make the code production-ready
+- Ensure the API base URL is easily configurable for different environments
+
+**Backend API Endpoints:**
+
+Registration: POST /api/auth/register
+Request: { "email": "user@example.com", "password": "password123", "role": "client", "clientType": "individual", "firstName": "John", "lastName": "Doe" }
+Response: { "userId": 1, "role": "CLIENT_PERSON" }
+
+Login: POST /api/auth/login
+Request: { "email": "user@example.com", "password": "password123" }
+Response: { "token": "eyJhbGci...", "type": "Bearer", "userId": 1, "email": "user@example.com", "role": "CLIENT_PERSON" }
+
+Error Response: { "error": "Error message here" }
+
+Token expires after 24 hours. Handle 401 responses by clearing token and redirecting to login.

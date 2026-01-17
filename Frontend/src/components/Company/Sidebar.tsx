@@ -1,6 +1,51 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
+
+/**
+ * Logout Button Component
+ * Handles user logout and redirects to login page
+ */
+const LogoutButton: React.FC = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, redirect to auth
+      navigate('/auth');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  return (
+    <button 
+      className="logout-button w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+      onClick={handleLogout}
+      disabled={isLoggingOut}
+    >
+      {isLoggingOut ? (
+        <>
+          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>Signing out...</span>
+        </>
+      ) : (
+        <>
+          <i className="bi bi-box-arrow-left"></i>
+          <span>Sign Out</span>
+        </>
+      )}
+    </button>
+  );
+};
 
 const Sidebar: React.FC = () => {
   return (
@@ -54,12 +99,8 @@ const Sidebar: React.FC = () => {
 
      {/* Bottom Action Section */}
 <div className="bottom-section p-3">
-
-  {/* NEW: Logout Button */}
-  <button className="logout-button w-100 d-flex align-items-center justify-content-center gap-2 py-2">
-    <i className="bi bi-box-arrow-left"></i>
-    <span>Sign Out</span>
-  </button>
+  {/* Logout Button */}
+  <LogoutButton />
 </div>
     </div>
   );

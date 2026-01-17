@@ -65,7 +65,7 @@ const MyProposals: React.FC = () => {
           <h4 className="fw-bold">My Project Proposals</h4>
           <button 
             className="btn btn-new fw-bold"
-            onClick={() => navigate('/client/proposals/new')}
+            onClick={() => navigate('/proposals/new')}
           >
             + Start New Proposal
           </button>

@@ -18,6 +18,7 @@ import MyProposals from './pages/Client/MyProposals';
 import ClientLayout from './components/Client/ClientLayout';
 import CreateProposal from './pages/Client/CreateProposal';
 import ClientAccountSettings from './pages/Client/ClientAccountSettings';
+import ProposalSubmission from './pages/Client/ProposalSubmission';
 
 
 /**
@@ -133,35 +134,42 @@ const AppRoutes: React.FC = () => {
       />
 
       <Route path="/BrowseCompanies" element={
-        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
-          <ClientLayout>
+      <ClientLayout>
             <BrowseCompanies />
           </ClientLayout>
-        </RoleBasedRoute>
+   
       } />
 
       <Route path="/proposals" element={
-        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+ 
           <ClientLayout>
             <MyProposals />
           </ClientLayout>
-        </RoleBasedRoute>
+    
       } />
 
       <Route path="/proposals/new" element={
-        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+     
           <ClientLayout>
             <CreateProposal />
           </ClientLayout>
-        </RoleBasedRoute>
+  
       } />
       <Route path="/settings" element={
-        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+       
           <ClientLayout><ClientAccountSettings /></ClientLayout>
-        </RoleBasedRoute>
+   
       } />
       
-      
+      <Route
+  path="/proposals/submission"
+  element={
+    <ClientLayout>
+      <ProposalSubmission />
+    </ClientLayout>
+  }
+/>
+
       </Routes>
    
   )

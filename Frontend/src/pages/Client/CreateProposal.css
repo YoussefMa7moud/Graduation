@@ -162,4 +162,11 @@
   .create-right {
     position: static;
   }
+  .error {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: -10px;
+  display: block;
+}
+
 }

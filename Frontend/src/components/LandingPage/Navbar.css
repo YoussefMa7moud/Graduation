@@ -1,0 +1,53 @@
+/* NAVBAR */
+.navbar {
+    background-color: var(--navy);
+    padding: 20px 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
+  }
+  
+  .navbar .nav-link {
+    color: #e2e8f0;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 0 20px !important;
+    transition: color 0.3s;
+  }
+  
+  .navbar .nav-link:hover {
+    color: var(--mint);
+  }
+  
+  .logo-icon {
+    background-color: var(--mint);
+    color: white;
+    padding: 8px;
+    border-radius: 8px;
+    margin-right: 10px;
+    font-size: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .brand-sub {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--gray-text);
+    margin-left: 42px;
+    margin-top: -5px;
+  }
+  
+  .navbar-brand {
+    color: white !important;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  
+  .login-link {
+    color: #e2e8f0;
+    font-size: 1rem;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  

@@ -1,0 +1,58 @@
+/* FOOTER */
+.footer-section {
+    background: var(--navy);
+    padding-top: 80px;
+    color: white;
+  }
+  .logo-icon-small {
+    background: var(--mint);
+    color: white;
+    padding: 4px;
+    border-radius: 6px;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .footer-label {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .footer-links li {
+    color: var(--gray-text);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: color 0.3s;
+  }
+  .footer-links li:hover {
+    color: var(--mint);
+  }
+  
+  .footer-divider {
+    border-color: rgba(255, 255, 255, 0.1);
+    margin-top: 60px;
+  }
+  .footer-bottom {
+    padding: 2rem 0;
+  }
+  .footer-bottom span {
+    cursor: pointer;
+    transition: color 0.3s;
+  }
+  .footer-bottom span:hover {
+    color: white;
+  }
+  .newsletter-input .form-control {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: white !important;
+    padding: 12px;
+  }
+  .newsletter-input .form-control::placeholder {
+    color: var(--gray-text);
+  }
+  

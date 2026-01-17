@@ -1,0 +1,26 @@
+.avatar-small {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--light-gray);
+  }
+  
+  /* TESTIMONIALS */
+  .testimonial-card {
+    border: 1px solid var(--light-gray) !important;
+    transition: all 0.3s;
+  }
+  .testimonial-card:hover {
+    border-color: var(--mint) !important;
+    box-shadow: 0 4px 15px rgba(100, 116, 139, 0.08);
+  }
+  .testimonial-card p:first-of-type {
+    font-size: 1.1rem;
+  }
+  #testimonial-avatar-1 {
+    background: url('https://i.pravatar.cc/50?img=5') center/cover;
+  }
+  #testimonial-avatar-2 {
+    background: url('https://i.pravatar.cc/50?img=8') center/cover;
+  }
+  

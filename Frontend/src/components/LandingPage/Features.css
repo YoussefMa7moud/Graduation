@@ -1,0 +1,32 @@
+/* SECTIONS GRID */
+.section-title-big {
+    font-size: 3rem;
+    font-weight: 800;
+  }
+  .section-subtitle {
+    max-width: 650px;
+    color: var(--gray-text);
+    font-size: 1.1rem;
+  }
+  .py-5 {
+    padding-top: 5rem !important;
+    padding-bottom: 5rem !important;
+  }
+  
+  .feature-item-box {
+    background: white;
+    border-radius: 20px;
+    border: 1px solid var(--light-gray);
+    transition: all 0.3s ease;
+    height: 100%;
+  }
+  .feature-item-box:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px rgba(100, 116, 139, 0.1);
+    border-color: var(--mint);
+  }
+  .feature-icon {
+    font-size: 2.5rem;
+    color: var(--mint);
+  }
+  

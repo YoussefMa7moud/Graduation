@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Hero.css';
 import dashboardImg from '../../assets/landing.png';
 
@@ -19,8 +20,8 @@ const Hero: React.FC = () => {
               LexGuard AI empowers corporate legal teams to automate contract reviews, ensuring 100% alignment with Egyptian regulatory frameworks and internal GCL policies.
             </p>
             <div className="hero-btns mt-5">
-              <button className="btn btn-mint px-4 py-3 me-3">Get Started <i className="bi bi-arrow-right ms-2"></i></button>
-              <button className="btn btn-outline-white px-4 py-3"><i className="bi bi-play-circle me-2"></i> Watch Demo</button>
+              <Link to="/auth" className="btn btn-mint px-4 py-3 me-3">Get Started <i className="bi bi-arrow-right ms-2"></i></Link>
+              <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="btn btn-outline-white px-4 py-3"><i className="bi bi-play-circle me-2"></i> Watch Demo</a>
             </div>
           </div>
           <div className="col-lg-6">

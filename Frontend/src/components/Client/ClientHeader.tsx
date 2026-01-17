@@ -26,7 +26,7 @@ const ClientHeader: React.FC = () => {
 
   const handleSettings = () => {
     console.log('Settings clicked');
-    navigate('/ClientSettings'); // Navigate to settings page
+    navigate('/settings'); // Navigate to settings page
   };
 
   return (

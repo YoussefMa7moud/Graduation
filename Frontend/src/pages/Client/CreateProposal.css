@@ -1,0 +1,165 @@
+/* Page */
+.create-page {
+  padding-top: 30px;
+}
+
+/* Header */
+.create-header h2 {
+  font-weight: 700;
+  color: #111827;
+}
+
+.create-header p {
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* Layout */
+.create-layout {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: 24px;
+  margin-top: 30px;
+}
+
+/* Cards */
+.card-box {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.card-box h6 {
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: #111827;
+}
+
+/* Inputs */
+.card-box label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.card-box input,
+.card-box textarea,
+.card-box select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+
+/* Analysis */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.analysis-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f9fafb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Two columns */
+.two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Sidebar */
+.create-right {
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Buttons */
+.btn-primary-full {
+  background: #111827;
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 700;
+  border: none;
+}
+
+.btn-secondary-full {
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 700;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+/* Progress */
+.progress-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 0.85rem;
+}
+
+.progress-box span {
+  color: #6b7280;
+}
+
+.progress-box strong {
+  float: right;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.progress-bar div {
+  height: 100%;
+  background: #111827;
+  border-radius: 4px;
+}
+
+/* Guidelines */
+.guidelines-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.guidelines-box h6 {
+  font-weight: 700;
+}
+
+.guidelines-box ul {
+  padding-left: 16px;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .create-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .create-right {
+    position: static;
+  }
+}

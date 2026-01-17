@@ -13,6 +13,12 @@ import CompanySettings from './pages/Company/CompanySettings';
 import ContractRepository from './pages/Company/ContractRepository';
 import RoleBasedRoute from './components/Auth/RoleBasedRoute';
 import { RoleGroups, getDefaultHomeRoute } from './utils/role.utils';
+import BrowseCompanies from './pages/Client/BrowseCompanies';
+import MyProposals from './pages/Client/MyProposals';
+import ClientLayout from './components/Client/ClientLayout';
+import CreateProposal from './pages/Client/CreateProposal';
+import ClientAccountSettings from './pages/Client/ClientAccountSettings';
+
 
 /**
  * Component that redirects authenticated users away from auth pages
@@ -158,53 +164,47 @@ const AppRoutes: React.FC = () => {
       />
       */}
 
-      {/* Project Manager Routes - Only accessible by PROJECT_MANAGER role (to be implemented later) */}
-      {/* 
-      <Route 
-        path="/ProjectManagerHome" 
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={RoleGroups.PROJECT_MANAGER}>
-              <ProjectManagerDashboardLayout>
-                <ProjectManagerHome />
-              </ProjectManagerDashboardLayout>
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        } 
-      />
-      */}
+         <Route path="/ContractRepository" element={
+          <RoleBasedRoute allowedRoles={RoleGroups.COMPANY}>
+            <DashboardLayout>
+              <ContractRepository />
+            </DashboardLayout>
+          </RoleBasedRoute>
+        } />
 
-      {/* Catch all - redirect to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-};
+      <Route path="/client/companies" element={
+        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+          <ClientLayout>
+            <BrowseCompanies />
+          </ClientLayout>
+        </RoleBasedRoute>
+      } />
 
-/**
- * Main App Component
- * Wraps the application with AuthProvider and Router
- */
-function App() {
-  try {
-    return (
-      <Router>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </Router>
-    );
-  } catch (error) {
-    console.error('App initialization error:', error);
-    return (
-      <div style={{ padding: '50px', textAlign: 'center' }}>
-        <h1>Application Error</h1>
-        <p>An error occurred while loading the application.</p>
-        <pre style={{ textAlign: 'left', background: '#f5f5f5', padding: '20px', borderRadius: '5px' }}>
-          {error instanceof Error ? error.message : String(error)}
-        </pre>
-      </div>
-    );
-  }
+      <Route path="/client/proposals" element={
+        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+          <ClientLayout>
+            <MyProposals />
+          </ClientLayout>
+        </RoleBasedRoute>
+      } />
+
+      <Route path="/client/proposals/new" element={
+        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+          <ClientLayout>
+            <CreateProposal />
+          </ClientLayout>
+        </RoleBasedRoute>
+      } />
+      <Route path="/client/settings" element={
+        <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+          <ClientLayout><ClientAccountSettings /></ClientLayout>
+        </RoleBasedRoute>
+      } />
+      
+      
+      </Routes>
+   
+  )
 }
 
-export default App
+export default AppRoutes;

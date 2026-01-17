@@ -132,47 +132,7 @@ const AppRoutes: React.FC = () => {
         } 
       />
 
-      {/* Client Routes - Only accessible by CLIENT roles (to be implemented later) */}
-      {/* 
-      <Route 
-        path="/ClientHome" 
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
-              <ClientDashboardLayout>
-                <ClientHome />
-              </ClientDashboardLayout>
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        } 
-      />
-      */}
-
-      {/* Admin Routes - Only accessible by ADMIN role (to be implemented later) */}
-      {/* 
-      <Route 
-        path="/AdminHome" 
-        element={
-          <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={RoleGroups.ADMIN}>
-              <AdminDashboardLayout>
-                <AdminHome />
-              </AdminDashboardLayout>
-            </RoleBasedRoute>
-          </ProtectedRoute>
-        } 
-      />
-      */}
-
-         <Route path="/ContractRepository" element={
-          <RoleBasedRoute allowedRoles={RoleGroups.COMPANY}>
-            <DashboardLayout>
-              <ContractRepository />
-            </DashboardLayout>
-          </RoleBasedRoute>
-        } />
-
-      <Route path="/client/companies" element={
+      <Route path="/BrowseCompanies" element={
         <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
           <ClientLayout>
             <BrowseCompanies />
@@ -180,7 +140,7 @@ const AppRoutes: React.FC = () => {
         </RoleBasedRoute>
       } />
 
-      <Route path="/client/proposals" element={
+      <Route path="/proposals" element={
         <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
           <ClientLayout>
             <MyProposals />
@@ -188,14 +148,14 @@ const AppRoutes: React.FC = () => {
         </RoleBasedRoute>
       } />
 
-      <Route path="/client/proposals/new" element={
+      <Route path="/proposals/new" element={
         <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
           <ClientLayout>
             <CreateProposal />
           </ClientLayout>
         </RoleBasedRoute>
       } />
-      <Route path="/client/settings" element={
+      <Route path="/settings" element={
         <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
           <ClientLayout><ClientAccountSettings /></ClientLayout>
         </RoleBasedRoute>
@@ -207,4 +167,18 @@ const AppRoutes: React.FC = () => {
   )
 }
 
-export default AppRoutes;
+/**
+ * Main App Component
+ * Wraps the application with AuthProvider and Router
+ */
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </Router>
+  );
+}
+
+export default App;

@@ -1,0 +1,43 @@
+/* WORKFLOW */
+.workflow-icon-circle {
+    width: 70px;
+    height: 70px;
+    background: #ecfdf5;
+    color: var(--mint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto;
+    font-size: 2rem;
+    transition: all 0.3s;
+  }
+  
+  .workflow-step:hover .workflow-icon-circle {
+    transform: scale(1.1);
+    background-color: var(--mint);
+    color: white;
+  }
+  
+  .workflow-path-container {
+    position: relative;
+  }
+  .workflow-step {
+    position: relative;
+    padding: 20px;
+  }
+  .workflow-step h6 {
+    font-size: 1.1rem;
+  }
+  
+  .workflow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 55px;
+    right: -25%;
+    width: 50%;
+    height: 2px;
+    border-top: 2px dashed #cbd5e1;
+    z-index: 0;
+  }
+  

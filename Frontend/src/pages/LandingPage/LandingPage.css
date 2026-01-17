@@ -1,236 +1,135 @@
 /* COLOR VARIABLES & GLOBALS */
 :root {
-  --navy: #111b27;
-  --mint: #10b981;
-  --bg-dark: #0f172a;
-  --gray-text: #64748b;
-}
+    --navy: #111b27;
+    --mint: #10b981;
+    --bg-dark: #0f172a;
+    --gray-text: #94a3b8;
+    --light-gray: #f1f5f9;
+  }
+  
+  /* FIX: Ensure scrolling is enabled */
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    /* Only hide horizontal scroll */
+    overflow-y: auto !important;
+    /* Force vertical scroll to be auto */
+    height: auto;
+  }
+  
+  .lexguard-landing-page {
+    font-family: 'Poppins', sans-serif;
+    color: var(--navy);
+    width: 100%;
+    position: relative;
+    background-color: #f8fafc;
+    overflow-y: visible !important;
+    /* Ensure the wrapper doesn't block scroll */
+  }
+  
+  .bg-navy {
+    background-color: var(--navy) !important;
+  }
+  
+  .text-mint {
+    color: var(--mint) !important;
+  }
+  
+  .x-small {
+    font-size: 0.8rem;
+  }
+  
+  .x-small-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
 
-/* FIX: Ensure scrolling is enabled */
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden; /* Only hide horizontal scroll */
-  overflow-y: auto !important; /* Force vertical scroll to be auto */
-  height: auto;
-}
+  /* BUTTONS */
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 12px 28px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  .btn-navy {
+    background: #1e293b;
+    color: white;
+    border: 1px solid #1e293b;
+  }
+  .btn-navy:hover {
+    background: #2c3e50;
+  }
+  
+  .btn-mint {
+    background: var(--mint);
+    color: white;
+    border: 1px solid var(--mint);
+  }
+  .btn-mint:hover {
+    background: #0d9d74;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+  }
+  
+  .btn-outline-white {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    background: transparent;
+  }
+  .btn-outline-white:hover {
+    background: white;
+    color: var(--navy);
+  }
 
-.lexguard-landing-page {
-  font-family: 'Inter', sans-serif;
-  color: var(--navy);
-  width: 100%;
-  position: relative;
-  overflow-y: visible !important; /* Ensure the wrapper doesn't block scroll */
-}
-
-.bg-navy { background-color: var(--navy) !important; }
-.text-mint { color: var(--mint) !important; }
-.x-small { font-size: 11px; }
-.x-small-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; }
-
-/* NAVBAR */
-.navbar {
-  background-color: var(--navy);
-  padding: 15px 0;
-  z-index: 1000;
-}
-
-.navbar .nav-link {
-  color: #e2e8f0;
-  font-weight: 500;
-  font-size: 14px;
-  padding: 0 15px !important;
-}
-
-.logo-icon {
-  background-color: var(--mint);
-  color: white;
-  padding: 5px 8px;
-  border-radius: 6px;
-  margin-right: 2px;
-}
-
-.brand-sub {
-  font-size: 8px;
-  letter-spacing: 1px;
-  color: var(--gray-text);
-  margin-left: 36px;
-  margin-top: -4px;
-}
-
-.navbar-brand { color: white !important; font-size: 18px; }
-.login-link { color: #e2e8f0; font-size: 14px; text-decoration: none; font-weight: 600; }
-
-/* HERO SECTION */
-.hero-section {
-  background-color: var(--navy);
-  color: white;
-  padding: 80px 0 120px;
-  position: relative;
-}
-
-.badge-law {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--mint);
-  font-size: 11px;
-  font-weight: 800;
-  padding: 6px 14px;
-  border-radius: 50px;
-  display: inline-block;
-}
-
-.hero-main-title {
-  font-size: 3.5rem;
-  line-height: 1.1;
-  margin-top: 10px;
-}
-
-.text-highlight {
-  color: #4382cc; /* Blue from image */
-}
-
-.hero-description {
-  font-size: 1.1rem;
-  color: #94a3b8;
-  max-width: 500px;
-  line-height: 1.6;
-}
-
-/* BUTTONS */
-.btn-navy { background: #1e293b; color: white; border: none; font-weight: 600; font-size: 14px; padding: 10px 20px; border-radius: 8px;}
-.btn-mint { background: var(--mint); color: white; border: none; font-weight: 700; border-radius: 8px; }
-.btn-outline-white { border: 1.5px solid rgba(255,255,255,0.2); color: white; background: transparent; border-radius: 8px; }
-
-/* DASHBOARD PREVIEW */
-.dashboard-preview-wrapper {
-  position: relative;
-  background-color: #558784; 
-  padding: 40px;
-  border-radius: 20px;
-}
-
-.floating-compliance-card {
-  position: absolute;
-  bottom: -20px;
-  left: -20px;
-  background: white;
-  color: var(--navy);
-  padding: 20px 25px;
-  border-radius: 12px;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-}
-
-.check-icon-circle {
-  width: 40px; height: 40px; background: #ecfdf5; color: var(--mint); 
-  display: flex; align-items: center; justify-content: center; border-radius: 50%;
-}
-
-/* SECTIONS GRID */
-.section-title-big { font-size: 2.2rem; }
-.section-subtitle { max-width: 600px; color: var(--gray-text); font-size: 0.95rem; }
-
-.feature-item-box {
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #f1f5f9;
-  transition: 0.3s;
-}
-
-/* WORKFLOW */
-.workflow-icon-circle {
-  width: 60px; height: 60px; background: #f0fdf4; color: var(--mint);
-  display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto;
-  font-size: 24px;
-}
-
-.workflow-path-container { position: relative; }
-.workflow-step { position: relative; padding: 20px; }
-
-.workflow-step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 50px;
-  right: -25%;
-  width: 50%;
-  height: 2px;
-  border-top: 2px dashed #e2e8f0;
-  z-index: -1;
-}
-
-/* NAVY COMPLIANCE SECTION */
-.compliance-section-navy { background-color: #0f172a; }
-.compliance-dark-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 20px;
-}
-
-.expert-box { background: rgba(255,255,255,0.05); border-radius: 10px; }
-.expert-avatar { width: 35px; height: 35px; background: #10b981; border-radius: 50%; }
-
-/* FOOTER */
-.footer-section { background: #0b111a; padding-top: 80px; }
-.logo-icon-small { background: var(--mint); color: white; padding: 3px 6px; border-radius: 4px; font-size: 12px; }
-.footer-label { color: white; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
-.footer-links li { color: #94a3b8; font-size: 13px; margin-bottom: 12px; cursor: pointer; }
-.footer-divider { border-color: rgba(255,255,255,0.05); margin-top: 60px; }
-
-/* ANIMATIONS */
-.page-fade-in { animation: fadeIn 0.8s ease-out forwards; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-@media (max-width: 991px) {
-  .hero-main-title { font-size: 2.2rem; }
-  .workflow-step:not(:last-child)::after { display: none; }
-  .dashboard-preview-wrapper { margin-top: 50px; }
-}
-
-/* --- EMERGENCY SCROLL RESET --- */
-/* These lines override any hidden scrollbars from other files */
-html, body {
-  margin: 0 !important;
-  padding: 0 !important;
-  height: auto !important; /* Forces height to grow with content */
-  min-height: 100% !important;
-  overflow-y: auto !important; /* Forces vertical scrollbar to appear */
-  overflow-x: hidden !important; /* Prevents side-scrolling */
-}
-
-/* If you are using a standard React setup, the #root div might be the trap */
-#root {
-  height: auto !important;
-  min-height: 100vh !important;
-  display: block !important;
-}
-
-.lexguard-landing-page {
-  font-family: 'Inter', sans-serif;
-  color: #111b27;
-  width: 100%;
-  position: relative;
-  /* Ensure the wrapper itself isn't trapping the height */
-  height: auto !important; 
-  min-height: 100vh;
-  overflow: visible !important; 
-}
-/* --- END RESET --- */
-
-/* Rest of your styling... */
-:root {
-  --navy: #111b27;
-  --mint: #10b981;
-}
-
-.hero-section {
-  background-color: var(--navy);
-  color: white;
-  padding: 100px 0;
-  min-height: 700px; /* Use min-height, never fixed height */
-}
-
-/* Ensure all sections are block-level and visible */
-section {
-  display: block;
-  position: relative;
-  width: 100%;
-}
+  /* ANIMATIONS */
+.page-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  /* UTILITIES & OVERRIDES */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: auto !importan;
+    overflow-x: hidden !important;
+  }
+  
+  #root {
+    height: auto !important;
+    min-height: 100vh !important;
+    display: block !important;
+  }
+  
+  .lexguard-landing-page {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+  
+  section {
+    display: block;
+    position: relative;
+    width: 100%;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  

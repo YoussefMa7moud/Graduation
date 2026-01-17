@@ -1,0 +1,77 @@
+/* HERO SECTION */
+.hero-section {
+    background: linear-gradient(45deg, #0f172a, #1e293b);
+    color: white;
+    padding: 100px 0 150px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .badge-law {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--mint);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 50px;
+    display: inline-block;
+  }
+  
+  .hero-main-title {
+    font-size: 4.5rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-top: 15px;
+  }
+  
+  .text-highlight {
+    color: var(--mint);
+  }
+  
+  .hero-description {
+    font-size: 1.25rem;
+    color: var(--gray-text);
+    max-width: 550px;
+    line-height: 1.7;
+  }
+
+  /* DASHBOARD PREVIEW */
+.dashboard-preview-wrapper {
+    position: relative;
+    padding: 25px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .dashboard-img-container img {
+    border-radius: 16px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  }
+  
+  .floating-compliance-card {
+    position: absolute;
+    bottom: -30px;
+    left: -30px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
+    color: var(--navy);
+    padding: 20px 25px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  
+  .check-icon-circle {
+    width: 45px;
+    height: 45px;
+    background: #dafcf0;
+    color: var(--mint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.3rem;
+  }
+  

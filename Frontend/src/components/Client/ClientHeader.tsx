@@ -80,16 +80,16 @@ const ClientHeader: React.FC = () => {
 
       {/* Navigation Links */}
       <nav style={{ display: 'flex', gap: '20px', fontSize: '14px', fontWeight: 500 }}>
-        <Link to="/client/companies" style={{ textDecoration: 'none', color: '#1e293b' }}>
+        <Link to="/BrowseCompanies" style={{ textDecoration: 'none', color: '#1e293b' }}>
           Dashboard
         </Link>
-        <Link to="/client/proposals" style={{ textDecoration: 'none', color: '#1e293b' }}>
+        <Link to="/proposals" style={{ textDecoration: 'none', color: '#1e293b' }}>
           Proposals
         </Link>
-        <Link to="/client/contracts" style={{ textDecoration: 'none', color: '#1e293b' }}>
+        <Link to="/contracts" style={{ textDecoration: 'none', color: '#1e293b' }}>
           Contracts
         </Link>
-        <Link to="/client/resources" style={{ textDecoration: 'none', color: '#1e293b' }}>
+        <Link to="/resources" style={{ textDecoration: 'none', color: '#1e293b' }}>
           Resources
         </Link>
       </nav>

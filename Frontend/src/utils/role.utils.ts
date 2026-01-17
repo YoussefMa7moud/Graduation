@@ -113,7 +113,7 @@ export const getDefaultHomeRoute = (userRole: FrontendRole): string => {
       return '/CompanyHome';
     case frontendRoles.CLIENT_INDIVIDUAL:
     case frontendRoles.CLIENT_CORPORATE:
-      return '/ClientHome'; // To be implemented
+      return '/BrowseCompanies'; // To be implemented
     case frontendRoles.ADMIN:
       return '/AdminHome'; // To be implemented
     case frontendRoles.PROJECT_MANAGER:

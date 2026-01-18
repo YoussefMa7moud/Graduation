@@ -89,9 +89,7 @@ const ClientHeader: React.FC = () => {
         <Link to="/OngoingProjects" style={{ textDecoration: 'none', color: '#1e293b' }}>
           Contracts
         </Link>
-        <Link to="/resources" style={{ textDecoration: 'none', color: '#1e293b' }}>
-          Resources
-        </Link>
+     
          <Link to="/SignedProjects" style={{ textDecoration: 'none', color: '#1e293b' }}>
           Projects Archives
         </Link>

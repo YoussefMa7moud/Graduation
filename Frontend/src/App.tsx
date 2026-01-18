@@ -21,7 +21,7 @@ import ClientAccountSettings from './pages/Client/ClientAccountSettings';
 import ProposalSubmission from './pages/Client/ProposalSubmission';
 import OngoingProjects from './pages/Client/OngoingProjects';
 import SignedProjects from './pages/Client/SignedProjects';
-
+import ActiveProjects from './pages/Client/ActiveProjects';
 /**
  * Component that redirects authenticated users away from auth pages
  */
@@ -190,7 +190,16 @@ const AppRoutes: React.FC = () => {
    
   }
 />
-      </Routes>
+   <Route 
+  path="/ActiveProjects"
+  element={
+  
+      <ClientLayout>
+        <ActiveProjects />
+      </ClientLayout>
+   
+  }
+/>   </Routes>
    
   )
 }

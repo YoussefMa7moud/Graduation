@@ -38,7 +38,11 @@ const MOCK_DB: Record<string, ContractDetails> = {
       <h3 class="contract-title">ANNUAL COMPLIANCE AUDIT AGREEMENT</h3>
       <p class="contract-text"><strong>BETWEEN:</strong> Cairo Plaza Estates (The "Client") AND LegalReview AI (The "Auditor").</p>
       <h4 class="clause-header">1. SCOPE OF AUDIT</h4>
-      <p class="contract-text">The Auditor shall review all financial records for the fiscal year 2023 in compliance with Egyptian Corporate Law No. 159 of 1981.</p>
+      <p class="contract-text">The Auditor shall review all financial records for the fiscal year 2023 in compliance with Egyptian Corporate Law No. 159 of 1981. The audit will encompass balance sheets, income statements, and cash flow statements.</p>
+      <h4 class="clause-header">2. ACCESS TO RECORDS</h4>
+      <p class="contract-text">The Client agrees to provide the Auditor with full and unrestricted access to all books, accounts, and vouchers. Failure to provide access within 5 business days will result in a project delay penalty.</p>
+      <h4 class="clause-header highlight-clause">3. CONFIDENTIALITY</h4>
+      <p class="contract-text">The Auditor agrees to keep all findings strictly confidential. No data shall be shared with third parties without written consent from the Client.</p>
     `,
     chatHistory: [
       { id: 1, sender: "Dr. Ahmed Salem", time: "09:00 AM", text: "I have started the initial review of the financial annexures.", type: "incoming" },
@@ -57,7 +61,9 @@ const MOCK_DB: Record<string, ContractDetails> = {
       <h3 class="contract-title">SERVICE LEVEL AGREEMENT</h3>
       <p class="contract-text"><strong>EFFECTIVE DATE:</strong> Nov 04, 2023</p>
       <h4 class="clause-header">1. UPTIME GUARANTEE</h4>
-      <p class="contract-text">Service Provider guarantees 99.9% uptime. Failure to meet this metric results in a 10% penalty credit.</p>
+      <p class="contract-text">Service Provider guarantees 99.9% uptime. Failure to meet this metric results in a 10% penalty credit applied to the next billing cycle.</p>
+      <h4 class="clause-header highlight-clause">2. DATA SOVEREIGNTY</h4>
+      <p class="contract-text">All data must be stored on servers physically located within the Arab Republic of Egypt.</p>
     `,
     chatHistory: [
       { id: 1, sender: "Counselor Nadia Zaki", time: "11:00 AM", text: "The Data Sovereignty clause looks solid.", type: "incoming" }
@@ -79,41 +85,29 @@ const MOCK_DB: Record<string, ContractDetails> = {
 const ActiveProjectWorkspace: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const clickedProject = location.state?.project; // Project passed from OngoingProjects
+  const clickedProject = location.state?.project; 
 
   const [projectData, setProjectData] = useState<ContractDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
 
-  // Load project either from clicked project or fallback
   useEffect(() => {
     setIsLoading(true);
-
     setTimeout(() => {
-      if (clickedProject) {
-        // Map OngoingProjects structure to ContractDetails
-        setProjectData({
-          id: clickedProject.id,
-          title: clickedProject.title,
-          companyName: clickedProject.company,
-          contractType: clickedProject.steps?.[0] || "Contract",
-          content: "<p>Contract content will appear here...</p>",
-          totalValue: "TBD",
-          status: clickedProject.status,
-          reviewerName: clickedProject.reviewer,
-          chatHistory: []
-        });
-      } else {
-        setProjectData(MOCK_DB["proj_001"]); // default project
-      }
+      // Logic: If passed via navigation state, use that ID, otherwise fallback to mock
+      const targetId = clickedProject?.id || "proj_001";
+      const data = MOCK_DB[targetId] || MOCK_DB["proj_001"];
+      
+      setProjectData(data);
       setIsLoading(false);
-    }, 500);
+    }, 600);
   }, [clickedProject]);
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f8f9fb' }}>
-        <div className="spinner-border text-teal" role="status">Loading Workspace...</div>
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Loading Workspace...</p>
       </div>
     );
   }
@@ -126,19 +120,23 @@ const ActiveProjectWorkspace: React.FC = () => {
 
       <div className="workspace-container">
         {/* Page Header */}
-        <div className="page-header">
-          <div className="page-title">
-            <h2>Active Project Workspace</h2>
-            <p>
-              Reviewing <strong>{projectData.contractType}</strong> for <span className="project-name">{projectData.companyName}</span>
-            </p>
+        <div className="workspace-header">
+          <div className="header-left">
+            <h2 className="page-heading">Active Project Workspace</h2>
+            <div className="breadcrumbs">
+              <span className="crumb-text">Reviewing <strong>{projectData.contractType}</strong> for</span>
+              <span className="project-badge">{projectData.companyName}</span>
+            </div>
           </div>
           <div className="header-actions">
-            <button className="btn-secondary active-doc">
-              <i className="bi bi-file-text"></i> {projectData.contractType}
+            <button className="btn-secondary active">
+              <i className="bi bi-file-earmark-text"></i> Agreement
             </button>
-            <button className="btn-secondary" onClick={() => navigate('/OngoingProjects')}>
-              <i className="bi bi-arrow-left"></i> Back to List
+            <button className="btn-secondary">
+              <i className="bi bi-paperclip"></i> Attachments
+            </button>
+            <button className="btn-secondary">
+              <i className="bi bi-download"></i> Export PDF
             </button>
           </div>
         </div>
@@ -146,27 +144,34 @@ const ActiveProjectWorkspace: React.FC = () => {
         <div className="main-grid">
           {/* LEFT COLUMN: Contract Viewer */}
           <div className="left-column">
-            <div className="contract-viewer-card">
-              <div className="document-toolbar">
-                <span className="doc-label">DOCUMENT PREVIEW</span>
-                <div className="doc-meta">
-                  <span>Status: <strong style={{ color: '#0f8f83' }}>{projectData.status}</strong></span>
-                  <span className="separator">|</span>
-                  <span>Value: {projectData.totalValue}</span>
+            <div className="contract-viewer-panel">
+              <div className="viewer-toolbar">
+                <div className="toolbar-left">
+                   <i className="bi bi-file-text-fill text-teal"></i>
+                   <span className="doc-name">MASTER SERVICE AGREEMENT_v3.pdf</span>
+                </div>
+                <div className="toolbar-right">
+                  <span className="status-indicator">
+                    <span className="dot"></span> {projectData.status}
+                  </span>
+                  <span className="divider"></span>
+                  <span className="meta-text">Page 1 of 4</span>
                 </div>
               </div>
 
-              <div className="contract-paper">
-                <div dangerouslySetInnerHTML={{ __html: projectData.content }} />
+              <div className="scrollable-viewer">
+                <div className="contract-paper">
+                  <div dangerouslySetInnerHTML={{ __html: projectData.content }} />
 
-                <div className="signature-section">
-                  <div className="signature-block">
-                    <div className="sign-line"></div>
-                    <span>For {projectData.companyName}</span>
-                  </div>
-                  <div className="signature-block">
-                    <div className="sign-line"></div>
-                    <span>For Service Provider</span>
+                  <div className="signature-section">
+                    <div className="signature-block">
+                      <div className="sign-line"></div>
+                      <span>For {projectData.companyName}</span>
+                    </div>
+                    <div className="signature-block">
+                      <div className="sign-line"></div>
+                      <span>For Service Provider</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -175,60 +180,76 @@ const ActiveProjectWorkspace: React.FC = () => {
 
           {/* RIGHT COLUMN: Chat & Actions */}
           <div className="right-column">
-            <div className="card sticky-panel">
-              <div className="collab-header">
-                <div className="collab-title">
-                  <i className="bi bi-chat-left-text-fill" style={{ color: '#0f8f83' }}></i> Collaboration Panel
+            {/* Chat Panel */}
+            <div className="card chat-card">
+              <div className="card-header-custom">
+                <div className="header-title">
+                  <i className="bi bi-chat-left-text-fill text-teal"></i>
+                  Collaboration
                 </div>
-                <div className="online-dot"></div>
+                <div className="online-indicator"></div>
               </div>
 
-              <div className="chat-container">
-                {projectData.chatHistory.length === 0 && (
-                  <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '12px', marginTop: '20px' }}>
-                    No messages yet. Start the conversation!
-                  </div>
+              <div className="chat-area">
+                {projectData.chatHistory.length === 0 ? (
+                  <div className="empty-chat">No messages yet.</div>
+                ) : (
+                  projectData.chatHistory.map((msg) => (
+                    <div key={msg.id} className={`chat-bubble-row ${msg.type}`}>
+                      <div className="chat-meta">
+                        {msg.sender} <span className="time">• {msg.time}</span>
+                      </div>
+                      <div className="chat-bubble">{msg.text}</div>
+                    </div>
+                  ))
                 )}
-
-                {projectData.chatHistory.map((msg) => (
-                  <div key={msg.id} className={`chat-message message-${msg.type}`}>
-                    <div className="chat-meta">{msg.sender} • {msg.time}</div>
-                    <div className="chat-bubble">{msg.text}</div>
-                  </div>
-                ))}
               </div>
 
-              <div className="chat-input-wrapper">
+              <div className="chat-input-row">
                 <input
                   type="text"
-                  className="chat-input"
                   placeholder="Type a message..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                 />
-                <i className="bi bi-send-fill send-icon"></i>
+                <button className="send-btn">
+                  <i className="bi bi-send-fill"></i>
+                </button>
               </div>
             </div>
 
-            <div className="card">
-              <div className="action-card-header">
-                <i className="bi bi-lock-fill"></i> Project Controls
+            {/* Actions Panel */}
+            <div className="card actions-card">
+              <div className="card-header-custom">
+                <div className="header-title">
+                  <i className="bi bi-shield-lock-fill text-teal"></i>
+                  Project Controls
+                </div>
               </div>
-              <div style={{ fontSize: '13px', marginBottom: '16px', color: '#64748b' }}>
-                Reviewer: <strong>{projectData.reviewerName}</strong>
+              
+              <div className="reviewer-info">
+                 <small>ASSIGNED REVIEWER</small>
+                 <strong>{projectData.reviewerName}</strong>
               </div>
-              <button className="btn-primary-action">
-                <i className="bi bi-pen-fill"></i> Approve & Sign
-              </button>
-              <button className="btn-outline-action">
-                <i className="bi bi-flag-fill"></i> Request Changes
-              </button>
+
+              <div className="action-buttons">
+                <button className="btn-primary-block">
+                  <i className="bi bi-pen-fill"></i> Approve & Sign
+                </button>
+                <button className="btn-outline-block">
+                  <i className="bi bi-flag-fill"></i> Request Changes
+                </button>
+              </div>
+              
+              <div className="footer-estimate">
+                Est. Completion: Oct 25, 2024
+              </div>
             </div>
           </div>
         </div>
 
         <div className="page-footer">
-          © 2024 LexGuard AI — Secured Workspace
+          © 2024 LexGuard AI — Secured Workspace v8.1.0
         </div>
       </div>
     </div>

@@ -1,10 +1,25 @@
-// src/pages/Client/OngoingProjects.tsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import ClientHeader from '../../components/Client/ClientHeader';
 import './OngoingProjects.css';
 
-const projects = [
+// 1️⃣ Define the Project interface
+interface Project {
+  id: string;
+  title: string;
+  company: string;
+  status: string;
+  progress: number;
+  steps: string[];
+  activeStep: number;
+  startDate: string;
+  reviewer: string;
+}
+
+// 2️⃣ Define the projects array
+const projects: Project[] = [
   {
+    id: "proj_001",
     title: "Annual Compliance Audit 2024",
     company: "Cairo Plaza Estates",
     status: "In Review",
@@ -15,6 +30,7 @@ const projects = [
     reviewer: "Dr. Ahmed Salem",
   },
   {
+    id: "proj_002",
     title: "Service Level Agreement Review",
     company: "Nile Bank Corp",
     status: "Validation",
@@ -25,6 +41,7 @@ const projects = [
     reviewer: "Counselor Nadia Zaki",
   },
   {
+    id: "proj_003",
     title: "IP Licensing Agreement",
     company: "Alexandria TechHub",
     status: "Signing",
@@ -35,6 +52,7 @@ const projects = [
     reviewer: "Omar Al-Fayed",
   },
   {
+    id: "proj_004",
     title: "Warehouse Lease Extension",
     company: "Giza Manufacturing Ltd",
     status: "Drafting",
@@ -47,28 +65,29 @@ const projects = [
 ];
 
 const OngoingProjects: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleManageContracts = (project: Project) => {
+    navigate('/ActiveProjects', { state: { project } });
+  };
+
   return (
     <>
       <ClientHeader />
       <div className="ongoing-container container page-fade-in">
         <h2 className="page-title">Ongoing Client Projects</h2>
-        <p className="page-subtitle">Track active legal review progress and manage contract lifecycles.</p>
+        <p className="page-subtitle">
+          Track active legal review progress and manage contract lifecycles.
+        </p>
 
-        {/* Filters */}
-        <div className="filters-bar">
-          <input placeholder="Search projects by name, client or reviewer..." />
-          <select>
-            <option>All Stages</option>
-          </select>
-        </div>
-
-        {/* Projects Grid */}
         <div className="projects-grid">
-          {projects.map((p, i) => (
-            <div className="project-card" key={i}>
+          {projects.map((p) => (
+            <div className="project-card" key={p.id}>
               <div className="card-header">
                 <h3>{p.title}</h3>
-                <span className={`badge ${p.status.toLowerCase().replace(" ", "-")}`}>{p.status}</span>
+                <span className={`badge ${p.status.toLowerCase().replace(" ", "-")}`}>
+                  {p.status}
+                </span>
               </div>
               <span className="company-name">{p.company}</span>
 
@@ -76,24 +95,20 @@ const OngoingProjects: React.FC = () => {
                 <span>PROJECT PROGRESS</span>
                 <span>{p.progress}%</span>
               </div>
-<div className="steps">
-  {p.steps.map((s, idx) => (
-    <div
-      key={idx}
-      className={`step ${idx <= p.activeStep ? "done" : ""}`}
-    >
-      <div className="dot-wrapper">
-        <span className="dot" />
-        {idx !== p.steps.length - 1 && (
-          <span className={`line ${idx < p.activeStep ? "active" : ""}`} />
-        )}
-      </div>
-      <span>{s}</span>
-    </div>
-  ))}
-</div>
 
-
+              <div className="steps">
+                {p.steps.map((s, idx) => (
+                  <div key={idx} className={`step ${idx <= p.activeStep ? "done" : ""}`}>
+                    <div className="dot-wrapper">
+                      <span className="dot" />
+                      {idx !== p.steps.length - 1 && (
+                        <span className={`line ${idx < p.activeStep ? "active" : ""}`} />
+                      )}
+                    </div>
+                    <span>{s}</span>
+                  </div>
+                ))}
+              </div>
 
               <div className="meta">
                 <div>
@@ -107,7 +122,9 @@ const OngoingProjects: React.FC = () => {
               </div>
 
               <div className="card-actions">
-                <button className="primary">Manage Contracts</button>
+                <button className="primary" onClick={() => handleManageContracts(p)}>
+                  Manage Contracts
+                </button>
               </div>
             </div>
           ))}

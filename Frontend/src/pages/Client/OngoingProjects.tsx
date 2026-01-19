@@ -1,6 +1,5 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import ClientHeader from '../../components/Client/ClientHeader';
 import './OngoingProjects.css';
 
 // 1️⃣ Define the Project interface
@@ -73,7 +72,6 @@ const OngoingProjects: React.FC = () => {
 
   return (
     <>
-      <ClientHeader />
       <div className="ongoing-container container page-fade-in">
         <h2 className="page-title">Ongoing Client Projects</h2>
         <p className="page-subtitle">

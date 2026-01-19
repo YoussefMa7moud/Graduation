@@ -1,7 +1,6 @@
 // src/pages/Client/ActiveProjectWorkspace.tsx
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ClientHeader from '../../components/Client/ClientHeader';
 import './ActiveProjects.css';
 
 interface ChatMessage {
@@ -116,7 +115,7 @@ const ActiveProjectWorkspace: React.FC = () => {
 
   return (
     <div className="workspace-wrapper">
-      <ClientHeader />
+
 
       <div className="workspace-container">
         {/* Page Header */}

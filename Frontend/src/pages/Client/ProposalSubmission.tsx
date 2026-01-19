@@ -1,4 +1,4 @@
-import ClientHeader from '../../components/Client/ClientHeader';
+
 import './ProposalSubmission.css';
 import { useEffect, useState } from 'react';
 
@@ -31,7 +31,7 @@ const ProposalSubmission = () => {
 
   return (
     <>
-      <ClientHeader />
+
 
       <div className="submission-page container">
 

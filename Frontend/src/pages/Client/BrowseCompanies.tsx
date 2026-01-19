@@ -1,144 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAllCompanies } from '../../services/Company/companyService';
 import CompanyCard from '../../components/Client/CompanyCard';
 import ProposalPickerModal from '../../components/Client/ProposalPickerModal';
-import './BrowseCompanies.css';
 import ClientHeader from '../../components/Client/ClientHeader';
-
-interface Company {
-  id: number;
-  name: string;
-  sector: string;
-  verified: boolean;
-  description: string;
-  activeProjects: string[]; // active projects array
-}
-
-const companies: Company[] = [
-  {
-    id: 1,
-    name: "Cairo Plaza Estates",
-    sector: "Real Estate & Development",
-    verified: true,
-    description: "Leading real estate developer focusing on commercial and residential properties.",
-    activeProjects: ["Downtown Towers", "Greenfield Villas"]
-  },
-  {
-    id: 2,
-    name: "Nile Bank Corp",
-    sector: "Financial Services",
-    verified: false,
-    description: "Premier bank offering corporate and personal financial solutions.",
-    activeProjects: ["Corporate Loan Program", "Mobile Banking App"]
-  },
-  {
-    id: 3,
-    name: "Alexandria TechHub",
-    sector: "Technology & Software",
-    verified: true,
-    description: "Innovative tech hub building software for modern enterprise needs.",
-    activeProjects: ["AI Analytics Platform", "Blockchain Payments"]
-  },
-  {
-    id: 4,
-    name: "Delta Energy Solutions",
-    sector: "Energy & Utilities",
-    verified: true,
-    description: "Renewable energy projects and sustainable power solutions.",
-    activeProjects: ["Solar Farm Alexandria", "Wind Turbine Project"]
-  },
-  {
-    id: 5,
-    name: "MedCare Pharmaceuticals",
-    sector: "Healthcare & Pharma",
-    verified: false,
-    description: "Research-driven pharmaceutical company producing high-quality medications.",
-    activeProjects: ["COVID-19 Vaccine Distribution", "New Pain Relief Formula"]
-  },
-];
+import LoadingAnimation from '../../components/LoadingAnimation';
 
 const BrowseCompanies: React.FC = () => {
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  // Always initialize with an empty array
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterVerified, setFilterVerified] = useState<string>('all');
-  const [filterSector, setFilterSector] = useState<string>('all');
 
-  const handleSubmitClick = (company: Company) => {
-    setSelectedCompany(company);
-    setIsModalOpen(true);
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const data = await getAllCompanies();
+      // Ensure data is an array before setting state
+      setCompanies(Array.isArray(data) ? data : []);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
-  // Filter companies
-  const filteredCompanies = companies.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesVerified =
-      filterVerified === 'all' ? true :
-      filterVerified === 'verified' ? c.verified :
-      !c.verified;
-    const matchesSector = filterSector === 'all' ? true : c.sector === filterSector;
-    return matchesSearch && matchesVerified && matchesSector;
-  });
-
-  const sectors = Array.from(new Set(companies.map(c => c.sector)));
+  if (loading) return <LoadingAnimation />;
 
   return (
     <>
       <ClientHeader />
-      <div className="browse-container container page-fade-in">
-        <h4 className="fw-bold mb-4 no-border">Browse & Search Companies</h4>
-
-        {/* Search & Filters */}
-        <div className="row mb-4 g-2 align-items-center filter-bar p-3 rounded">
-          <div className="col-md-4">
-            <input
-              type="text"
-              className="form-control filter-input"
-              placeholder="Search by company name..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="col-md-4">
-            <select
-              className="form-select filter-input"
-              value={filterVerified}
-              onChange={e => setFilterVerified(e.target.value)}
-            >
-              <option value="all">All Companies</option>
-              <option value="verified">Verified Only</option>
-              <option value="unverified">Unverified Only</option>
-            </select>
-          </div>
-          <div className="col-md-4">
-            <select
-              className="form-select filter-input"
-              value={filterSector}
-              onChange={e => setFilterSector(e.target.value)}
-            >
-              <option value="all">All Industries</option>
-              {sectors.map(sector => (
-                <option key={sector} value={sector}>{sector}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Company Cards */}
+      <div className="container mt-4 mb-5">
         <div className="row g-4">
-          {filteredCompanies.map(c => (
-            <div className="col-md-4 d-flex" key={c.id}>
-              <CompanyCard company={c} onSubmit={handleSubmitClick} />
+          {/* Defensive check: only map if companies is an array and has items */}
+          {companies && companies.length > 0 ? (
+            companies.map((c) => (
+              <div className="col-md-4 d-flex" key={c?.id || Math.random()}>
+                <CompanyCard 
+                  company={c} 
+                  onSubmit={() => {
+                    setSelectedCompany(c);
+                    setIsModalOpen(true);
+                  }} 
+                />
+              </div>
+            ))
+          ) : (
+            <div className="col-12 text-center mt-5">
+              <p className="text-muted">No companies found in the database.</p>
             </div>
-          ))}
-          {filteredCompanies.length === 0 && (
-            <p className="text-muted">No companies match your search/filter criteria.</p>
           )}
         </div>
-
-        <ProposalPickerModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          company={selectedCompany}
+        
+        <ProposalPickerModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          company={selectedCompany} 
         />
       </div>
     </>

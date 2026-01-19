@@ -17,6 +17,12 @@ export const API_ENDPOINTS = {
     LOGOUT: '/api/auth/logout', // If your backend has this
     REFRESH: '/api/auth/refresh', // If your backend supports token refresh
   },
+
+  CLIENT: {
+    BROWSECOMPANIES: '/api/companies/browse',
+   
+  },
+
   // Add other API endpoints here as needed
   // USER: {
   //   PROFILE: '/api/user/profile',

@@ -1,0 +1,70 @@
+:root {
+    --main-theme-color: #0f172a;
+    --main-theme-hover: #1e293b; /* Slightly lighter for hover states */
+    --card-border-color: #e2e8f0;
+}
+
+/* The main card styling */
+.company-card {
+    border: 1px solid var(--card-border-color);
+    transition: all 0.3s ease;
+    overflow: visible; /* Important for the overlapping logo */
+}
+
+.company-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    border-color: var(--main-theme-color);
+}
+
+/* Top banner background */
+.card-banner {
+    height: 100px;
+    background: linear-gradient(45deg, var(--main-theme-color), #334155);
+    border-radius: calc(var(--bs-border-radius) - 1px) calc(var(--bs-border-radius) - 1px) 0 0;
+}
+
+/* The rounded logo container overlapping the banner */
+.logo-wrapper {
+    width: 110px;
+    height: 110px;
+    margin: -60px auto 0 auto; /* Negative top margin creates overlap */
+    background-color: #fff;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    overflow: hidden; /* Ensures image stays inside circle */
+}
+
+.logo-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Keeps logo aspect ratio inside the circle */
+    padding: 10px; /* Padding so logo doesn't touch the circle edge */
+}
+
+/* Title styling */
+.company-title {
+    color: var(--main-theme-color);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+/* Custom Theme Buttons */
+.btn-theme-link {
+    color: var(--main-theme-color) !important;
+    font-weight: 600;
+    padding: 0;
+    vertical-align: baseline;
+}
+
+.btn-theme-primary {
+    background-color: var(--main-theme-color);
+    border: none;
+    padding: 10px 0;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-theme-primary:hover {
+    background-color: var(--main-theme-hover);
+}

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import ClientHeader from '../../components/Client/ClientHeader';
 import './MyProposals.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -57,7 +56,6 @@ const MyProposals: React.FC = () => {
 
   return (
     <>
-      <ClientHeader />
       <div className="container page-fade-in mt-4">
 
         {/* Header */}

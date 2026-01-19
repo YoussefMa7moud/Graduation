@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import ClientHeader from '../../components/Client/ClientHeader';
 import './ClientAccountSettings.css';
 
 const ClientAccountSettings: React.FC = () => {
@@ -127,7 +126,7 @@ const ClientAccountSettings: React.FC = () => {
 
   return (
     <div>
-      <ClientHeader />
+
       <div className="settings-container">
         {/* Sidebar */}
         <aside className="settings-sidebar">

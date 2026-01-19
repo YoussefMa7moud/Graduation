@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import ClientHeader from '../../components/Client/ClientHeader';
 import './SignedProjects.css';
 
 interface Project {
@@ -50,7 +49,7 @@ const SignedProjects: React.FC = () => {
 
   return (
     <>
-      <ClientHeader />
+
 
       <div className="signed-container container page-fade-in">
         {/* Header */}

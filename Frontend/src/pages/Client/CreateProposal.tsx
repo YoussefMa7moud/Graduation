@@ -1,5 +1,4 @@
 import React, { useState, type ChangeEvent } from 'react';
-import ClientHeader from '../../components/Client/ClientHeader';
 import './CreateProposal.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -100,7 +99,7 @@ const CreateProposal: React.FC = () => {
 
   return (
     <>
-      <ClientHeader />
+
       <div className="create-page container page-fade-in">
         {/* Header */}
         <div className="create-header">

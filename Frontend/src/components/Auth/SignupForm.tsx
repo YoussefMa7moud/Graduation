@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'react-toastify';
 
 interface SignupFormProps {
   onSwitch: () => void;
@@ -75,7 +76,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
       await register(registrationData);
       
       // Show success message
-      setSuccess(true);
+    toast.success("Account Created successfully!");
       
       // Auto-switch to login after 2 seconds
       setTimeout(() => {
@@ -93,7 +94,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
       }, 2000);
     } catch (err: any) {
       // Display error message
-      setError(err.message || 'Registration failed. Please try again.');
+    toast.error(err.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

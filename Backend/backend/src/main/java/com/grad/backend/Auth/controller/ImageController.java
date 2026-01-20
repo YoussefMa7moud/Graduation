@@ -10,8 +10,6 @@ import com.grad.backend.Auth.entity.Company;
 import com.grad.backend.Auth.repository.ClientCompanyRepository;
 import com.grad.backend.Auth.repository.CompanyRepository;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/images")
 @RequiredArgsConstructor
@@ -21,7 +19,7 @@ public class ImageController {
     private final ClientCompanyRepository clientCompanyRepository;
 
     @GetMapping("/company/{id}")
-    public ResponseEntity<byte[]> getCompanyLogo(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> getCompanyLogo(@PathVariable Long id) {
 
         Company company = companyRepository.findById(id).orElse(null);
 
@@ -36,7 +34,7 @@ public class ImageController {
     }
 
     @GetMapping("/client-company/{id}")
-    public ResponseEntity<byte[]> getClientCompanyLogo(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> getClientCompanyLogo(@PathVariable Long id) {
 
         ClientCompany clientCompany = clientCompanyRepository.findById(id).orElse(null);
 

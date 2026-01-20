@@ -1,7 +1,5 @@
 package com.grad.backend.Auth.entity;
 
-import java.util.UUID;
-
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -10,12 +8,11 @@ import lombok.Data;
 public class ClientPerson {
 
     @Id
-    @Column(columnDefinition = "BINARY(16)")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @MapsId
     @OneToOne
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "user_id")
     private User user;
 
     private String firstName;

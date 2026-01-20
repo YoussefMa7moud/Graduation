@@ -3,12 +3,9 @@ package com.grad.backend.project.service;
 import com.grad.backend.project.entity.ProjectProposal;
 import com.grad.backend.project.DTO.ProjectProposalRequest;
 import com.grad.backend.project.repository.ProjectProposalRepository;
-import com.grad.backend.project.service.ProjectProposalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +15,7 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
 
     @Override
     @Transactional
-    public ProjectProposal createProposal(ProjectProposalRequest request, UUID authenticatedClientId) {
+    public ProjectProposal createProposal(ProjectProposalRequest request, Long authenticatedClientId) {
         // Build the entity from the DTO
         ProjectProposal proposal = ProjectProposal.builder()
                 .clientId(authenticatedClientId) // <--- THIS is the fix. Use the passed ID.
@@ -41,7 +38,7 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
     }
 
     @Override
-    public ProjectProposal getProposalById(UUID id) {
+    public ProjectProposal getProposalById(Long id) {
         return proposalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Proposal not found with id: " + id));
     }

@@ -16,7 +16,7 @@
  */
 export type FrontendRole = 
   | 'client_individual'
-  | 'client_corporate'
+  | 'client_company'
   | 'software_company'
   | 'admin'
   | 'project_manager'
@@ -29,7 +29,7 @@ export type FrontendRole =
  */
 export const frontendRoles = {
   CLIENT_INDIVIDUAL: 'client_individual',
-  CLIENT_CORPORATE: 'client_corporate',
+  CLIENT_COMPANY: 'client_company',
   SOFTWARE_COMPANY: 'software_company',
   ADMIN: 'admin',
   PROJECT_MANAGER: 'project_manager',
@@ -47,7 +47,7 @@ export const frontendRoles = {
  */
 const backendToFrontendRoleMap: Record<string, FrontendRole> = {
   client_person: frontendRoles.CLIENT_INDIVIDUAL,
-  client_corporate: frontendRoles.CLIENT_CORPORATE,
+  client_company: frontendRoles.CLIENT_COMPANY,
   company: frontendRoles.SOFTWARE_COMPANY, // Original role
   software_company: frontendRoles.SOFTWARE_COMPANY, // Backend role from user
   admin: frontendRoles.ADMIN,
@@ -78,7 +78,7 @@ export const normalizeRole = (backendRole?: string | null): FrontendRole => {
  * Uses the type-safe frontendRoles constants.
  */
 export const RoleGroups = {
-  CLIENT: [frontendRoles.CLIENT_INDIVIDUAL, frontendRoles.CLIENT_CORPORATE],
+  CLIENT: [frontendRoles.CLIENT_INDIVIDUAL, frontendRoles.CLIENT_COMPANY],
   COMPANY: [frontendRoles.SOFTWARE_COMPANY],
   ADMIN: [frontendRoles.ADMIN],
   PROJECT_MANAGER: [frontendRoles.PROJECT_MANAGER],
@@ -112,7 +112,7 @@ export const getDefaultHomeRoute = (userRole: FrontendRole): string => {
     case frontendRoles.SOFTWARE_COMPANY:
       return '/CompanyHome';
     case frontendRoles.CLIENT_INDIVIDUAL:
-    case frontendRoles.CLIENT_CORPORATE:
+    case frontendRoles.CLIENT_COMPANY:
       return '/BrowseCompanies'; // To be implemented
     case frontendRoles.ADMIN:
       return '/AdminHome'; // To be implemented

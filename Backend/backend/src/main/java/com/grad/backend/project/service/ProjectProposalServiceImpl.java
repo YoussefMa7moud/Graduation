@@ -18,7 +18,7 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
 
     @Override
     @Transactional
-    public ProjectProposal createProposal(ProjectProposalRequest request, Long authenticatedClientId) {
+    public ProjectProposal createProposal(ProjectProposalRequest request, UUID authenticatedClientId) {
         // Build the entity from the DTO
         ProjectProposal proposal = ProjectProposal.builder()
                 .clientId(authenticatedClientId) // <--- THIS is the fix. Use the passed ID.

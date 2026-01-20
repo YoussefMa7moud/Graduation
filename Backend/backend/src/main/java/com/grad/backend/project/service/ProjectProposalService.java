@@ -6,6 +6,6 @@ import java.util.UUID;
 
 public interface ProjectProposalService {
     // Updated to accept Long clientId
-    ProjectProposal createProposal(ProjectProposalRequest request, Long clientId);
+    ProjectProposal createProposal(ProjectProposalRequest request, UUID authenticatedClientId);
     ProjectProposal getProposalById(UUID id);
 }

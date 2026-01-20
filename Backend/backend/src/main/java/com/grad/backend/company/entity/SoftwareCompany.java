@@ -1,39 +1,75 @@
 package com.grad.backend.company.entity;
 
+import java.util.UUID;
 import jakarta.persistence.*;
 
+import com.grad.backend.Auth.entity.User;
+
 @Entity
-@Table(name = "company") // Ensure this matches your actual table name exactly
+@Table(name = "company")
 public class SoftwareCompany {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // bigint(20) maps to Long
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID id;
 
-    private String name; // varchar(255)
-    
-    private String description; // varchar(255)
+    @MapsId
+    @OneToOne
+    @JoinColumn(name = "id")
+    private User user;
+
+    private String name;
+    private String description;
 
     @Lob
-    @Column(name = "logo", columnDefinition = "LONGBLOB")
-    private byte[] logo; // longblob maps to byte array
+    @Column(columnDefinition = "LONGBLOB")
+    private byte[] logo;
 
-    @Column(name = "user_id")
-    private Long userId; // bigint(20)
+    @PrePersist
+    public void generateId() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+    }
 
-    // Standard Getters and Setters
-    public Long getId() { return id; }
- 
+    // Getters & Setters
+    public UUID getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-  
+    public void setId(UUID id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-   
+    public User getUser() {
+        return user;
+    }
 
-    public byte[] getLogo() { return logo; }
-  
+    public void setUser(User user) {
+        this.user = user;
+    }
 
-    public Long getUserId() { return userId; }
-    
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public byte[] getLogo() {
+        return logo;
+    }
+
+    public void setLogo(byte[] logo) {
+        this.logo = logo;
+    }
 }

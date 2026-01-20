@@ -23,7 +23,7 @@ public class ProjectProposal {
     private UUID id;
 
     @Column(name = "client_id", nullable = false)
-    private Long clientId; // Added as requested
+    private UUID clientId; // Added as requested
 
     @Column(name = "project_title", nullable = false)
     private String projectTitle;

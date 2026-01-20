@@ -7,7 +7,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "project_proposals")
@@ -19,11 +18,11 @@ import java.util.UUID;
 public class ProjectProposal {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "client_id", nullable = false)
-    private UUID clientId; // Added as requested
+    private Long clientId; // Added as requested
 
     @Column(name = "project_title", nullable = false)
     private String projectTitle;

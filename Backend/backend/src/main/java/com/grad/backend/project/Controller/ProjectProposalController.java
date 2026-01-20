@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.*;
 // Replace 'com.grad.backend.auth.User' with your actual User class path
 import com.grad.backend.Auth.entity.User; 
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/proposals")
 @RequiredArgsConstructor
@@ -32,14 +30,14 @@ public ResponseEntity<ProjectProposal> submitProposal(
     }
 
     // FIX: Changed from UUID to Long
-UUID authenticatedClientId = currentUser.getId();    
+    Long authenticatedClientId = currentUser.getId();
     // FIX: Now matches the new service signature
-ProjectProposal created = proposalService.createProposal(request, authenticatedClientId);    
+    ProjectProposal created = proposalService.createProposal(request, authenticatedClientId);
     return new ResponseEntity<>(created, HttpStatus.CREATED);
 }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectProposal> getProposal(@PathVariable UUID id) {
+    public ResponseEntity<ProjectProposal> getProposal(@PathVariable Long id) {
         return ResponseEntity.ok(proposalService.getProposalById(id));
     }
 }

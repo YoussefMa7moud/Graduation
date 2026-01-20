@@ -2,11 +2,10 @@ package com.grad.backend.project.DTO;
 
 import lombok.Data;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 public class ProjectProposalRequest {
-    private UUID clientId;
+    private Long clientId;
     private String projectTitle;
     private String projectType;
     private String problemSolved;

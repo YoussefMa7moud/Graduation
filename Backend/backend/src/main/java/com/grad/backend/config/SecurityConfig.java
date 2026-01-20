@@ -32,7 +32,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll() // Allow authentication endpoints
                 .requestMatchers("/api/images/**").permitAll() // Allow image endpoints
                 .requestMatchers("/api/companies/browse").permitAll() // Allow anyone to browse companies
+                .requestMatchers("/api/proposals/create").permitAll()
                 .anyRequest().authenticated() // All other requests require authentication
+                
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Use stateless sessions for JWT

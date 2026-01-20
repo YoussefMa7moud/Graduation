@@ -1,43 +1,46 @@
-/* Page */
+/* 1. Global Wrapper Fix */
 .create-page {
   padding-top: 30px;
+  max-width: 1100px;
+  margin: 0 auto;
+  /* Ensure this doesn't overlap the navbar */
+  position: relative;
+  z-index: 1; 
 }
 
-/* Header */
-.create-header h2 {
-  font-weight: 700;
-  color: #111827;
-}
-
-.create-header p {
-  color: #6b7280;
-  margin-top: 6px;
-}
-
-/* Layout */
+/* 2. Layout & Grid */
 .create-layout {
   display: grid;
   grid-template-columns: 2.5fr 1fr;
   gap: 24px;
   margin-top: 30px;
+  /* Added to prevent layout from breaking navbar links */
+  clear: both;
 }
 
-/* Cards */
+/* 3. Header Styling */
+.create-header h2 { font-weight: 700; color: #111827; }
+.create-header p { color: #6b7280; margin-top: 6px; }
+
+/* 4. Card Boxes */
 .card-box {
   background: #ffffff;
   border-radius: 14px;
-  padding: 20px;
+  padding: 24px;
   margin-bottom: 20px;
   border: 1px solid #e5e7eb;
 }
 
 .card-box h6 {
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   color: #111827;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 10px;
 }
 
-/* Inputs */
+/* 5. Inputs & Labels */
 .card-box label {
   display: block;
   font-size: 0.85rem;
@@ -46,127 +49,141 @@
   color: #374151;
 }
 
-.card-box input,
-.card-box textarea,
-.card-box select {
+.card-box input, .card-box textarea, .card-box select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   border-radius: 10px;
   border: 1px solid #d1d5db;
   margin-bottom: 14px;
   font-size: 0.9rem;
 }
 
-/* Analysis */
-.analysis-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
+.two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-.analysis-item {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 12px;
-  background: #f9fafb;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Two columns */
-.two-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-/* Sidebar */
-.create-right {
-  position: sticky;
-  top: 90px;
+/* --- 6. NDA Standard Toggle (Fixed Visibility) --- */
+.nda-container {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* Buttons */
-.btn-primary-full {
-  background: #111827;
-  color: #fff;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9fafb;
+  padding: 16px;
   border-radius: 12px;
-  padding: 12px;
-  font-weight: 700;
-  border: none;
+  border: 1px solid #e5e7eb;
 }
 
-.btn-secondary-full {
-  border-radius: 12px;
-  padding: 12px;
-  font-weight: 700;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
+.nda-info strong { display: block; font-size: 0.95rem; color: #111827; }
+.nda-info p { font-size: 0.8rem; color: #6b7280; margin: 4px 0 0 0; }
+
+.standard-toggle {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
-/* Progress */
+/* Hidden but accessible checkbox */
+.standard-toggle input { 
+  opacity: 0; 
+  width: 0; 
+  height: 0; 
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #d1d5db;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.standard-toggle input:checked + .toggle-slider { background-color: #111827; }
+.standard-toggle input:checked + .toggle-slider:before { transform: translateX(24px); }
+
+/* --- 7. Sidebar & Progress Bar --- */
+.create-right {
+  /* Use sticky carefully - can sometimes block clicks if too wide */
+  position: sticky;
+  top: 100px; 
+  height: fit-content;
+}
+
 .progress-box {
+  background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  padding: 16px;
-  font-size: 0.85rem;
-}
-
-.progress-box span {
-  color: #6b7280;
-}
-
-.progress-box strong {
-  float: right;
+  padding: 20px;
+  margin-top: 15px;
 }
 
 .progress-bar {
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 4px;
-  margin: 10px 0;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin: 12px 0;
+  overflow: hidden;
 }
 
-.progress-bar div {
+.progress-fill {
   height: 100%;
+  background: #10b981;
+  transition: width 0.5s ease;
+}
+
+.complete-text { color: #10b981; }
+
+/* --- 8. Buttons --- */
+.btn-primary-full {
   background: #111827;
-  border-radius: 4px;
-}
-
-/* Guidelines */
-.guidelines-box {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 16px;
-}
-
-.guidelines-box h6 {
+  color: white;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
   font-weight: 700;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background 0.2s;
 }
 
-.guidelines-box ul {
-  padding-left: 16px;
-  font-size: 0.85rem;
-  color: #374151;
+.btn-primary-full:hover { background: #1f2937; }
+
+.btn-secondary-full {
+  background: white;
+  border: 1px solid #d1d5db;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-/* Responsive */
+.btn-secondary-full:hover { background: #f9fafb; }
+
+/* --- 9. Helpers & Media Queries --- */
+.error { color: #e11d48; font-size: 0.75rem; display: block; margin-top: -10px; margin-bottom: 10px; }
+
+.guidelines-box { margin-top: 15px; border: 1px solid #e5e7eb; padding: 15px; border-radius: 14px; background: white; }
+.guidelines-box h6 { font-weight: 700; margin-bottom: 8px; }
+.guidelines-box ul { padding-left: 20px; font-size: 0.85rem; color: #475569; }
+
 @media (max-width: 992px) {
-  .create-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .create-right {
-    position: static;
-  }
-  .error {
-  color: #dc2626;
-  font-size: 0.75rem;
-  margin-top: -10px;
-  display: block;
-}
-
+  .create-layout { grid-template-columns: 1fr; }
+  .create-right { position: static; }
 }

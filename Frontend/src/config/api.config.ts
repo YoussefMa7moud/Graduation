@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
 
   CLIENT: {
     BROWSECOMPANIES: '/api/companies/browse',
+    SUBMITPROPOSAL: '/api/proposals/create',
    
   },
 

@@ -23,11 +23,12 @@ import MyProposals from "./pages/Client/MyProposals";
 import ClientLayout from "./components/Client/ClientLayout";
 import CreateProposal from "./pages/Client/CreateProposal";
 import ClientAccountSettings from "./pages/Client/ClientAccountSettings";
-import ProposalSubmission from "./pages/Client/ProposalSubmission";
 import OngoingProjects from "./pages/Client/OngoingProjects";
 import SignedProjects from "./pages/Client/SignedProjects";
 import ActiveProjects from "./pages/Client/ActiveProjects";
 import LoadingAnimation from "./components/LoadingAnimation";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // Don't forget the CSS!
 /**
  * Component that redirects authenticated users away from auth pages
  */
@@ -63,6 +64,8 @@ const AuthRedirect: React.FC<{ children: React.ReactNode }> = ({
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
+      <Route path="/toast" element={<ToastContainer />} />
+      
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
       <Route
@@ -225,16 +228,7 @@ const AppRoutes: React.FC = () => {
         }
       />
 
-      <Route
-        path="/proposals/submission"
-        element={
-          <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
-            <ClientLayout>
-              <ProposalSubmission />
-            </ClientLayout>
-          </RoleBasedRoute>
-        }
-      />
+     
 
       <Route
         path="/OngoingProjects"
@@ -280,6 +274,17 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <ToastContainer
+          position="bottom-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
         <AppRoutes />
       </AuthProvider>
     </Router>

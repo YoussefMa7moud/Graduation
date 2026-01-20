@@ -119,9 +119,9 @@ const ClientHeader: React.FC = () => {
         <nav style={{ display: "flex", gap: "30px" }}>
           {[
             { name: "Dashboard", path: "/BrowseCompanies" },
-            { name: "Proposals", path: "/proposals" },
-            { name: "Contracts", path: "/OngoingProjects" },
-            { name: "Archives", path: "/SignedProjects" },
+            { name: "My Proposals", path: "/proposals" },
+            { name: "Ongoing Projects", path: "/OngoingProjects" },
+            { name: "My Contracts", path: "/SignedProjects" },
           ].map((item) => (
             <Link
               key={item.name}

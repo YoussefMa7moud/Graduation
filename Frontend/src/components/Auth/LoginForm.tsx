@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'react-toastify';
 
 // This interface solves the error you're seeing in AuthPage
 interface LoginFormProps {
@@ -15,7 +15,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch }) => {
   const [isLoading, setIsLoading] = useState(false);
   
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   /**
    * Handle form submission
@@ -37,10 +36,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch }) => {
       await login({ email, password });
       
       // Redirect to home page on successful login
-      navigate('/CompanyHome');
+      toast.success("Logged in successfully!");
     } catch (err: any) {
       // Display error message
-      setError(err.message || 'Login failed. Please check your credentials.');
+      toast.error(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

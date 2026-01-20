@@ -1,7 +1,10 @@
 import React, { useState, useEffect, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SubmitProposal } from '../../services/Client/ProposalDocumnet'; // Ensure this path is correct
+import { toast } from 'react-toastify';
 import './CreateProposal.css';
+import 'react-toastify/dist/ReactToastify.css'; // Don't forget the CSS!
+
 
 interface FormData {
   projectName: string;
@@ -21,8 +24,6 @@ interface FormData {
 const CreateProposal: React.FC = () => {
   const navigate = useNavigate();
 
-  // STUB: Replace this with your actual Auth Context/User logic
-  const loggedInClientId = "550e8400-e29b-41d4-a716-446655440000"; 
 
   const [formData, setFormData] = useState<FormData>({
     projectName: '',
@@ -95,7 +96,6 @@ const CreateProposal: React.FC = () => {
 
     // Mapping React state to Spring Boot Entity DTO
     const payload = {
-      clientId: loggedInClientId,
       projectTitle: formData.projectName,
       projectType: formData.projectType,
       problemSolved: formData.problemSolved,
@@ -112,10 +112,12 @@ const CreateProposal: React.FC = () => {
 
     try {
       await SubmitProposal(payload);
-      navigate('/proposals/submission');
+       toast.success("Proposal submitted successfully!");
+      navigate('/proposals');
+     
     } catch (error) {
-      alert("Error submitting proposal. Please check if the server is connected.");
-      console.error(error);
+      console.error("Submission error:", error);
+      toast.error("Error submitting proposal. Please check if the server is connected.");
     } finally {
       setIsSubmitting(false);
     }

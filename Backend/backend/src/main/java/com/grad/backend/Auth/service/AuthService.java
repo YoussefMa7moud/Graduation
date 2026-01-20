@@ -8,6 +8,9 @@ import com.grad.backend.Auth.dto.LoginRequest;
 import com.grad.backend.Auth.dto.LoginResponse;
 import com.grad.backend.Auth.entity.User;
 import com.grad.backend.Auth.repository.UserRepository;
+import java.util.UUID;
+
+
 
 @Service
 @RequiredArgsConstructor

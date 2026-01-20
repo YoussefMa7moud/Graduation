@@ -6,5 +6,5 @@ import java.util.UUID;
 
 public interface ProjectProposalRepository extends JpaRepository<ProjectProposal, UUID> {
     // You can add custom queries here, like finding all proposals for a specific client
-    java.util.List<ProjectProposal> findByClientId(Long clientId);
+    java.util.List<ProjectProposal> findByClientId(UUID clientId);
 }

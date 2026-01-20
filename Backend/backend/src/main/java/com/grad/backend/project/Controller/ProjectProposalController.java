@@ -32,7 +32,7 @@ public ResponseEntity<ProjectProposal> submitProposal(
     }
 
     // FIX: Changed from UUID to Long
-Long authenticatedClientId = currentUser.getId();    
+UUID authenticatedClientId = currentUser.getId();    
     // FIX: Now matches the new service signature
 ProjectProposal created = proposalService.createProposal(request, authenticatedClientId);    
     return new ResponseEntity<>(created, HttpStatus.CREATED);

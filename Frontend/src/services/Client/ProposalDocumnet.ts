@@ -47,3 +47,19 @@ export const GetAllProposals = async (userId: number | string) => {
         throw error;
     }
 };
+
+
+export const DeleteProposal = async (proposalId: number | string) => {
+    const token = localStorage.getItem('auth_token');
+    try {
+        const response = await axios.delete(`/api/proposals/delete/${proposalId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error("Deleting proposal failed. Status:", error.response?.status);
+        throw error;
+    }
+};

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './MyProposals.css';
 import { useNavigate } from 'react-router-dom';
-import { GetAllProposals } from '../../services/Client/ProposalDocumnet'; // Adjust path if needed
+import { GetAllProposals, DeleteProposal } from '../../services/Client/ProposalDocumnet'; // Adjust path if needed
 import { toast } from 'react-toastify';
 
 // 1. Modified Interface to match your backend DTO
@@ -82,9 +82,15 @@ useEffect(() => {
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this proposal?')) {
-      setProposals((prev) => prev.filter((p) => p.id !== id));
+      try {
+        await DeleteProposal(id);
+        setProposals((prev) => prev.filter((p) => p.id !== id));
+        toast.success("Proposal deleted successfully!");
+      } catch (error) {
+        toast.error("Error deleting proposal.");
+      }
     }
   };
 

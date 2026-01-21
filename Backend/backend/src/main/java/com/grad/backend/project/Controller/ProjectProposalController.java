@@ -20,29 +20,47 @@ public class ProjectProposalController {
 
     private final ProjectProposalService proposalService;
 
-   @PostMapping("/create")
-public ResponseEntity<ProjectProposal> submitProposal(
-    @RequestBody ProjectProposalRequest request,
-    @AuthenticationPrincipal User currentUser 
-) {
-    if (currentUser == null) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    // ✅ CREATE
+    @PostMapping("/create")
+    public ResponseEntity<ProjectProposal> submitProposal(
+            @RequestBody ProjectProposalRequest request,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        ProjectProposal created =
+                proposalService.createProposal(request, currentUser.getId());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // FIX: Changed from UUID to Long
-    Long authenticatedClientId = currentUser.getId();
-    // FIX: Now matches the new service signature
-    ProjectProposal created = proposalService.createProposal(request, authenticatedClientId);
-    return new ResponseEntity<>(created, HttpStatus.CREATED);
-}
+    // ✅ GET ALL MY PROPOSALS (FIXED)
+    @GetMapping("/MyProposals/{clientId}")
+    public ResponseEntity<?> getMyProposals(
+            @AuthenticationPrincipal User currentUser
+    ) {
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ProjectProposal> getProposal(@PathVariable Long id) {
-        return ResponseEntity.ok(proposalService.getProposalById(id));
+        return ResponseEntity.ok(
+                proposalService.getProposalsByClientId(currentUser.getId())
+        );
     }
 
-    @GetMapping("/MyProposals/{id}")
-    public ResponseEntity<ProjectProposal> getMyProposals(@PathVariable Long id) {
-        return ResponseEntity.ok(proposalService.getProposalById(id));
+    // ✅ DELETE PROPOSAL
+    @DeleteMapping("/delete/{proposalId}")
+    public ResponseEntity<?> deleteProposal(
+            @PathVariable Long proposalId,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        proposalService.deleteProposal(proposalId, currentUser.getId());
+        return ResponseEntity.ok().build();
     }
 }

@@ -1,10 +1,16 @@
 package com.grad.backend.project.service;
 
 import com.grad.backend.project.entity.ProjectProposal;
+
+import java.util.List;
+
 import com.grad.backend.project.DTO.ProjectProposalRequest;
 
 public interface ProjectProposalService {
-    // Updated to accept Long clientId
+
     ProjectProposal createProposal(ProjectProposalRequest request, Long authenticatedClientId);
-    ProjectProposal getProposalById(Long id);
+
+    List<ProjectProposal> getProposalsByClientId(Long clientId);
+
+    void deleteProposal(Long proposalId, Long authenticatedClientId);
 }

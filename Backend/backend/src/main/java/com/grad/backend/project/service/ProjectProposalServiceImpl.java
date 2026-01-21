@@ -4,6 +4,9 @@ import com.grad.backend.project.entity.ProjectProposal;
 import com.grad.backend.project.DTO.ProjectProposalRequest;
 import com.grad.backend.project.repository.ProjectProposalRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,9 +19,9 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
     @Override
     @Transactional
     public ProjectProposal createProposal(ProjectProposalRequest request, Long authenticatedClientId) {
-        // Build the entity from the DTO
+
         ProjectProposal proposal = ProjectProposal.builder()
-                .clientId(authenticatedClientId) // <--- THIS is the fix. Use the passed ID.
+                .clientId(authenticatedClientId)
                 .projectTitle(request.getProjectTitle())
                 .projectType(request.getProjectType())
                 .problemSolved(request.getProblemSolved())
@@ -28,7 +31,7 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
                 .scalability(request.getScalability() != null ? request.getScalability() : "Small")
                 .durationDays(request.getDurationDays())
                 .budgetUsd(request.getBudgetUsd())
-                .ndaRequired(request.getNdaRequired() != null && request.getNdaRequired())
+                .ndaRequired(Boolean.TRUE.equals(request.getNdaRequired()))
                 .codeOwnership(request.getCodeOwnership())
                 .maintenancePeriod(request.getMaintenancePeriod())
                 .status("Pending")
@@ -38,8 +41,22 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
     }
 
     @Override
-    public ProjectProposal getProposalById(Long id) {
-        return proposalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Proposal not found with id: " + id));
+    public List<ProjectProposal> getProposalsByClientId(Long clientId) {
+        return proposalRepository.findByClientId(clientId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProposal(Long proposalId, Long authenticatedClientId) {
+
+        ProjectProposal proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new RuntimeException("Proposal not found"));
+
+        // 🔐 Ownership check (VERY IMPORTANT)
+        if (!proposal.getClientId().equals(authenticatedClientId)) {
+            throw new RuntimeException("You are not allowed to delete this proposal");
+        }
+
+        proposalRepository.delete(proposal);
     }
 }

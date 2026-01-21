@@ -27,3 +27,23 @@ export const SubmitProposal = async (proposalData: any) => {
         throw error;
     }
 };
+
+
+
+
+export const GetAllProposals = async (userId: number | string) => {
+    const token = localStorage.getItem('auth_token');
+    
+    try {
+        // This targets: http://localhost:8080/api/proposals/MyProposals/1
+        const response = await axios.get(`/api/proposals/MyProposals/${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error("Fetching proposals failed. Status:", error.response?.status);
+        throw error;
+    }
+};

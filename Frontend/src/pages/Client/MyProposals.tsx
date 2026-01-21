@@ -1,31 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './MyProposals.css';
 import { useNavigate } from 'react-router-dom';
+import { GetAllProposals } from '../../services/Client/ProposalDocumnet'; // Adjust path if needed
+import { toast } from 'react-toastify';
 
+// 1. Modified Interface to match your backend DTO
 interface Proposal {
   id: number;
-  title: string;
-  targetCompany: string;
-  date: string;
+  projectTitle: string;
+  createdAt: string; 
+  ndaRequired: boolean;
   status: 'Done' | 'In Progress';
 }
 
-const initialProposals: Proposal[] = [
-  { id: 1, title: "Commercial Lease - Maadi Tower", targetCompany: "Nile Real Estate Dev.", date: "Oct 28, 2024", status: "In Progress" },
-  { id: 2, title: "Software License Agreement", targetCompany: "TechDelta Solutions", date: "Oct 24, 2024", status: "In Progress" },
-  { id: 3, title: "Construction Service Master", targetCompany: "Global Builders S.A.E", date: "Oct 15, 2024", status: "Done" },
-  { id: 4, title: "Employment Contract Template", targetCompany: "Pyramid Logistics", date: "Oct 12, 2024", status: "In Progress" },
-];
-
 const MyProposals: React.FC = () => {
   const navigate = useNavigate();
-  const [proposals, setProposals] = useState<Proposal[]>(initialProposals);
+  
+  // Initialize with empty array
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Done' | 'In Progress'>('All');
   const [showFilter, setShowFilter] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // 2. Fetch data from API on component mount
+// Inside MyProposals.tsx -> useEffect
+
+// Inside MyProposals.tsx -> useEffect
+
+useEffect(() => {
+    const fetchProposals = async () => {
+        try {
+            setIsLoading(true);
+            const storedAuthUser = localStorage.getItem('auth_user'); 
+            
+            if (storedAuthUser) {
+                const userData = JSON.parse(storedAuthUser);
+                const id = userData.userId; 
+
+                if (id) {
+                    const responseData = await GetAllProposals(id);
+
+                    // LOGIC TO HANDLE OBJECT vs ARRAY
+                    if (Array.isArray(responseData)) {
+                        // Case A: It's already an array [{}, {}]
+                        setProposals(responseData);
+                    } else if (responseData && typeof responseData === 'object' && responseData.id) {
+                        // Case B: It's a single object {id: 1, ...}
+                        // Wrap it in brackets [] to make it a list of one
+                        setProposals([responseData]);
+                    } else {
+                        // Case C: It's null or empty
+                        setProposals([]);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Fetch error:", error);
+            setProposals([]); 
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    fetchProposals();
+}, []);
   const handleEdit = (proposal: Proposal) => {
     setEditingProposal(proposal);
     setShowModal(true);
@@ -47,9 +88,9 @@ const MyProposals: React.FC = () => {
     }
   };
 
+  // 3. Updated Search Logic for projectTitle
   const filteredProposals = proposals.filter((p) => {
-    const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.targetCompany.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = p.projectTitle.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || p.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -73,7 +114,7 @@ const MyProposals: React.FC = () => {
         <div className="d-flex gap-3 mb-4 align-items-center position-relative">
           <input
             type="text"
-            placeholder="Search by project or company..."
+            placeholder="Search by project title..."
             className="search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -105,37 +146,51 @@ const MyProposals: React.FC = () => {
           )}
         </div>
 
-        {/* Table */}
+        {/* Table - Modified Columns */}
         <div className="flat-table-container bg-white rounded-4 shadow-sm border overflow-hidden w-100 mb-5">
-          <table className="table corporate-table align-middle mb-0 w-100">
-            <thead>
-              <tr className="text-muted small text-uppercase bg-light">
-                <th className="ps-4 py-3 border-0">Project Title</th>
-                <th className="border-0">Company</th>
-                <th className="border-0">Submission Date</th>
-                <th className="border-0">Status</th>
-                <th className="text-end pe-4 border-0">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProposals.map((p) => (
-                <tr key={p.id} className="proposal-row border-bottom">
-                  <td className="ps-4 py-3">{p.title}</td>
-                  <td>{p.targetCompany}</td>
-                  <td>{p.date}</td>
-                  <td>
-                    <span className={`status-pill status-${p.status.toLowerCase().replace(' ', '-')}`}>
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="text-end pe-4">
-                    <i className="bi bi-pencil text-new cursor-pointer me-3" onClick={() => handleEdit(p)}></i>
-                    <i className="bi bi-trash text-danger cursor-pointer" onClick={() => handleDelete(p.id)}></i>
-                  </td>
+          {isLoading ? (
+            <div className="p-5 text-center text-muted">Loading proposals...</div>
+          ) : (
+            <table className="table corporate-table align-middle mb-0 w-100">
+              <thead>
+                <tr className="text-muted small text-uppercase bg-light">
+                  <th className="ps-4 py-3 border-0">Project Title</th>
+                  <th className="border-0">Created At</th>
+                  <th className="border-0">NDA Required</th>
+                  <th className="border-0">Status</th>
+                  <th className="text-end pe-4 border-0">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredProposals.length > 0 ? (
+                  filteredProposals.map((p) => (
+                    <tr key={p.id} className="proposal-row border-bottom">
+                      <td className="ps-4 py-3 fw-medium">{p.projectTitle}</td>
+                      <td>{new Date(p.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <span className={`badge ${p.ndaRequired ? 'bg-info-subtle text-info' : 'bg-light text-muted'}`}>
+                          {p.ndaRequired ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-pill status-${p.status.toLowerCase().replace(' ', '-')}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="text-end pe-4">
+                        <i className="bi bi-pencil text-new cursor-pointer me-3" onClick={() => handleEdit(p)}></i>
+                        <i className="bi bi-trash text-danger cursor-pointer" onClick={() => handleDelete(p.id)}></i>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="text-center py-5 text-muted">No proposals found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Stat Cards */}
@@ -147,7 +202,7 @@ const MyProposals: React.FC = () => {
                 <h6 className="fw-bold text-mint mb-0">AI Suggestions</h6>
               </div>
               <p className="small text-muted mb-0">
-                Get automated recommendations to improve your proposals and increase approval chances.
+                Get automated recommendations to improve your proposals.
               </p>
             </div>
           </div>
@@ -158,7 +213,7 @@ const MyProposals: React.FC = () => {
                 <h6 className="fw-bold text-dark-blue mb-0">Approval Rate</h6>
               </div>
               <p className="small text-muted mb-0">
-                Track your proposal success rate and optimize your submissions for better results.
+                Track your proposal success rate.
               </p>
             </div>
           </div>
@@ -169,7 +224,7 @@ const MyProposals: React.FC = () => {
                 <h6 className="fw-bold text-orange mb-0">Need Support?</h6>
               </div>
               <p className="small text-muted mb-0">
-                Contact our team for guidance or assistance in creating impactful proposals.
+                Contact our team for guidance.
               </p>
             </div>
           </div>
@@ -183,19 +238,12 @@ const MyProposals: React.FC = () => {
             <h5 className="mb-3">Edit Proposal</h5>
             <input
               type="text"
-              value={editingProposal.title}
+              className="form-control mb-2"
+              value={editingProposal.projectTitle}
               onChange={(e) =>
-                setEditingProposal({ ...editingProposal, title: e.target.value })
+                setEditingProposal({ ...editingProposal, projectTitle: e.target.value })
               }
               placeholder="Project Title"
-            />
-            <input
-              type="text"
-              value={editingProposal.targetCompany}
-              onChange={(e) =>
-                setEditingProposal({ ...editingProposal, targetCompany: e.target.value })
-              }
-              placeholder="Company"
             />
             <div className="d-flex justify-content-end mt-3">
               <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>

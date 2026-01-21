@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/images/**").permitAll() // Allow image endpoints
                 .requestMatchers("/api/companies/browse").permitAll() // Allow anyone to browse companies
                 .requestMatchers("/api/proposals/create").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/proposals/MyProposals/**").permitAll()
                 .anyRequest().authenticated() // All other requests require authentication
                 
             )

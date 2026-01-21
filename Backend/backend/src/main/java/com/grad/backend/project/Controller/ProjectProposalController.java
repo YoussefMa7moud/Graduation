@@ -40,4 +40,9 @@ public ResponseEntity<ProjectProposal> submitProposal(
     public ResponseEntity<ProjectProposal> getProposal(@PathVariable Long id) {
         return ResponseEntity.ok(proposalService.getProposalById(id));
     }
+
+    @GetMapping("/MyProposals/{id}")
+    public ResponseEntity<ProjectProposal> getMyProposals(@PathVariable Long id) {
+        return ResponseEntity.ok(proposalService.getProposalById(id));
+    }
 }

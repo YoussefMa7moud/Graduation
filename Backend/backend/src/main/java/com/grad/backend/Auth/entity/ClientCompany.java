@@ -4,18 +4,19 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
+@Table(name = "client_company")
 @Data
 public class ClientCompany {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @MapsId
     @OneToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "id")
     private User user;
 
-    private String name;
+    private String companyName;
     private String description;
 
     @Lob

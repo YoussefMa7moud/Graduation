@@ -138,7 +138,7 @@ public class RegistrationService {
 
                 ClientCompany company = new ClientCompany();
                 company.setUser(user);
-                company.setName(companyName);
+                company.setCompanyName(companyName);
                 company.setDescription(description);
                 company.setLogo(logoData);
 

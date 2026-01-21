@@ -4,15 +4,16 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
+@Table(name = "client_person")
 @Data
 public class ClientPerson {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @MapsId
     @OneToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "id")
     private User user;
 
     private String firstName;

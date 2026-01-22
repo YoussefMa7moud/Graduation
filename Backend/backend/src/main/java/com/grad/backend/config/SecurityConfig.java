@@ -35,6 +35,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/proposals/create").permitAll()
                 .requestMatchers("/api/proposals/MyProposals/**").authenticated()
                 .requestMatchers("/api/proposals/delete/**").authenticated()
+                .requestMatchers("/api/proposals/**").authenticated()
+                .requestMatchers("/api/proposals/update/**").authenticated()
+                .requestMatchers("/api/submissions/**").authenticated()
+                
 
 
                 .anyRequest().authenticated() // All other requests require authentication

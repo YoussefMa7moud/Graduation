@@ -1,5 +1,9 @@
 import axios from 'axios';
 
+
+
+
+
 export const SubmitProposal = async (proposalData: any) => {
     // 1. Get the token
     const token = localStorage.getItem('auth_token'); 
@@ -49,6 +53,8 @@ export const GetAllProposals = async (userId: number | string) => {
 };
 
 
+
+
 export const DeleteProposal = async (proposalId: number | string) => {
     const token = localStorage.getItem('auth_token');
     try {
@@ -63,3 +69,25 @@ export const DeleteProposal = async (proposalId: number | string) => {
         throw error;
     }
 };
+
+
+
+
+
+   export const UpdateProposal = async (proposalId: number | string, proposalData: any) => {
+    const token = localStorage.getItem('auth_token');
+    try {
+        const response = await axios.put(`/api/proposals/update/${proposalId}`, proposalData, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error("Updating proposal failed. Status:", error.response?.status);
+        throw error;
+    }
+
+};
+

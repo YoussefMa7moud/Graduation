@@ -1,22 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import './MyProposals.css';
 import { useNavigate } from 'react-router-dom';
-import { GetAllProposals, DeleteProposal } from '../../services/Client/ProposalDocumnet'; // Adjust path if needed
+import { GetAllProposals, DeleteProposal, UpdateProposal } from '../../services/Client/ProposalDocumnet'; 
 import { toast } from 'react-toastify';
 
-// 1. Modified Interface to match your backend DTO
+// 1. Full Interface matching CreateProposal and Backend DTO
 interface Proposal {
   id: number;
   projectTitle: string;
-  createdAt: string; 
+  projectType: string;
+  problemSolved: string;
+  description: string;
+  mainFeatures: string;
+  userRoles: string;
+  scalability: string;
+  durationDays: number;
+  budgetUsd: number;
   ndaRequired: boolean;
+  codeOwnership: string;
+  maintenancePeriod: string;
   status: 'Done' | 'In Progress';
+  createdAt: string;
 }
 
 const MyProposals: React.FC = () => {
   const navigate = useNavigate();
   
-  // Initialize with empty array
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Done' | 'In Progress'>('All');
@@ -25,60 +34,54 @@ const MyProposals: React.FC = () => {
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 2. Fetch data from API on component mount
-// Inside MyProposals.tsx -> useEffect
-
-// Inside MyProposals.tsx -> useEffect
-
-useEffect(() => {
+  // Fetch Proposals on Load
+  useEffect(() => {
     const fetchProposals = async () => {
-        try {
-            setIsLoading(true);
-            const storedAuthUser = localStorage.getItem('auth_user'); 
-            
-            if (storedAuthUser) {
-                const userData = JSON.parse(storedAuthUser);
-                const id = userData.userId; 
-
-                if (id) {
-                    const responseData = await GetAllProposals(id);
-
-                    // LOGIC TO HANDLE OBJECT vs ARRAY
-                    if (Array.isArray(responseData)) {
-                        // Case A: It's already an array [{}, {}]
-                        setProposals(responseData);
-                    } else if (responseData && typeof responseData === 'object' && responseData.id) {
-                        // Case B: It's a single object {id: 1, ...}
-                        // Wrap it in brackets [] to make it a list of one
-                        setProposals([responseData]);
-                    } else {
-                        // Case C: It's null or empty
-                        setProposals([]);
-                    }
-                }
+      try {
+        setIsLoading(true);
+        const storedAuthUser = localStorage.getItem('auth_user'); 
+        if (storedAuthUser) {
+          const userData = JSON.parse(storedAuthUser);
+          const id = userData.userId; 
+          if (id) {
+            const responseData = await GetAllProposals(id);
+            if (Array.isArray(responseData)) {
+              setProposals(responseData);
+            } else if (responseData && typeof responseData === 'object' && responseData.id) {
+              setProposals([responseData]);
+            } else {
+              setProposals([]);
             }
-        } catch (error) {
-            console.error("Fetch error:", error);
-            setProposals([]); 
-        } finally {
-            setIsLoading(false);
+          }
         }
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setProposals([]); 
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
     fetchProposals();
-}, []);
+  }, []);
+
   const handleEdit = (proposal: Proposal) => {
-    setEditingProposal(proposal);
+    setEditingProposal({ ...proposal }); 
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editingProposal) {
-      setProposals((prev) =>
-        prev.map((p) => (p.id === editingProposal.id ? editingProposal : p))
-      );
-      setShowModal(false);
-      setEditingProposal(null);
+      try {
+        await UpdateProposal(editingProposal.id, editingProposal);
+        setProposals((prev) =>
+          prev.map((p) => (p.id === editingProposal.id ? editingProposal : p))
+        );
+        toast.success("Proposal updated successfully!");
+        setShowModal(false);
+        setEditingProposal(null);
+      } catch (error) {
+        toast.error("Failed to update proposal.");
+      }
     }
   };
 
@@ -94,7 +97,6 @@ useEffect(() => {
     }
   };
 
-  // 3. Updated Search Logic for projectTitle
   const filteredProposals = proposals.filter((p) => {
     const matchesSearch = p.projectTitle.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'All' || p.status === filterStatus;
@@ -108,10 +110,7 @@ useEffect(() => {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h4 className="fw-bold">My Project Proposals</h4>
-          <button 
-            className="btn btn-new fw-bold"
-            onClick={() => navigate('/proposals/new')}
-          >
+          <button className="btn btn-new fw-bold" onClick={() => navigate('/proposals/new')}>
             + Start New Proposal
           </button>
         </div>
@@ -125,11 +124,7 @@ useEffect(() => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <i
-            className="bi bi-funnel-fill filter-icon"
-            onClick={() => setShowFilter(!showFilter)}
-            title="Filter proposals"
-          ></i>
+          <i className="bi bi-funnel-fill filter-icon" onClick={() => setShowFilter(!showFilter)}></i>
 
           {showFilter && (
             <div className="filter-panel shadow-sm">
@@ -140,11 +135,9 @@ useEffect(() => {
                     <input
                       type="radio"
                       name="statusFilter"
-                      value={status}
                       checked={filterStatus === status}
-                      onChange={() => setFilterStatus(status as 'All' | 'Done' | 'In Progress')}
-                    />
-                    {status}
+                      onChange={() => setFilterStatus(status as any)}
+                    /> {status}
                   </label>
                 ))}
               </div>
@@ -152,7 +145,7 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Table - Modified Columns */}
+        {/* Table */}
         <div className="flat-table-container bg-white rounded-4 shadow-sm border overflow-hidden w-100 mb-5">
           {isLoading ? (
             <div className="p-5 text-center text-muted">Loading proposals...</div>
@@ -199,7 +192,7 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Stat Cards */}
+        {/* Stat Cards - RESTORED */}
         <div className="row g-4 mb-5">
           <div className="col-md-4">
             <div className="card stat-card bg-mint-light">
@@ -207,9 +200,7 @@ useEffect(() => {
                 <i className="bi bi-robot fs-3 text-mint me-2"></i>
                 <h6 className="fw-bold text-mint mb-0">AI Suggestions</h6>
               </div>
-              <p className="small text-muted mb-0">
-                Get automated recommendations to improve your proposals.
-              </p>
+              <p className="small text-muted mb-0">Get automated recommendations to improve your proposals.</p>
             </div>
           </div>
           <div className="col-md-4">
@@ -218,9 +209,7 @@ useEffect(() => {
                 <i className="bi bi-bar-chart-line fs-3 text-dark-blue me-2"></i>
                 <h6 className="fw-bold text-dark-blue mb-0">Approval Rate</h6>
               </div>
-              <p className="small text-muted mb-0">
-                Track your proposal success rate.
-              </p>
+              <p className="small text-muted mb-0">Track your proposal success rate.</p>
             </div>
           </div>
           <div className="col-md-4">
@@ -229,31 +218,98 @@ useEffect(() => {
                 <i className="bi bi-headset fs-3 text-orange me-2"></i>
                 <h6 className="fw-bold text-orange mb-0">Need Support?</h6>
               </div>
-              <p className="small text-muted mb-0">
-                Contact our team for guidance.
-              </p>
+              <p className="small text-muted mb-0">Contact our team for guidance.</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Edit Modal */}
+      {/* FULL EDIT MODAL - ALL FIELDS */}
       {showModal && editingProposal && (
         <div className="custom-modal-backdrop">
-          <div className="custom-modal">
-            <h5 className="mb-3">Edit Proposal</h5>
-            <input
-              type="text"
-              className="form-control mb-2"
-              value={editingProposal.projectTitle}
-              onChange={(e) =>
-                setEditingProposal({ ...editingProposal, projectTitle: e.target.value })
-              }
-              placeholder="Project Title"
-            />
-            <div className="d-flex justify-content-end mt-3">
-              <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="save-btn" onClick={handleSave}>Save</button>
+          <div className="custom-modal wide-modal">
+            <h5 className="fw-bold mb-4">Edit Proposal</h5>
+            <div className="modal-scroll-area">
+                <div className="row g-3">
+                    <div className="col-md-6">
+                        <label className="small fw-bold">Project Title</label>
+                        <input className="form-control" value={editingProposal.projectTitle} onChange={(e) => setEditingProposal({...editingProposal, projectTitle: e.target.value})} />
+                    </div>
+                    <div className="col-md-6">
+                        <label className="small fw-bold">Project Type</label>
+                        <select className="form-select" value={editingProposal.projectType} onChange={(e) => setEditingProposal({...editingProposal, projectType: e.target.value})}>
+                            <option value="Web App">Web App</option>
+                            <option value="Mobile App">Mobile App</option>
+                            <option value="AI System">AI System</option>
+                            <option value="API">API/Backend</option>
+                        </select>
+                    </div>
+                    <div className="col-12">
+                        <label className="small fw-bold">Problem Solved</label>
+                        <textarea className="form-control" rows={2} value={editingProposal.problemSolved} onChange={(e) => setEditingProposal({...editingProposal, problemSolved: e.target.value})} />
+                    </div>
+                    <div className="col-12">
+                        <label className="small fw-bold">Description</label>
+                        <textarea className="form-control" rows={3} value={editingProposal.description} onChange={(e) => setEditingProposal({...editingProposal, description: e.target.value})} />
+                    </div>
+                    <div className="col-12">
+                        <label className="small fw-bold">Main Features</label>
+                        <textarea className="form-control" rows={2} value={editingProposal.mainFeatures} onChange={(e) => setEditingProposal({...editingProposal, mainFeatures: e.target.value})} />
+                    </div>
+                    <div className="col-md-6">
+                        <label className="small fw-bold">User Roles</label>
+                        <input className="form-control" value={editingProposal.userRoles} onChange={(e) => setEditingProposal({...editingProposal, userRoles: e.target.value})} />
+                    </div>
+                    <div className="col-md-6">
+                        <label className="small fw-bold">Scalability</label>
+                        <select className="form-select" value={editingProposal.scalability} onChange={(e) => setEditingProposal({...editingProposal, scalability: e.target.value})}>
+                            <option value="Small">Small</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Large">Large</option>
+                        </select>
+                    </div>
+                    <div className="col-md-4">
+                        <label className="small fw-bold">Duration (Days)</label>
+                        <input type="number" className="form-control" value={editingProposal.durationDays} onChange={(e) => setEditingProposal({...editingProposal, durationDays: parseInt(e.target.value) || 0})} />
+                    </div>
+                    <div className="col-md-4">
+                        <label className="small fw-bold">Budget (USD)</label>
+                        <input type="number" className="form-control" value={editingProposal.budgetUsd} onChange={(e) => setEditingProposal({...editingProposal, budgetUsd: parseFloat(e.target.value) || 0})} />
+                    </div>
+                    <div className="col-md-4">
+                        <label className="small fw-bold">Status</label>
+                        <select className="form-select" value={editingProposal.status} onChange={(e) => setEditingProposal({...editingProposal, status: e.target.value as any})}>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Done">Done</option>
+                        </select>
+                    </div>
+                    <div className="col-md-6">
+                        <label className="small fw-bold">Code Ownership</label>
+                        <select className="form-select" value={editingProposal.codeOwnership} onChange={(e) => setEditingProposal({...editingProposal, codeOwnership: e.target.value})}>
+                            <option value="Client">Client</option>
+                            <option value="Company">Company</option>
+                            <option value="Shared">Shared</option>
+                        </select>
+                    </div>
+                    <div className="col-md-6">
+                        <label className="small fw-bold">Maintenance</label>
+                        <select className="form-select" value={editingProposal.maintenancePeriod} onChange={(e) => setEditingProposal({...editingProposal, maintenancePeriod: e.target.value})}>
+                            <option value="None">None</option>
+                            <option value="1 Month">1 Month</option>
+                            <option value="3 Months">3 Months</option>
+                        </select>
+                    </div>
+                    <div className="col-12">
+                        <div className="form-check form-switch mt-2">
+                            <input className="form-check-input" type="checkbox" checked={editingProposal.ndaRequired} onChange={(e) => setEditingProposal({...editingProposal, ndaRequired: e.target.checked})} />
+                            <label className="form-check-label fw-bold">NDA Required</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="d-flex justify-content-end mt-4 gap-2">
+              <button className="btn btn-secondary-custom" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn btn-primary-custom" onClick={handleSave}>Save Changes</button>
             </div>
           </div>
         </div>

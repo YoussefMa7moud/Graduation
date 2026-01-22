@@ -245,3 +245,41 @@
   color: #64748b;
 }
 
+/* Progress Bar Fill */
+.progress-bar-container {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+/* Color Variants */
+.bg-danger { background: #ef4444; }    /* Red for Rejected */
+.bg-warning { background: #f59e0b; }   /* Yellow for Waiting */
+.bg-success { background: #22c55e; }   /* Green for Progress */
+.bg-neutral { background: #64748b; }
+
+/* Status Badges */
+.badge.status-danger { background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2; }
+.badge.status-warning { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
+.badge.status-success { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
+/* Step Dot Coloring */
+.step.done.step-one-danger .dot { background: #ef4444 !important; }
+.step.done.step-one-warning .dot { background: #f59e0b !important; }
+.step.done.step-one-success .dot { background: #22c55e !important; }
+
+/* Label text for the first step needs to be smaller if the status name is long */
+.step-label {
+  display: block;
+  font-size: 10px !important;
+  text-transform: capitalize;
+  line-height: 1.2;
+  margin-top: 4px;
+}

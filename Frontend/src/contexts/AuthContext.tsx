@@ -17,9 +17,12 @@ import { normalizeRole } from '../utils/role.utils';
  * User information type. The role is a normalized, type-safe FrontendRole.
  */
 export interface User {
+  companyName: string;
   userId: number;
   email: string;
   role: FrontendRole;
+  firstName?: string;
+  lastName?: string;
 }
 
 /**
@@ -154,3 +157,5 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
+

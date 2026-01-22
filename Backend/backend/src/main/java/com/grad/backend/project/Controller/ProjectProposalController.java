@@ -50,6 +50,34 @@ public class ProjectProposalController {
         );
     }
 
+    // ✅ GET PROPOSAL BY ID
+    @GetMapping("/{proposalId}")
+    public ResponseEntity<?> getProposalById(
+            @PathVariable Long proposalId,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(
+                proposalService.getProposalById(proposalId, proposalId)
+        );
+    }
+
+    // ✅ UPDATE PROPOSAL
+    @PutMapping("/update/{proposalId}")
+    public ResponseEntity<?> updateProposal(
+            @PathVariable Long proposalId,
+            @RequestBody ProjectProposalRequest request,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        proposalService.updateProposal(proposalId, request, currentUser.getId());
+        return ResponseEntity.ok().build();
+    }
+
     // ✅ DELETE PROPOSAL
     @DeleteMapping("/delete/{proposalId}")
     public ResponseEntity<?> deleteProposal(
@@ -63,4 +91,7 @@ public class ProjectProposalController {
         proposalService.deleteProposal(proposalId, currentUser.getId());
         return ResponseEntity.ok().build();
     }
+
+
+
 }

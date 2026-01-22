@@ -12,5 +12,9 @@ public interface ProjectProposalService {
 
     List<ProjectProposal> getProposalsByClientId(Long clientId);
 
+    ProjectProposal getProposalById(Long proposalId, Long authenticatedClientId);
+
+    ProjectProposal updateProposal(Long proposalId, ProjectProposalRequest request, Long authenticatedClientId);
+
     void deleteProposal(Long proposalId, Long authenticatedClientId);
 }

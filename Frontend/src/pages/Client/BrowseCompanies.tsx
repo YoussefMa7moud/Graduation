@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAllCompanies } from '../../services/Company/companyService';
 import CompanyCard from '../../components/Client/CompanyCard';
-import ProposalPickerModal from '../../components/Client/ProposalPickerModal';
+import ProposalSubmissionModal from '../../components/Client/ProposalSubmissionModal'; // Renamed for clarity
 import './BrowseCompanies.css';
 
 interface Company {
@@ -20,9 +20,7 @@ const BrowseCompanies: React.FC = () => {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Restored Filter States
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterVerified, setFilterVerified] = useState<string>('all');
   const [filterSector, setFilterSector] = useState<string>('all');
 
   useEffect(() => {
@@ -35,94 +33,68 @@ const BrowseCompanies: React.FC = () => {
     loadData();
   }, []);
 
-  // Restored Filtering Logic
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesVerified = filterVerified === 'all' 
-      ? true 
-      : filterVerified === 'verified' ? c.verified : !c.verified;
-      
-    const matchesSector = filterSector === 'all' 
-      ? true 
-      : c.sector === filterSector;
-    
-    return matchesSearch && matchesVerified && matchesSector;
+    const matchesSector = filterSector === 'all' ? true : c.sector === filterSector;
+    return matchesSearch && matchesSector;
   });
 
   const sectors = Array.from(new Set(companies.map(c => c.sector).filter(Boolean)));
 
-  if (loading) return <div className="text-center mt-5 p-5"><h4>Loading Companies...</h4></div>;
+  if (loading) return <div className="loader-container"><h4>Loading Partners...</h4></div>;
 
   return (
-    <>
-      <div className="browse-container container mt-4 mb-5 page-fade-in">
-        <h4 className="fw-bold mb-4" style={{ color: '#0f172a' }}>Browse & Search Companies</h4>
+    <div className="browse-container container mt-4 mb-5 page-fade-in">
+      <div className="text-center mb-5">
+        <h2 className="fw-bold section-title">Partner Companies</h2>
+        <p className="text-muted">Select a company to pitch your project proposal</p>
+      </div>
 
-        {/* Restored Search & Filters Bar */}
-        <div className="row mb-4 g-2 align-items-center filter-bar p-3 rounded shadow-sm" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-          <div className="col-md-4">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by company name..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+      {/* Search & Filters */}
+      <div className="row mb-5 justify-content-center">
+        <div className="col-md-8 d-flex gap-2 p-2 rounded-pill shadow-sm bg-white border">
+          <input
+            type="text"
+            className="form-control border-0 bg-transparent ms-3"
+            placeholder="Search company name..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+          <select
+            className="form-select border-0 bg-transparent w-auto"
+            value={filterSector}
+            onChange={e => setFilterSector(e.target.value)}
+          >
+            <option value="all">All Industries</option>
+            {sectors.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="row g-4">
+        {filteredCompanies.map((c) => (
+          <div className="col-lg-3 col-md-4 col-sm-6" key={c.id}>
+            <CompanyCard 
+              company={c} 
+              onOpen={() => {
+                setSelectedCompany(c);
+                setIsModalOpen(true);
+              }} 
             />
           </div>
-          <div className="col-md-4">
-            <select
-              className="form-select"
-              value={filterVerified}
-              onChange={e => setFilterVerified(e.target.value)}
-            >
-              <option value="all">All Statuses</option>
-              <option value="verified">Verified Only</option>
-              <option value="unverified">Unverified Only</option>
-            </select>
-          </div>
-          <div className="col-md-4">
-            <select
-              className="form-select"
-              value={filterSector}
-              onChange={e => setFilterSector(e.target.value)}
-            >
-              <option value="all">All Industries</option>
-              {sectors.map(sector => (
-                <option key={sector} value={sector}>{sector}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Updated Grid for modern Cards */}
-        <div className="row g-4">
-          {filteredCompanies.length > 0 ? (
-            filteredCompanies.map((c) => (
-              <div className="col-md-4 d-flex" key={c.id}>
-                <CompanyCard 
-                  company={c} 
-                  onSubmit={() => {
-                    setSelectedCompany(c);
-                    setIsModalOpen(true);
-                  }} 
-                />
-              </div>
-            ))
-          ) : (
-            <div className="col-12 text-center mt-5">
-              <p className="text-muted">No companies match your search criteria.</p>
-            </div>
-          )}
-        </div>
-
-        <ProposalPickerModal 
+      {/* The New Submission Modal */}
+      {isModalOpen && selectedCompany && (
+        <ProposalSubmissionModal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           company={selectedCompany} 
         />
-      </div>
-    </>
+      )}
+    </div>
   );
 };
 

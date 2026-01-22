@@ -89,3 +89,94 @@
 .bg-orange-light { background-color: #fff7ed; }
 .text-orange { color: #f59e0b; }
 .stat-card i { font-size: 1.5rem; }
+
+
+/* Ensure modal can handle many fields */
+.wide-modal {
+    max-width: 850px !important;
+    width: 95%;
+}
+
+.modal-scroll-area {
+    max-height: 65vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+}
+
+/* Custom scrollbar for better look */
+.modal-scroll-area::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-scroll-area::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 10px;
+}
+
+/* Custom Button Colors */
+.btn-new {
+    background-color: #17253b !important; /* Mint Green */
+    color: white !important;
+    border-radius: 8px;
+    padding: 10px 24px;
+    transition: 0.3s;
+}
+
+.btn-new:hover {
+    background-color: #17253b !important;
+    transform: translateY(-2px);
+}
+
+.btn-primary-custom {
+    background-color: #17253b !important; /* Professional Blue */
+    color: white !important;
+    padding: 8px 25px;
+    border: none;
+    border-radius: 6px;
+}
+
+.btn-secondary-custom {
+    background-color: #f1f2f6 !important;
+    color: #2f3542 !important;
+    padding: 8px 25px;
+    border: 1px solid #dfe4ea;
+    border-radius: 6px;
+}
+
+/* Modal Layout Adjustments */
+.wide-modal {
+    max-width: 800px !important;
+    width: 95%;
+}
+
+.modal-scroll-area {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 15px;
+    background: #fdfdfd;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+/* Status Colors */
+.status-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.status-done { background-color: #e3fcef; color: #00b894; }
+.status-in-progress { background-color: #fff4e5; color: #ff9f43; }
+
+/* Stat Cards Styling */
+.stat-card {
+    padding: 20px;
+    border-radius: 15px;
+    border: none;
+    transition: 0.3s;
+}
+.bg-mint-light { background-color: #e3fcef; }
+.bg-dark-blue-light { background-color: #e0e7ff; }
+.bg-orange-light { background-color: #fff4e5; }

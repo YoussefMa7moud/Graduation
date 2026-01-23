@@ -92,7 +92,7 @@ const MyProposals: React.FC = () => {
         setProposals((prev) => prev.filter((p) => p.id !== id));
         toast.success("Proposal deleted successfully!");
       } catch (error) {
-        toast.error("Error deleting proposal.");
+        toast.error("You cannot delete this proposal it is linked to an ongoing project or proposal.");
       }
     }
   };

@@ -36,12 +36,16 @@ public class AuthController {
             @RequestParam(value = "lastName", required = false) String lastName,
             @RequestParam(value = "companyName", required = false) String companyName,
             @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "logo", required = false) MultipartFile logo
+            @RequestParam(value = "logo", required = false) MultipartFile logo,
+            @RequestParam(value = "nationalId", required = false) String nationalId,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "companyRegNo", required = false) String companyRegNo,
+            @RequestParam(value = "phoneNumber", required = false) String phoneNumber
     ) {
         try {
             RegisterResponse response = registrationService.register(
                     email, password, role, clientType, firstName, lastName,
-                    companyName, description, logo
+                    companyName, description, logo, nationalId, title, companyRegNo, phoneNumber
             );
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {

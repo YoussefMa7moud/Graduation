@@ -24,4 +24,9 @@ public class Company {
     @Lob
     @Column(columnDefinition = "LONGBLOB")
     private byte[] logo;
+
+    private String nationalId;
+    private String title; // CEO / CTO / Legal Rep
+    private String companyRegNo;
+    private String phoneNumber;
 }

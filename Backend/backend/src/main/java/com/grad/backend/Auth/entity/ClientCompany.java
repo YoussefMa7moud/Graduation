@@ -22,4 +22,9 @@ public class ClientCompany {
     @Lob
     @Column(columnDefinition = "LONGBLOB")
     private byte[] logo;
+
+    private String nationalId;
+    private String companyRegNo;
+    private String phoneNumber;
+    private String title; // CEO / CTO / Legal Rep
 }

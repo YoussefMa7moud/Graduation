@@ -4,6 +4,7 @@ import com.grad.backend.Auth.enums.UserRole;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.util.Objects;
 
 @Entity
 @Table(name = "users")
@@ -26,4 +27,5 @@ public class User {
 
     private String firstName;
     private String lastName;
+
 }

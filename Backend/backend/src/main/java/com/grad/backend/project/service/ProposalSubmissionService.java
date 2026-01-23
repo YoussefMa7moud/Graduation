@@ -1,8 +1,11 @@
 package com.grad.backend.project.service;
 
+import com.grad.backend.Auth.entity.ClientCompany;
 import com.grad.backend.Auth.entity.Company;
 import com.grad.backend.Auth.entity.User;
 import com.grad.backend.Auth.enums.UserRole;
+import com.grad.backend.Auth.repository.ClientCompanyRepository;
+import com.grad.backend.Auth.repository.ClientPersonRepository;
 import com.grad.backend.Auth.repository.CompanyRepository;
 import com.grad.backend.project.entity.ProjectProposal;
 import com.grad.backend.project.entity.ProposalSubmission;
@@ -76,6 +79,46 @@ public List<ProposalSubmission> getMySubmissions(Long clientId) {
     return submissionRepository.findByClient_Id(clientId);
 }
     
+
+
+
+@Transactional
+public void updateStatus(Long submissionId, SubmissionStatus status, String note) {
+    ProposalSubmission submission = submissionRepository.findById(submissionId)
+            .orElseThrow(() -> new RuntimeException("Submission not found"));
+    submission.setStatus(status);
+    if (note != null) {
+        submission.setRejectionNote(note);
+    }
+    submissionRepository.save(submission);
+}
+
+@Transactional
+public void deleteSubmission(Long submissionId) {
+    submissionRepository.deleteById(submissionId);
+}
+
+public List<ProposalSubmission> getSubmissionsForCompany(Long companyId) {
+    return submissionRepository.findBySoftwareCompany_Id(companyId);
+}
+
+
+// Inside ProposalSubmissionService.java
+private final ClientCompanyRepository clientCompanyRepo;
+private final CompanyRepository companyRepo;
+private final ClientPersonRepository clientPersonRepo;
+
+public String getClientDisplayName(Long userId, ClientType type) {
+    if (type == ClientType.COMPANY) {
+        return clientCompanyRepo.findById(userId)
+                .map(ClientCompany::getCompanyName)
+                .orElse("Unknown Company");
+    } else {
+        return clientPersonRepo.findById(userId)
+                .map(cp -> cp.getFirstName() + " " + cp.getLastName())
+                .orElse("Unknown Individual");
+    }
+}
 
     
 }

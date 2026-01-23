@@ -6,7 +6,9 @@ public enum SubmissionStatus {
     REJECTED, 
     REJECTED_WITH_NOTE, 
     RESUBMITTED, 
+    WAITING_FOR_NDA,
     REVIEWING, 
     VALIDATION, 
-    SIGNING
+    SIGNING,
+    COMPLETED
 }

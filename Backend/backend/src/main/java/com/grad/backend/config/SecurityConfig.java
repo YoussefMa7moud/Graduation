@@ -38,6 +38,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/proposals/**").authenticated()
                 .requestMatchers("/api/proposals/update/**").authenticated()
                 .requestMatchers("/api/submissions/**").authenticated()
+                .requestMatchers("/api/submissions/send-to-company").authenticated()
+                .requestMatchers("/api/submissions/my-submissions").authenticated()
+                .requestMatchers("/api/submissions/company-queue").authenticated()
+
                 
 
 

@@ -77,7 +77,7 @@ const CompanyHome: React.FC = () => {
   return (
     <>
     <div className="container page-fade-in">
-      <Header />
+  
       <div className="corporate-container w-100 p-0">
         <div className="row g-4 mb-5">
            {/* Stat cards remain the same */}

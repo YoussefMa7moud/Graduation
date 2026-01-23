@@ -2,6 +2,7 @@ package com.grad.backend.Auth.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.util.Objects;
 
 @Entity
 @Table(name = "client_person")

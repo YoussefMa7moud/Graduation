@@ -17,4 +17,6 @@ public interface ProposalSubmissionRepository extends JpaRepository<ProposalSubm
     Optional<ProposalSubmission> findByIdAndClient_Id(Long id, Long clientId);
 
     List<ProposalSubmission> findByClient_Id(Long clientId);
+
+    List<ProposalSubmission> findBySoftwareCompany_Id(Long companyId);
 }

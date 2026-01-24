@@ -1,0 +1,109 @@
+/* Container Spacing */
+.pm-dashboard-content { padding-top: 20px; }
+
+.display-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 5px;
+}
+
+.subtitle { color: #64748b; font-size: 1.1rem; }
+
+.section-label {
+    font-size: 0.9rem;
+    letter-spacing: 1.5px;
+    color: #475569;
+    font-weight: 700;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.count-pill {
+    background: #e2e8f0;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+/* Table styling to match Screen Shot 1.00.11 AM */
+.modern-pm-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+.modern-pm-table th {
+    padding: 10px 20px;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.modern-pm-table tbody tr {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    border-radius: 12px;
+    transition: 0.2s;
+}
+
+.modern-pm-table td {
+    padding: 20px;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.badge-active {
+    background: #ecfdf5;
+    color: #10b981;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.doc-link-item {
+    color: #3b82f6;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-open-workspace {
+    background: #0f172a;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+/* Proposal Grid */
+.proposal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.proposal-card-modern {
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+.tag-new {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 4px;
+}

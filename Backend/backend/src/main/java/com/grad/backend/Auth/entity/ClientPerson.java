@@ -19,4 +19,6 @@ public class ClientPerson {
 
     private String firstName;
     private String lastName;
+    private String nationalId;
+    private String phoneNumber;
 }

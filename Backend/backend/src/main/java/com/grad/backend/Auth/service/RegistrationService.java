@@ -33,7 +33,11 @@ public class RegistrationService {
             String lastName,
             String companyName,
             String description,
-            MultipartFile logoFile
+            MultipartFile logoFile,
+            String nationalId,
+            String title,
+            String companyRegNo,
+            String phoneNumber
     ) {
 
         // ===== Basic validation =====
@@ -65,10 +69,18 @@ public class RegistrationService {
         byte[] logoData = null;
         try {
             if (logoFile != null && !logoFile.isEmpty()) {
+                // Validate file size (max 1MB = 1,048,576 bytes)
+                long maxSize = 1024 * 1024; // 1MB
+                if (logoFile.getSize() > maxSize) {
+                    throw new IllegalArgumentException("Logo file size must be less than 1MB. Please compress or resize your image.");
+                }
                 logoData = logoFile.getBytes();
             }
         } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to read logo file");
+            throw new IllegalArgumentException("Failed to read logo file: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            // Re-throw validation errors
+            throw e;
         }
 
         // ===== Create User (ROOT ENTITY) =====
@@ -92,11 +104,32 @@ public class RegistrationService {
             user.setRole(UserRole.SOFTWARE_COMPANY);
             user = userRepo.save(user);
 
+            // Validate required fields for software company
+            if (nationalId == null || nationalId.trim().isEmpty()) {
+                throw new IllegalArgumentException("National ID is required for software company");
+            }
+            if (title == null || title.trim().isEmpty()) {
+                throw new IllegalArgumentException("Title is required for software company");
+            }
+            if (!title.equalsIgnoreCase("CEO") && !title.equalsIgnoreCase("CTO") && !title.equalsIgnoreCase("Legal Rep")) {
+                throw new IllegalArgumentException("Title must be one of: CEO, CTO, or Legal Rep");
+            }
+            if (companyRegNo == null || companyRegNo.trim().isEmpty()) {
+                throw new IllegalArgumentException("Company Registration Number is required for software company");
+            }
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new IllegalArgumentException("Phone number is required");
+            }
+
             Company company = new Company();
             company.setUser(user);
             company.setName(companyName);
             company.setDescription(description);
             company.setLogo(logoData);
+            company.setNationalId(nationalId);
+            company.setTitle(title);
+            company.setCompanyRegNo(companyRegNo);
+            company.setPhoneNumber(phoneNumber);
 
             companyRepo.save(company);
         }
@@ -114,10 +147,20 @@ public class RegistrationService {
                 user.setRole(UserRole.CLIENT_PERSON);
                 user = userRepo.save(user);
 
+                // Validate required fields for individual client
+                if (nationalId == null || nationalId.trim().isEmpty()) {
+                    throw new IllegalArgumentException("National ID is required for individual client");
+                }
+                if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Phone number is required");
+                }
+
                 ClientPerson person = new ClientPerson();
                 person.setUser(user);
                 person.setFirstName(firstName);
                 person.setLastName(lastName);
+                person.setNationalId(nationalId);
+                person.setPhoneNumber(phoneNumber);
 
                 personRepo.save(person);
             }
@@ -136,11 +179,32 @@ public class RegistrationService {
                 user.setRole(UserRole.CLIENT_COMPANY);
                 user = userRepo.save(user);
 
+                // Validate required fields for corporate client
+                if (nationalId == null || nationalId.trim().isEmpty()) {
+                    throw new IllegalArgumentException("National ID is required for corporate client");
+                }
+                if (title == null || title.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Title is required for corporate client");
+                }
+                if (!title.equalsIgnoreCase("CEO") && !title.equalsIgnoreCase("CTO") && !title.equalsIgnoreCase("Legal Rep")) {
+                    throw new IllegalArgumentException("Title must be one of: CEO, CTO, or Legal Rep");
+                }
+                if (companyRegNo == null || companyRegNo.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Company Registration Number is required for corporate client");
+                }
+                if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Phone number is required");
+                }
+
                 ClientCompany company = new ClientCompany();
                 company.setUser(user);
                 company.setCompanyName(companyName);
                 company.setDescription(description);
                 company.setLogo(logoData);
+                company.setNationalId(nationalId);
+                company.setTitle(title);
+                company.setCompanyRegNo(companyRegNo);
+                company.setPhoneNumber(phoneNumber);
 
                 clientCompanyRepo.save(company);
             }

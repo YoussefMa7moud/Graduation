@@ -34,6 +34,10 @@ public class SubmissionResponseDTO {
     private String codeOwnership;
     private String maintenancePeriod; 
 
+
+    private String rejectionNote; // Add this field
+
+
     // Client Info (For the Table and Modal)
     private String clientType;
     private String clientName;

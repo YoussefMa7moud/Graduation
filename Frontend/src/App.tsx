@@ -30,6 +30,8 @@ import ActiveProjects from "./pages/Client/ActiveProjects";
 import LoadingAnimation from "./components/LoadingAnimation";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; // Don't forget the CSS!
+import ProposalFeedback from "./pages/Client/MangeProject/ProposalFeedback";
+import NDASigning from "./pages/Client/MangeProject/NDASigning";
 /**
  * Component that redirects authenticated users away from auth pages
  */
@@ -263,7 +265,61 @@ const AppRoutes: React.FC = () => {
           </RoleBasedRoute>
         }
       />
+
+
+
+
+
+          <Route
+        path="/ProposalFeedback"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+            <ClientLayout>
+              <ProposalFeedback />
+            </ClientLayout>
+          </RoleBasedRoute>
+        }
+      />
+
+
+
+
+            <Route
+        path="/NDASigning"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+            <ClientLayout>
+              <NDASigning />
+            </ClientLayout>
+          </RoleBasedRoute>
+        }
+      />
+
+
+
+      
     </Routes>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   );
 };
 

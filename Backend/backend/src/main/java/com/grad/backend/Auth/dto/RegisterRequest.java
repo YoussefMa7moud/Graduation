@@ -26,4 +26,10 @@ public class RegisterRequest {
     // File upload for logo (required for all companies)
     // Note: Companies must upload logo as file, not URL
     private MultipartFile logoFile;
+
+    // Fields for Software Company
+    private String nationalId; // For software company
+    private String title; // CEO / CTO / Legal Rep (for software company)
+    private String companyRegNo; // For software company and client company
+    private String phoneNumber; // For all roles
 }

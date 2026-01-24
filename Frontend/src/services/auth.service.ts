@@ -24,6 +24,10 @@ export interface RegisterRequest {
   companyName?: string;
   description?: string;
   logo?: File; // The key should be 'logo' to match the backend
+  nationalId?: string;
+  title?: 'CEO' | 'CTO' | 'Legal Rep'; // For software company
+  companyRegNo?: string; // For software company and client company
+  phoneNumber?: string; // For all roles
 }
 
 /**

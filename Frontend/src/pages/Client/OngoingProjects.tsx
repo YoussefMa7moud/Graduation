@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyActiveSubmissions } from '../../services/Client/RetriveSubmitions'; 
+import { withdrawSubmission } from '../../services/Client/withdrawSubmission'; // Import the service
 import { toast } from 'react-toastify';
 import './OngoingProjects.css';
 
@@ -23,6 +24,21 @@ const OngoingProjects: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false); // New state for button loading
+
+  const fetchProjects = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getMyActiveSubmissions();
+      const filteredData = data.filter((item: any) => item.status !== "COMPLETED");
+      const mappedData = filteredData.map((item: any) => mapBackendToUI(item));
+      setProjects(mappedData);
+    } catch (error) {
+      toast.error("Failed to fetch ongoing projects.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const mapBackendToUI = (submission: any): Project => {
     const s = submission.status; 
@@ -31,7 +47,6 @@ const OngoingProjects: React.FC = () => {
     let progress = 0;
     let statusType: 'neutral' | 'success' | 'warning' | 'danger' = 'neutral';
 
-    // Logic for steps and progress
     if (["WAITING_FOR_COMPANY", "REJECTED", "REJECTED_WITH_NOTE", "RESUBMITTED"].includes(s)) {
       activeStep = 0;
       progress = 20;
@@ -40,21 +55,13 @@ const OngoingProjects: React.FC = () => {
       else if (s === "WAITING_FOR_COMPANY") statusType = 'warning';
       else statusType = 'success';
     } else if (s === "ACCEPTED") {
-      activeStep = 1;
-      progress = 40;
-      statusType = 'success';
+      activeStep = 1; progress = 40; statusType = 'success';
     } else if (s === "REVIEWING") {
-      activeStep = 2;
-      progress = 60;
-      statusType = 'success';
+      activeStep = 2; progress = 60; statusType = 'success';
     } else if (s === "VALIDATION") {
-      activeStep = 3;
-      progress = 80;
-      statusType = 'success';
+      activeStep = 3; progress = 80; statusType = 'success';
     } else if (s === "SIGNING") {
-      activeStep = 4;
-      progress = 100;
-      statusType = 'success';
+      activeStep = 4; progress = 100; statusType = 'success';
     }
 
     return {
@@ -74,23 +81,6 @@ const OngoingProjects: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const data = await getMyActiveSubmissions();
-        
-        // 1. FILTER: Only keep projects where status is NOT "COMPLETED"
-        const filteredData = data.filter((item: any) => item.status !== "COMPLETED");
-        
-        // 2. MAP: Convert the filtered backend data to UI format
-        const mappedData = filteredData.map((item: any) => mapBackendToUI(item));
-        
-        setProjects(mappedData);
-      } catch (error) {
-        toast.error("Failed to fetch ongoing projects.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchProjects();
   }, []);
 
@@ -102,6 +92,22 @@ const OngoingProjects: React.FC = () => {
     }
   };
 
+  // 1. Withdrawal Handler
+  const handleWithdraw = async (submissionId: number) => {
+    if (!window.confirm("Are you sure you want to withdraw this proposal?")) return;
+    
+    setIsProcessing(true);
+    try {
+      await withdrawSubmission(submissionId);
+      toast.success("Proposal withdrawn successfully");
+      fetchProjects(); // Refresh the list
+    } catch (error) {
+      toast.error("Failed to withdraw proposal.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (isLoading) return <div className="loading-screen"><div className="spinner"></div></div>;
 
   return (
@@ -109,7 +115,6 @@ const OngoingProjects: React.FC = () => {
       <h2 className="page-title">Ongoing Client Projects</h2>
       <p className="page-subtitle">Track your project status across the lifecycle.</p>
 
-      {/* 3. Handle Empty State (If all projects are completed or list is empty) */}
       {projects.length === 0 ? (
         <div className="text-center py-5">
           <p className="text-muted">No ongoing projects found.</p>
@@ -117,15 +122,14 @@ const OngoingProjects: React.FC = () => {
       ) : (
         <div className="projects-grid">
           {projects.map((p) => {
-            const isButtonDisabled = p.rawStatus === "WAITING_FOR_COMPANY" || p.rawStatus === "RESUBMITTED";
+            const isManageDisabled = p.rawStatus === "WAITING_FOR_COMPANY" || p.rawStatus === "RESUBMITTED";
+            const showWithdraw = p.rawStatus === "WAITING_FOR_COMPANY";
 
             return (
               <div className="project-card" key={p.id}>
                 <div className="card-header">
                   <h3>{p.title}</h3>
-                  <span className={`badge status-${p.statusType}`}>
-                    {p.status}
-                  </span>
+                  <span className={`badge status-${p.statusType}`}>{p.status}</span>
                 </div>
                 <span className="company-name">{p.company}</span>
 
@@ -137,6 +141,7 @@ const OngoingProjects: React.FC = () => {
                   <div className={`progress-fill bg-${p.statusType}`} style={{ width: `${p.progress}%` }}></div>
                 </div>
 
+                {/* Steps Section */}
                 <div className="steps">
                   {p.steps.map((s, idx) => (
                     <div key={idx} className={`step ${idx <= p.activeStep ? "done" : ""} ${idx === 0 ? `step-one-${p.statusType}` : ""}`}>
@@ -156,18 +161,29 @@ const OngoingProjects: React.FC = () => {
                   <div><small>ASSIGNED COMPANY</small><strong>{p.reviewer}</strong></div>
                 </div>
 
-                <div className="card-actions">
+                <div className="card-actions d-flex gap-2">
                   <button 
-                    className="primary" 
+                    className="primary flex-grow-1" 
                     onClick={() => handleManageContracts(p)}
-                    disabled={isButtonDisabled}
+                    disabled={isManageDisabled || isProcessing}
                     style={{ 
-                      opacity: isButtonDisabled ? 0.5 : 1, 
-                      cursor: isButtonDisabled ? 'not-allowed' : 'pointer' 
+                      opacity: isManageDisabled ? 0.5 : 1, 
+                      cursor: isManageDisabled ? 'not-allowed' : 'pointer' 
                     }}
                   >
-                    {isButtonDisabled ? 'Action Pending' : 'Manage Project'}
+                    {isManageDisabled ? 'Action Pending' : 'Manage Project'}
                   </button>
+
+                  {/* 2. Conditionally Render Withdrawal Button */}
+                  {showWithdraw && (
+                    <button 
+                      className="btn btn-outline-danger"
+                      onClick={() => handleWithdraw(p.id)}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Processing...' : 'Withdraw Proposal'}
+                    </button>
+                  )}
                 </div>
               </div>
             );

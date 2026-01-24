@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyActiveSubmissions } from '../../services/Client/RetriveSubmitions'; 
-import { withdrawSubmission } from '../../services/Client/withdrawSubmission'; // Import the service
+import { withdrawSubmission } from '../../services/Client/withdrawSubmission';
 import { toast } from 'react-toastify';
 import './OngoingProjects.css';
 
@@ -24,7 +24,7 @@ const OngoingProjects: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false); // New state for button loading
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -40,6 +40,9 @@ const OngoingProjects: React.FC = () => {
     }
   };
 
+  /**
+   * Refined Mapping Logic for Lifecycle Steps
+   */
   const mapBackendToUI = (submission: any): Project => {
     const s = submission.status; 
     let stepOneLabel = "Submission";
@@ -47,20 +50,30 @@ const OngoingProjects: React.FC = () => {
     let progress = 0;
     let statusType: 'neutral' | 'success' | 'warning' | 'danger' = 'neutral';
 
-    if (["WAITING_FOR_COMPANY", "REJECTED", "REJECTED_WITH_NOTE", "RESUBMITTED"].includes(s)) {
+    // 1. WAITING FOR NDA (New Initial Step)
+    if (s === "WAITING_FOR_NDA") {
+      activeStep = 0;
+      progress = 30; // "Little progress" as requested
+      stepOneLabel = "Waiting for NDA";
+      statusType = 'warning';
+    } 
+    // 2. OTHER INITIAL STATES
+    else if (["WAITING_FOR_COMPANY", "REJECTED", "REJECTED_WITH_NOTE", "RESUBMITTED"].includes(s)) {
       activeStep = 0;
       progress = 20;
       stepOneLabel = s.replace(/_/g, ' '); 
       if (s.includes("REJECTED")) statusType = 'danger';
       else if (s === "WAITING_FOR_COMPANY") statusType = 'warning';
-      else statusType = 'success';
-    } else if (s === "ACCEPTED") {
+      else statusType = 'success'; // Resubmitted
+    } 
+    // 3. MIDDLE & FINAL STEPS
+    else if (s === "ACCEPTED") {
       activeStep = 1; progress = 40; statusType = 'success';
-    } else if (s === "REVIEWING") {
+    } else if (s === "CONSTRUCTING_CONTRACT" || s === "REVIEWING") {
       activeStep = 2; progress = 60; statusType = 'success';
     } else if (s === "VALIDATION") {
       activeStep = 3; progress = 80; statusType = 'success';
-    } else if (s === "SIGNING") {
+    } else if (s === "WAITING_FOR_SIGNING" || s === "SIGNING") {
       activeStep = 4; progress = 100; statusType = 'success';
     }
 
@@ -84,23 +97,39 @@ const OngoingProjects: React.FC = () => {
     fetchProjects();
   }, []);
 
+  /**
+   * Refined Navigation Handler
+   */
   const handleManageContracts = (p: Project) => {
-    if (p.rawStatus === 'REJECTED_WITH_NOTE') {
-      navigate('/ProposalFeedback', { state: { project: p } });
-    } else {
-      navigate('/ActiveProjects', { state: { project: p } });
+    switch (p.rawStatus) {
+      case 'WAITING_FOR_NDA':
+        // Navigate to the NDA Signing page
+        navigate('/NDASigning', { state: { project: p } });
+        break;
+      case 'REJECTED_WITH_NOTE':
+        // Navigate to the feedback/resubmit page
+        navigate('/ProposalFeedback', { state: { project: p } });
+        break;
+      case 'WAITING_FOR_SIGNING':
+      case 'SIGNING':
+      case 'VALIDATION':
+      case 'CONSTRUCTING_CONTRACT':
+        // Navigate to the Active Contract Workspace
+        navigate('/ActiveProjects', { state: { project: p } });
+        break;
+      default:
+        // Default navigation
+        navigate('/ActiveProjects', { state: { project: p } });
     }
   };
 
-  // 1. Withdrawal Handler
   const handleWithdraw = async (submissionId: number) => {
     if (!window.confirm("Are you sure you want to withdraw this proposal?")) return;
-    
     setIsProcessing(true);
     try {
       await withdrawSubmission(submissionId);
       toast.success("Proposal withdrawn successfully");
-      fetchProjects(); // Refresh the list
+      fetchProjects(); 
     } catch (error) {
       toast.error("Failed to withdraw proposal.");
     } finally {
@@ -122,8 +151,11 @@ const OngoingProjects: React.FC = () => {
       ) : (
         <div className="projects-grid">
           {projects.map((p) => {
+            // Manage is disabled if we are waiting on the company or just resubmitted
             const isManageDisabled = p.rawStatus === "WAITING_FOR_COMPANY" || p.rawStatus === "RESUBMITTED";
-            const showWithdraw = p.rawStatus === "WAITING_FOR_COMPANY";
+            
+            // Withdraw is enabled for initial stages
+            const showWithdraw = ["WAITING_FOR_COMPANY", "RESUBMITTED", "WAITING_FOR_NDA"].includes(p.rawStatus);
 
             return (
               <div className="project-card" key={p.id}>
@@ -141,7 +173,6 @@ const OngoingProjects: React.FC = () => {
                   <div className={`progress-fill bg-${p.statusType}`} style={{ width: `${p.progress}%` }}></div>
                 </div>
 
-                {/* Steps Section */}
                 <div className="steps">
                   {p.steps.map((s, idx) => (
                     <div key={idx} className={`step ${idx <= p.activeStep ? "done" : ""} ${idx === 0 ? `step-one-${p.statusType}` : ""}`}>
@@ -174,7 +205,6 @@ const OngoingProjects: React.FC = () => {
                     {isManageDisabled ? 'Action Pending' : 'Manage Project'}
                   </button>
 
-                  {/* 2. Conditionally Render Withdrawal Button */}
                   {showWithdraw && (
                     <button 
                       className="btn btn-outline-danger"

@@ -69,6 +69,7 @@ public ResponseEntity<List<SubmissionResponseDTO>> getMySubmissions(@Authenticat
                 .companyName(s.getSoftwareCompany().getName())
                 .clientType(s.getClientType().name())
                 .clientName(displayName)
+                .rejectionNote(s.getRejectionNote())
                 .ndaRequired(s.getProposal().getNdaRequired())
                 .proposedAt(s.getProposedAt())
                 .content(s.getProposal().getDescription())

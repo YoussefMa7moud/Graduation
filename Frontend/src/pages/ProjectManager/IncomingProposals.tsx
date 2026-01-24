@@ -34,7 +34,7 @@ const IncomingProposals: React.FC = () => {
     };
 
     return (
-        <PMLayout>
+       
             <div className="proposals-container animate-fade-in">
                 <header className="proposals-header">
                     <div>
@@ -90,7 +90,7 @@ const IncomingProposals: React.FC = () => {
                     )}
                 </div>
             </div>
-        </PMLayout>
+      
     );
 };
 

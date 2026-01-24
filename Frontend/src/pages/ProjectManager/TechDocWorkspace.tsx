@@ -8,7 +8,7 @@ const TechnicalDocWorkspace: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <PMLayout>
+       
             <div className="workspace-container animate-fade-in">
                 <div className="workspace-header">
                     <div>
@@ -46,7 +46,7 @@ const TechnicalDocWorkspace: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </PMLayout>
+       
     );
 };
 

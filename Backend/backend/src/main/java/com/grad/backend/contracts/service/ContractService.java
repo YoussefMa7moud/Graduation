@@ -222,4 +222,11 @@ public class ContractService {
                 .map(ContractRecord::getPdfBytes)
                 .orElse(null);
     }
+
+
+
+
+
+
+
 }

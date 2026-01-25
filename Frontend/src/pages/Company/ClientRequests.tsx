@@ -132,7 +132,7 @@ const ClientRequests: React.FC = () => {
                   <td className="pe-4 text-center">
                     <div className="d-flex justify-content-center gap-2 align-items-center">
                       {sub.status === 'WAITING_FOR_NDA' && (
-                        <button type="button" className="btn btn-sm btn-navy-flat px-3" onClick={() => navigate('/NDASigning', { state: { project: { id: sub.id, company: sub.companyName } } })}>
+                        <button type="button" className="btn btn-sm btn-navy-flat px-3" onClick={() => navigate('/SignNda', { state: { project: { id: sub.id, company: sub.companyName } } })}>
                           Sign NDA
                         </button>
                       )}

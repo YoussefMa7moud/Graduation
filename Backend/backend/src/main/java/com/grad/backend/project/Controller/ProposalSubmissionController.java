@@ -1,6 +1,7 @@
 package com.grad.backend.project.Controller;
 
 import com.grad.backend.Auth.entity.User;
+import com.grad.backend.project.DTO.NdaPartiesResponse;
 import com.grad.backend.project.DTO.SubmissionResponseDTO;
 import com.grad.backend.project.DTO.SubmitToCompanyRequest;
 import com.grad.backend.project.entity.ProjectProposal;
@@ -125,6 +126,13 @@ public ResponseEntity<List<SubmissionResponseDTO>> getCompanyQueue(@Authenticati
     return ResponseEntity.ok(dtos);
 }
 
+
+@GetMapping("/{id}/nda-parties")
+public ResponseEntity<NdaPartiesResponse> getNdaParties(@PathVariable Long id, @AuthenticationPrincipal User currentUser) {
+    if (currentUser == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    NdaPartiesResponse res = submissionService.getNdaParties(id, currentUser.getId());
+    return ResponseEntity.ok(res);
+}
 
 @PatchMapping("/{id}/status")
 public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestParam SubmissionStatus status, @RequestParam(required = false) String note) {

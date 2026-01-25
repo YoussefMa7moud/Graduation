@@ -79,6 +79,9 @@ const Sidebar: React.FC = () => {
           <NavLink to="/ClientRequests" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-person-lines-fill me-3"></i> Client Requests
           </NavLink>
+          <NavLink to="/OngoingContracts" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
+            <i className="bi bi-file-earmark-text-fill me-3"></i> Ongoing Contracts
+          </NavLink>
           <NavLink to="/ContractRepository" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-file-earmark-text-fill me-3"></i> Contract Repository
           </NavLink>

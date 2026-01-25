@@ -31,6 +31,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll() // Allow authentication endpoints
                 .requestMatchers("/api/images/**").permitAll() // Allow image endpoints
+                .requestMatchers("/api/internal/**").permitAll() // Internal API (key-checked in controller)
                 .requestMatchers("/api/companies/browse").permitAll() // Allow anyone to browse companies
                 .requestMatchers("/api/proposals/create").permitAll()
                 .requestMatchers("/api/proposals/MyProposals/**").authenticated()
@@ -41,9 +42,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/submissions/send-to-company").authenticated()
                 .requestMatchers("/api/submissions/my-submissions").authenticated()
                 .requestMatchers("/api/submissions/company-queue").authenticated()
-
-                
-
+                .requestMatchers("/api/contracts/**").authenticated()
 
                 .anyRequest().authenticated() // All other requests require authentication
                 

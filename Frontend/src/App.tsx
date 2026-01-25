@@ -19,6 +19,7 @@ import CompanySettings from "./pages/Company/CompanySettings";
 import ContractRepository from "./pages/Company/ContractRepository";
 import RoleBasedRoute from "./components/Auth/RoleBasedRoute";
 import { RoleGroups, getDefaultHomeRoute } from "./utils/role.utils";
+import OngoingContracts from "./pages/Company/OngoingContracts";
 import BrowseCompanies from "./pages/Client/BrowseCompanies";
 import MyProposals from "./pages/Client/MyProposals";
 import ClientLayout from "./components/Client/ClientLayout";
@@ -169,9 +170,16 @@ const AppRoutes: React.FC = () => {
         }
       />
 
-
-
-
+   <Route 
+        path="OngoingContracts"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.COMPANY}>
+            <DashboardLayout>
+              <OngoingContracts />
+            </DashboardLayout>
+          </RoleBasedRoute>
+        }
+      />
 
 
 
@@ -287,7 +295,7 @@ const AppRoutes: React.FC = () => {
             <Route
         path="/NDASigning"
         element={
-          <RoleBasedRoute allowedRoles={RoleGroups.CLIENT}>
+          <RoleBasedRoute allowedRoles={[...RoleGroups.CLIENT, ...RoleGroups.COMPANY]}>
             <ClientLayout>
               <NDASigning />
             </ClientLayout>

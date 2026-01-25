@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { submissionService } from '../../services/Company/Proposlals'; 
 import { Modal, Button, Form } from 'react-bootstrap';
 import { ToastContainer, toast } from 'react-toastify';
@@ -8,6 +9,7 @@ import html2canvas from 'html2canvas';
 import './ClientRequests.css';
 
 const ClientRequests: React.FC = () => {
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [selectedSub, setSelectedSub] = useState<any>(null);
   const pdfExportRef = useRef<HTMLDivElement>(null);
@@ -128,7 +130,12 @@ const ClientRequests: React.FC = () => {
                     <span className={`status-badge ${getStatusBadgeClass(sub.status)}`}>{sub.status.replace(/_/g, ' ')}</span>
                   </td>
                   <td className="pe-4 text-center">
-                    <div className="d-flex justify-content-center gap-2">
+                    <div className="d-flex justify-content-center gap-2 align-items-center">
+                      {sub.status === 'WAITING_FOR_NDA' && (
+                        <button type="button" className="btn btn-sm btn-navy-flat px-3" onClick={() => navigate('/NDASigning', { state: { project: { id: sub.id, company: sub.companyName } } })}>
+                          Sign NDA
+                        </button>
+                      )}
                       <button className={`btn-action btn-decline ${actionsDisabled ? 'disabled-btn' : ''}`} disabled={actionsDisabled} onClick={() => { if (!actionsDisabled) { setSelectedSub(sub); setShowDeclineModal(true); } }}>
                         <i className="bi bi-x-lg"></i>
                       </button>

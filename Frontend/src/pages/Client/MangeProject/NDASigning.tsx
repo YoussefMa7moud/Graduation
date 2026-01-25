@@ -1,347 +1,330 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FileCheck, User, ShieldCheck, Clock, Globe, Scale, 
-  AlertCircle, X, ChevronRight, ChevronLeft, PenTool, Eraser
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Scale, X, PenTool, Eraser, Code, Coins, Lock
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import {
+  getNdaParties,
+  getNdaDraft,
+  signClient,
+  signCompany,
+  type NdaPartiesResponse,
+  type NdaDraftResponse,
+} from '../../../services/Contract/nda';
+import { useAuth } from '../../../contexts/AuthContext';
+import { frontendRoles } from '../../../utils/role.utils';
 import './NDASigning.css';
 
+const defaultParties = {
+  partyA: { name: '', signatory: '', title: '', email: '', details: '', date: '' },
+  partyB: { name: '', signatory: '', title: '', email: '', details: '', date: '' },
+};
+
 const NDASigning: React.FC = () => {
-  const [step, setStep] = useState(1);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const project = (location.state as { project?: { id: number; company?: string } })?.project;
+  const submissionId = project?.id;
+  const isCompany = user?.role === frontendRoles.SOFTWARE_COMPANY;
+
   const [isSignModalOpen, setIsSignModalOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [signing, setSigning] = useState(false);
+  const [parties, setParties] = useState<NdaPartiesResponse | null>(null);
+  const [draft, setDraft] = useState<NdaDraftResponse | null>(null);
 
-  // --- Form Data Mapping ---
   const [formData, setFormData] = useState({
-    agreementType: 'Mutual',
-    partyA: { type: 'Company', role: 'Both', name: 'Nile Tech Solutions', id: 'CR-123456', signatory: 'Mustafa Kamel', email: 'mustafa@niletech.eg' },
-    partyB: { type: 'Company', role: 'Both', name: '', id: '', email: '' },
-    purpose: '',
-    infoTypes: [] as string[],
-    recipients: [] as string[],
-    duration: '2 Years',
-    useRestriction: 'Only for the stated purpose',
-    governingLaw: 'Arab Republic of Egypt',
-    disputeResolution: 'Egyptian Courts',
-    termination: 'By mutual written agreement',
-    remedies: [] as string[]
+    partyA: { ...defaultParties.partyA, date: new Date().toLocaleDateString() },
+    partyB: { ...defaultParties.partyB, date: new Date().toLocaleDateString() },
+    purpose: 'Software Development Outsourcing',
+    assets: 'Full Tech Stack (Source code, schemas, and logic)',
+    duration: '3 Years',
+    disputeResolution: 'Cairo Economic Court',
+    penaltyAmount: '50,000 EGP',
+    includePenalty: true,
+    nonSolicitation: true,
+    nonSolicitationPeriod: '12 Months',
+    dataPrivacyLaw151: true,
+    ipOwnershipProtection: true,
+    languagePriority: 'Arabic',
+    noLicenseClause: true,
+    subcontractorLiability: true,
   });
 
-  // --- Logic: Dispute Resolution Rule ---
   useEffect(() => {
-    if (formData.partyA.type === 'Individual' || formData.partyB.type === 'Individual') {
-      setFormData(prev => ({ ...prev, disputeResolution: 'Egyptian Courts' }));
+        if (!submissionId) {
+      toast.error('No project context. Open from Ongoing Projects or Client Requests.');
+      navigate(isCompany ? '/ClientRequests' : '/OngoingProjects');
+      return;
     }
-  }, [formData.partyA.type, formData.partyB.type]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [partiesRes, draftRes] = await Promise.all([
+          getNdaParties(submissionId),
+          getNdaDraft(submissionId).catch(() => null),
+        ]);
+        if (cancelled) return;
+        setParties(partiesRes);
+        setDraft(draftRes || null);
+        setFormData((prev) => ({
+          ...prev,
+          partyA: {
+            name: partiesRes.partyA.name,
+            signatory: partiesRes.partyA.signatory,
+            title: partiesRes.partyA.title,
+            email: partiesRes.partyA.email,
+            details: partiesRes.partyA.details,
+            date: new Date().toLocaleDateString(),
+          },
+          partyB: {
+            name: partiesRes.partyB.name,
+            signatory: partiesRes.partyB.signatory,
+            title: partiesRes.partyB.title,
+            email: partiesRes.partyB.email,
+            details: partiesRes.partyB.details,
+            date: new Date().toLocaleDateString(),
+          },
+        }));
+      } catch (e: any) {
+        if (!cancelled) {
+          toast.error(e?.response?.data?.error || e?.message || 'Failed to load NDA data.');
+          navigate('/OngoingProjects');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [submissionId, navigate]);
 
-  const handleCheckbox = (listName: 'infoTypes' | 'recipients' | 'remedies', value: string) => {
-    setFormData(prev => {
-      const list = prev[listName] as string[];
-      return {
-        ...prev,
-        [listName]: list.includes(value) ? list.filter(i => i !== value) : [...list, value]
-      };
-    });
+  const generateProvisions = () => {
+    const p: string[] = [];
+    if (formData.ipOwnershipProtection) p.push('IP Ownership: Nothing in this agreement shall be construed as transferring ownership of developed software or source code; all IP remains with the Discloser.');
+    if (formData.includePenalty) p.push(`Liquidated Damages: A breach of confidentiality shall incur a penalty of ${formData.penaltyAmount} as pre-agreed damages.`);
+    if (formData.nonSolicitation) p.push(`Non-Solicitation: Parties shall not solicit employees for ${formData.nonSolicitationPeriod} post-termination.`);
+    if (formData.dataPrivacyLaw151) p.push('Data Privacy: Receiver must comply with Egypt Law No. 151 of 2020 for all personal data processed.');
+    if (formData.noLicenseClause) p.push('No License: Disclosure does not grant any patent, copyright, or IP license to the Receiver.');
+    if (formData.languagePriority === 'Arabic') p.push('Language: This agreement is bilingual; the Arabic version takes precedence before Egyptian Courts.');
+    if (formData.subcontractorLiability) p.push('Liability: Receiver remains fully liable for any breach by its Permitted Receivers.');
+    return p.length ? p.join(' ') : 'No additional provisions.';
   };
 
-  // --- Signature Logic ---
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDrawing(true);
-    draw(e);
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-    const canvas = canvasRef.current;
-    if (canvas) canvas.getContext('2d')?.beginPath();
-  };
-
-  const draw = (e: any) => {
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => { setIsDrawing(true); draw(e); };
+  const stopDrawing = () => { setIsDrawing(false); canvasRef.current?.getContext('2d')?.beginPath(); };
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
-
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#1e293b';
-
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    const ev = 'touches' in e ? e.touches[0] : e;
+    const x = ('clientX' in ev ? ev.clientX : 0) - rect.left;
+    const y = ('clientY' in ev ? ev.clientY : 0) - rect.top;
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+    ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
   };
 
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+  const getCanvasBase64 = (): string => {
+    const c = canvasRef.current;
+    if (!c) return '';
+    return c.toDataURL('image/png').replace(/^data:image\/\w+;base64,/, '');
   };
+
+  const handleConfirmSign = async () => {
+    if (!submissionId || !parties) return;
+    const base64 = getCanvasBase64();
+    if (!base64.trim()) {
+      toast.error('Please draw your signature first.');
+      return;
+    }
+    const provisions = generateProvisions();
+    const payload = {
+      partyA: formData.partyA,
+      partyB: formData.partyB,
+      purpose: formData.purpose,
+      assets: formData.assets,
+      duration: formData.duration,
+      disputeResolution: formData.disputeResolution,
+      provisions,
+    };
+    const contractPayloadJson = JSON.stringify(payload);
+    setSigning(true);
+    try {
+      if (parties.actor === 'client') {
+        await signClient({ submissionId, signatureBase64: base64, contractPayloadJson });
+        setDraft((d) => (d ? { ...d, clientSigned: true } : { submissionId, clientSigned: true, companySigned: false }));
+        setIsSignModalOpen(false);
+        toast.success('Your signature has been recorded. Waiting for the company to sign.');
+      } else {
+        await signCompany({ submissionId, signatureBase64: base64, contractPayloadJson });
+        setDraft((d) => (d ? { ...d, companySigned: true } : { submissionId, clientSigned: true, companySigned: true }));
+        setIsSignModalOpen(false);
+        toast.success('NDA fully executed. Contract saved.');
+        setTimeout(() => navigate(parties.actor === 'company' ? '/ClientRequests' : '/OngoingProjects'), 1500);
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || e?.message || 'Signing failed.');
+    } finally {
+      setSigning(false);
+    }
+  };
+
+  const clientSigned = draft?.clientSigned ?? false;
+  const companySigned = draft?.companySigned ?? false;
+  const isClient = parties?.actor === 'client';
+  const showSignBtn = isClient ? !clientSigned : clientSigned && !companySigned;
+  const bindName = isClient ? formData.partyB.name : formData.partyA.name;
+
+  if (loading) {
+    return (
+      <div className="nda-signing-page">
+        <div className="d-flex justify-content-center align-items-center min-vh-100"><div className="spinner-border text-primary" /></div>
+      </div>
+    );
+  }
 
   return (
     <div className="nda-signing-page">
-      {/* LEFT: exact oneNDA v2.1 Preview */}
       <div className="nda-preview-section">
         <div className="document-paper">
           <div className="one-nda-header">
-            <div className="one-nda-branding">
-              <div className="branding-dot"></div>
-              <span>one<strong>NDA</strong></span>
-            </div>
+            <div className="one-nda-branding"><div className="branding-dot" /><span>one<strong>NDA</strong></span></div>
             <div className="v-tag">v2.1</div>
           </div>
-
           <div className="doc-body">
             <h2 className="main-title">Mutual Non-Disclosure Agreement</h2>
-            
             <div className="doc-grid-section">
-              <div className="grid-label">PARTIES</div>
-              <div className="party-box-container">
-                <div className="party-box">
-                  <strong>Party 1: {formData.partyA.name}</strong><br/>
-                  <small>{formData.partyA.type} | {formData.partyA.email}</small>
-                </div>
-                <div className="party-box">
-                  <strong>Party 2: {formData.partyB.name || '__________'}</strong><br/>
-                  <small>{formData.partyB.type} | {formData.partyB.email || 'pending email'}</small>
-                </div>
-              </div>
+              <div className="grid-label">PARTIES AND EXECUTION</div>
+              <table className="execution-table">
+                <thead><tr><th>Party 1 (Company)</th><th>Party 2 (Client)</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div className="p-row"><strong>Entity details:</strong> {formData.partyA.details || '—'}</div>
+                      <div className="p-row signature-row"><strong>Signature:</strong> {companySigned ? <span className="sig-placeholder">[Digitally Signed]</span> : '_________________'}</div>
+                      <div className="p-row"><strong>Name:</strong> {formData.partyA.signatory}</div>
+                      <div className="p-row"><strong>Title:</strong> {formData.partyA.title}</div>
+                      <div className="p-row"><strong>Email:</strong> {formData.partyA.email}</div>
+                      <div className="p-row"><strong>Date:</strong> {formData.partyA.date}</div>
+                    </td>
+                    <td>
+                      <div className="p-row"><strong>Entity details:</strong> {formData.partyB.details || '—'}</div>
+                      <div className="p-row signature-row"><strong>Signature:</strong> {clientSigned ? <span className="sig-placeholder">[Digitally Signed]</span> : '_________________'}</div>
+                      <div className="p-row"><strong>Name:</strong> {formData.partyB.signatory}</div>
+                      <div className="p-row"><strong>Title:</strong> {formData.partyB.title}</div>
+                      <div className="p-row"><strong>Email:</strong> {formData.partyB.email}</div>
+                      <div className="p-row"><strong>Date:</strong> {formData.partyB.date}</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-
             <div className="doc-grid-section">
               <div className="grid-label">VARIABLES</div>
-              <div className="variable-row"><span>Purpose:</span> <strong>{formData.purpose || 'Software Development Project'}</strong></div>
-              <div className="variable-row"><span>Confidentiality period:</span> <strong>{formData.duration}</strong></div>
-              <div className="variable-row"><span>Governing law:</span> <strong>{formData.governingLaw}</strong></div>
-              <div className="variable-row"><span>Dispute Resolution:</span> <strong>{formData.disputeResolution}</strong></div>
+              <table className="variables-table">
+                <tbody>
+                  <tr><td className="var-key">Purpose:</td><td>{formData.purpose} ({formData.assets})</td></tr>
+                  <tr><td className="var-key">Confidentiality period:</td><td>{formData.duration}</td></tr>
+                  <tr><td className="var-key">Governing law:</td><td>Arab Republic of Egypt</td></tr>
+                  <tr><td className="var-key">Dispute Resolution Method:</td><td>{formData.disputeResolution}</td></tr>
+                  <tr><td className="var-key">Special Provisions:</td><td className="special-txt">{generateProvisions()}</td></tr>
+                </tbody>
+              </table>
             </div>
-
             <div className="doc-grid-section">
               <div className="grid-label">TERMS</div>
-              <p className="terms-text"><strong>1. What is Confidential Information?</strong> Information disclosed by the Discloser to the Receiver in connection with the Purpose.</p>
-              <p className="terms-text"><strong>2. Sharing:</strong> The Receiver may share with Permitted Receivers who need to know for the Purpose.</p>
-              <p className="terms-text"><strong>3. Obligations:</strong> Receiver must keep info secure and only use it for the Purpose.</p>
-              {formData.infoTypes.includes('Client / User Data') && (
-                 <p className="highlight-clause"><strong>Special Provision:</strong> Receiver must comply with Law No. 151 of 2020 (Egypt Data Protection).</p>
-              )}
+              <div className="terms-scroll-preview">
+                <p><strong>1. What is Confidential Information?</strong> Information disclosed by the Discloser to the Receiver in connection with the Purpose.</p>
+                <p><strong>2. Who can I share it with?</strong> Permitted Receivers on a &quot;need to know&quot; basis who agree to confidentiality.</p>
+                <p><strong>3. What are my obligations?</strong> Use only for Purpose, keep secure, and destroy/erase within 30 days of request.</p>
+                <p><strong>4. Duration:</strong> Obligations last until the end of the Confidentiality Period.</p>
+                <p><strong>5. Governing Law:</strong> This agreement is subject to the Governing Law and resolved by the Dispute Resolution Method.</p>
+              </div>
             </div>
           </div>
-          <div className="watermark">oneNDA v2.1 Preview</div>
+          <div className="watermark">oneNDA v2.1 Egypt</div>
         </div>
       </div>
 
-      {/* RIGHT: 12-Step Questionnaire */}
       <div className="nda-form-section">
-        <div className="step-indicator">
-          <div className="step-count">STEP {step} <span>of 12</span></div>
-          <div className="progress-track"><div className="fill" style={{width: `${(step/12)*100}%`}}></div></div>
+        <div className="form-header">
+          <h3>Contract Setup Guide</h3>
+          <p>Configure your software NDA for Egyptian Law. Party details are retrieved from your profile.</p>
+        </div>
+        <div className="scroll-questions">
+          <div className="q-card highlight-card">
+            <div className="q-heading"><Code size={16} /> 1. Intellectual Property (IP) Ownership</div>
+            <p className="q-desc"><strong>Crucial for Software:</strong> This clause ensures sharing code does not transfer ownership.</p>
+            <div className="toggle-row">
+              <span>Protect Code Ownership?</span>
+              <input type="checkbox" checked={formData.ipOwnershipProtection} onChange={(e) => setFormData({ ...formData, ipOwnershipProtection: e.target.checked })} />
+            </div>
+          </div>
+          <div className="q-card">
+            <div className="q-heading"><Coins size={16} /> 2. Breach Penalty (Liquidated Damages)</div>
+            <p className="q-desc">A pre-set penalty allows easier recovery in court.</p>
+            <div className="toggle-row">
+              <span>Apply financial penalty for breach?</span>
+              <input type="checkbox" checked={formData.includePenalty} onChange={(e) => setFormData({ ...formData, includePenalty: e.target.checked })} />
+            </div>
+            {formData.includePenalty && (
+              <select className="legal-select" value={formData.penaltyAmount} onChange={(e) => setFormData({ ...formData, penaltyAmount: e.target.value })}>
+                <option>25,000 EGP</option><option>50,000 EGP</option><option>100,000 EGP</option>
+              </select>
+            )}
+          </div>
+          <div className="q-card">
+            <div className="q-heading"><Lock size={16} /> 3. Confidentiality Period</div>
+            <div className="radio-grid">
+              {['1 Year', '2 Years', '3 Years', '5 Years'].map((yr) => (
+                <button key={yr} type="button" className={`opt-pill ${formData.duration === yr ? 'active' : ''}`} onClick={() => setFormData({ ...formData, duration: yr })}>{yr}</button>
+              ))}
+            </div>
+          </div>
+          <div className="q-card">
+            <div className="q-heading"><Scale size={16} /> 4. Dispute Resolution</div>
+            <select className="legal-select" value={formData.disputeResolution} onChange={(e) => setFormData({ ...formData, disputeResolution: e.target.value })}>
+              <option>Cairo Economic Court</option>
+              <option>Arbitration (CRCICA)</option>
+              <option>Giza Courts</option>
+            </select>
+          </div>
         </div>
 
-        <div className="questionnaire-body">
-          {step === 1 && (
-            <div className="q-wrap">
-              <label className="q-label">🧩 STEP 1 — Agreement Type</label>
-              <p className="q-text">Q1. What type of NDA do you want to create?</p>
-              <div className="radio-card-list">
-                <div className={`r-card ${formData.agreementType === 'Mutual' ? 'active' : ''}`} onClick={() => setFormData({...formData, agreementType: 'Mutual'})}>
-                  <div className="r-circle"></div>
-                  <div><strong>Mutual NDA</strong><small>Both parties disclose information</small></div>
-                </div>
-                <div className={`r-card ${formData.agreementType === 'One-Way' ? 'active' : ''}`} onClick={() => setFormData({...formData, agreementType: 'One-Way'})}>
-                  <div className="r-circle"></div>
-                  <div><strong>One-Way NDA</strong><small>Only one party discloses information</small></div>
-                </div>
-              </div>
-            </div>
-          )}
+        {clientSigned && !companySigned && isClient && (
+          <div className="alert alert-info mb-3">Waiting for the company to sign. You will be notified when the NDA is fully executed.</div>
+        )}
+        {companySigned && (
+          <div className="alert alert-success mb-3">This NDA has been fully executed and saved.</div>
+        )}
 
-          {step === 2 && (
-            <div className="q-wrap">
-              <label className="q-label">👥 STEP 2 — Party Identification</label>
-              <p className="q-text">Identify the second party (Party B):</p>
-              <div className="btn-toggle-group mb-3">
-                <button className={formData.partyB.type === 'Individual' ? 'active' : ''} onClick={() => setFormData({...formData, partyB: {...formData.partyB, type: 'Individual'}})}>Individual</button>
-                <button className={formData.partyB.type === 'Company' ? 'active' : ''} onClick={() => setFormData({...formData, partyB: {...formData.partyB, type: 'Company'}})}>Company</button>
-              </div>
-              <input type="text" className="legal-input" placeholder="Legal Name of Party B" value={formData.partyB.name} onChange={(e) => setFormData({...formData, partyB: {...formData.partyB, name: e.target.value}})} />
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="q-wrap">
-              <label className="q-label">🎯 STEP 3 — Purpose of Disclosure</label>
-              <p className="q-text">Q6. What is the purpose of sharing confidential information?</p>
-              <div className="grid-options">
-                {['Software Development Project', 'Web / Mobile Application Development', 'SaaS Platform Evaluation', 'System Integration', 'Source Code Review', 'Technical Consultation'].map(p => (
-                  <button key={p} className={`opt-pill ${formData.purpose === p ? 'active' : ''}`} onClick={() => setFormData({...formData, purpose: p})}>{p}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="q-wrap">
-              <label className="q-label">🔐 STEP 4 — Confidential Information Type</label>
-              <p className="q-text">Q7. What information will be considered confidential?</p>
-              <div className="checkbox-list">
-                {['Source Code', 'Algorithms & Logic', 'Software Architecture', 'Database Structure', 'API Keys & Credentials', 'UI/UX Designs', 'Technical Documentation', 'Client / User Data'].map(t => (
-                  <label key={t} className="check-item">
-                    <input type="checkbox" checked={formData.infoTypes.includes(t)} onChange={() => handleCheckbox('infoTypes', t)} />
-                    <span>{t}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="q-wrap">
-              <label className="q-label">👥 STEP 5 — Allowed Recipients</label>
-              <p className="q-text">Q8. Who is allowed to access the confidential information?</p>
-              <div className="checkbox-list">
-                {['Employees', 'Contractors', 'Technical Consultants', 'Legal Advisors', 'Affiliates'].map(r => (
-                  <label key={r} className="check-item">
-                    <input type="checkbox" checked={formData.recipients.includes(r)} onChange={() => handleCheckbox('recipients', r)} />
-                    <span>{r}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 6 && (
-            <div className="q-wrap">
-              <label className="q-label">⏳ STEP 6 — Confidentiality Duration</label>
-              <p className="q-text">Q9. How long should confidentiality obligations last?</p>
-              <div className="radio-pill-list">
-                {['1 Year', '2 Years', '3 Years', '5 Years'].map(d => (
-                  <button key={d} className={`pill ${formData.duration === d ? 'active' : ''}`} onClick={() => setFormData({...formData, duration: d})}>{d}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 7 && (
-            <div className="q-wrap">
-              <label className="q-label">🔄 STEP 7 — Use & Restrictions</label>
-              <p className="q-text">Q10. Confidential information may be used:</p>
-              <button className={`opt-pill w-100 mb-2 ${formData.useRestriction === 'Only for the stated purpose' ? 'active' : ''}`} onClick={() => setFormData({...formData, useRestriction: 'Only for the stated purpose'})}>Only for the stated purpose</button>
-              <button className={`opt-pill w-100 ${formData.useRestriction === 'For stated purpose and internal evaluation' ? 'active' : ''}`} onClick={() => setFormData({...formData, useRestriction: 'For stated purpose and internal evaluation'})}>Stated purpose and internal evaluation only</button>
-            </div>
-          )}
-
-          {step === 8 && (
-            <div className="q-wrap">
-              <label className="q-label">🚫 STEP 8 — Confidentiality Exclusions</label>
-              <p className="q-text">Q11. Standard exclusions (Auto-selected):</p>
-              <div className="readonly-list">
-                <div className="r-item">☑ Publicly available information</div>
-                <div className="r-item">☑ Information independently developed</div>
-                <div className="r-item">☑ Information obtained legally from third parties</div>
-                <div className="r-item">☑ Information disclosed by law or court order</div>
-              </div>
-            </div>
-          )}
-
-          {step === 9 && (
-            <div className="q-wrap">
-              <label className="q-label">🏛 STEP 9 — Governing Law</label>
-              <p className="q-text">Q12. Governing law of this agreement:</p>
-              <div className="locked-field">
-                <span className="flag">🇪🇬</span> Arab Republic of Egypt <small>(Locked)</small>
-              </div>
-            </div>
-          )}
-
-          {step === 10 && (
-            <div className="q-wrap">
-              <label className="q-label">⚖️ STEP 10 — Dispute Resolution</label>
-              <p className="q-text">Q13. How should disputes be resolved?</p>
-              <div className="radio-card-list">
-                <div className={`r-card ${formData.disputeResolution === 'Egyptian Courts' ? 'active' : ''}`} onClick={() => setFormData({...formData, disputeResolution: 'Egyptian Courts'})}>
-                  <div className="r-circle"></div>
-                  <div><strong>Egyptian Courts</strong><small>Standard litigation process</small></div>
-                </div>
-                {formData.partyA.type === 'Company' && formData.partyB.type === 'Company' && (
-                  <div className={`r-card ${formData.disputeResolution === 'Arbitration' ? 'active' : ''}`} onClick={() => setFormData({...formData, disputeResolution: 'Arbitration'})}>
-                    <div className="r-circle"></div>
-                    <div><strong>Arbitration (CRCICA)</strong><small>Cairo Regional Centre for International Commercial Arbitration</small></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {step === 11 && (
-            <div className="q-wrap">
-              <label className="q-label">🧾 STEP 11 — Termination</label>
-              <p className="q-text">Q14. When can this agreement be terminated?</p>
-              <div className="radio-pill-list vertical">
-                {['By mutual written agreement', 'With 30 days prior notice', 'Automatically at project completion'].map(t => (
-                  <button key={t} className={`pill ${formData.termination === t ? 'active' : ''}`} onClick={() => setFormData({...formData, termination: t})}>{t}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 12 && (
-            <div className="q-wrap">
-              <label className="q-label">🚨 STEP 12 — Breach & Remedies</label>
-              <p className="q-text">Q15. In case of breach, you may seek:</p>
-              <div className="checkbox-list">
-                {['Injunctive relief', 'Financial compensation', 'Both'].map(rem => (
-                  <label key={rem} className="check-item">
-                    <input type="checkbox" checked={formData.remedies.includes(rem)} onChange={() => handleCheckbox('remedies', rem)} />
-                    <span>{rem}</span>
-                  </label>
-                ))}
-              </div>
-              <button className="signing-trigger" onClick={() => setIsSignModalOpen(true)}>
-                <PenTool size={18} /> Sign & Send Agreement
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="step-nav">
-          <button className="nav-btn prev" disabled={step === 1} onClick={() => setStep(step - 1)}><ChevronLeft size={18} /> Previous</button>
-          {step < 12 && <button className="nav-btn next" onClick={() => setStep(step + 1)}>Next <ChevronRight size={18} /></button>}
-        </div>
+        {showSignBtn && (
+          <button type="button" className="signing-btn" onClick={() => setIsSignModalOpen(true)} disabled={signing}>
+            <PenTool size={18} /> {isClient ? 'Sign & Finalize (Client)' : 'Sign as Company'}
+          </button>
+        )}
       </div>
 
-      {/* DRAWING SIGNATURE MODAL */}
       {isSignModalOpen && (
         <div className="modal-backdrop">
           <div className="signature-modal">
-            <div className="modal-head">
-              <h3>Draw Your Signature</h3>
-              <button className="close" onClick={() => setIsSignModalOpen(false)}><X size={20}/></button>
+            <div className="modal-head"><h3>Apply Digital Signature</h3><button type="button" className="close" onClick={() => setIsSignModalOpen(false)}><X size={20} /></button></div>
+            <p className="modal-sub">By signing, you confirm that you are authorized to bind <strong>{bindName || (isClient ? 'Client' : 'Company')}</strong>.</p>
+            <div className="canvas-wrapper">
+              <canvas ref={canvasRef} width={520} height={200} onMouseDown={startDrawing} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onMouseMove={draw} />
+              <button type="button" className="canvas-clear" onClick={() => canvasRef.current?.getContext('2d')?.clearRect(0, 0, 520, 200)}><Eraser size={14} /> Clear</button>
             </div>
-            <p className="modal-sub">By signing, you agree to the terms of this oneNDA as <strong>{formData.partyA.signatory}</strong>.</p>
-            
-            <div className="canvas-container">
-              <canvas 
-                ref={canvasRef} 
-                width={500} 
-                height={220}
-                onMouseDown={startDrawing}
-                onMouseUp={stopDrawing}
-                onMouseOut={stopDrawing}
-                onMouseMove={draw}
-                onTouchStart={startDrawing}
-                onTouchEnd={stopDrawing}
-                onTouchMove={draw}
-              />
-              <button className="canvas-clear" onClick={clearSignature}><Eraser size={14} /> Clear</button>
-            </div>
-
             <div className="modal-foot">
-              <button className="cancel" onClick={() => setIsSignModalOpen(false)}>Cancel</button>
-              <button className="confirm" onClick={() => toast.success("NDA Signed and Sent!")}>Confirm & Send</button>
+              <button type="button" className="cancel" onClick={() => setIsSignModalOpen(false)}>Cancel</button>
+              <button type="button" className="confirm" onClick={handleConfirmSign} disabled={signing}>
+                {signing ? 'Signing…' : 'Confirm & Sign'}
+              </button>
             </div>
           </div>
         </div>

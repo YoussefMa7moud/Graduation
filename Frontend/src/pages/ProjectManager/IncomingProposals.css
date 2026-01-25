@@ -1,0 +1,134 @@
+.proposals-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.proposals-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 20px;
+}
+
+.page-title {
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 2rem;
+}
+
+.page-subtitle {
+    color: #64748b;
+}
+
+/* Row-style Card */
+.proposal-row-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.proposal-row-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+.prop-main-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.prop-icon {
+    width: 48px;
+    height: 48px;
+    background: #f1f5f9;
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 1.4rem;
+}
+
+.prop-main-info h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.client-tagline {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.prop-details {
+    display: flex;
+    gap: 15px;
+    margin: 0 30px;
+}
+
+.detail-pill {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.prop-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-approve {
+    background: #0f172a;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-approve:hover { background: #1e293b; }
+
+.btn-reject {
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-reject:hover { background: #fef2f2; }
+
+.empty-state {
+    text-align: center;
+    padding: 100px 0;
+    color: #94a3b8;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 10px;
+}

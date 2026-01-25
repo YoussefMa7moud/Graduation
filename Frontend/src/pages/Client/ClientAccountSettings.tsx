@@ -1,19 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import api from '../../services/api';
 import './ClientAccountSettings.css';
 import { useAuth } from '../../contexts/AuthContext';
-
+import { saveUser } from '../../utils/auth.utils';
+import { normalizeRole } from '../../utils/role.utils';
 
 const ClientAccountSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('editProfile');
- 
-const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
- 
 
   const tabs = [
     { key: 'editProfile', label: 'Edit Profile', icon: 'bi-person' },
@@ -27,15 +25,26 @@ const { user } = useAuth();
     const data = Object.fromEntries(formData.entries());
     
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await axios.put('/api/users/profile', data, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Update local storage with new info
-      localStorage.setItem('auth_user', JSON.stringify(response.data));
+      const response = await api.put('/api/users/profile', data);
+      
+      // Map backend response to frontend User format
+      // Backend returns User entity with 'id', frontend expects 'userId'
+      const updatedUser = {
+        userId: response.data.id || response.data.userId || user?.userId || 0,
+        email: response.data.email || data.email as string,
+        role: user?.role || normalizeRole(response.data.role),
+        firstName: response.data.firstName || data.firstName as string,
+        lastName: response.data.lastName || data.lastName as string,
+        companyName: user?.companyName,
+      };
+      
+      // Update localStorage and refresh context
+      saveUser(updatedUser);
+      refreshUser();
+      
       toast.success("Profile updated successfully!");
-    } catch (err) {
-      toast.error("Failed to update profile.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.response?.data || "Failed to update profile.");
     }
   };
 
@@ -49,14 +58,11 @@ const { user } = useAuth();
     }
 
     try {
-      const token = localStorage.getItem('auth_token');
-      await axios.put('/api/users/password', { currentPassword, newPassword }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put('/api/users/password', { currentPassword, newPassword });
       toast.success("Password updated successfully!");
       e.currentTarget.reset();
     } catch (err: any) {
-      toast.error(err.response?.data || "Security update failed.");
+      toast.error(err.response?.data?.message || err.response?.data || "Security update failed.");
     }
   };
 
@@ -112,9 +118,15 @@ const { user } = useAuth();
     <div className="settings-container">
       <aside className="settings-sidebar">
         <div className="profile-card">
-          <div className="avatar">{user?.firstName?.substring(0,1)}{user?.lastName?.substring(0,1)}</div>
+          <div className="avatar">
+            {user?.firstName?.charAt(0) || ''}{user?.lastName?.charAt(0) || '' || user?.email?.charAt(0) || 'U'}
+          </div>
           <div className="profile-info">
-            <div className="name">{user?.firstName} {user?.lastName}</div>
+            <div className="name">
+              {user?.firstName && user?.lastName 
+                ? `${user.firstName} ${user.lastName}`.trim()
+                : user?.firstName || user?.lastName || user?.email || 'User'}
+            </div>
             <div className="email">{user?.email}</div>
           </div>
         </div>

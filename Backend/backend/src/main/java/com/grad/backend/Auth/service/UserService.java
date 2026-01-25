@@ -6,23 +6,42 @@ import org.springframework.stereotype.Service;
 import com.grad.backend.Auth.dto.PasswordUpdateRequest;
 import com.grad.backend.Auth.dto.ProfileUpdateRequest;
 import com.grad.backend.Auth.entity.User;
+import com.grad.backend.Auth.entity.ClientPerson;
+import com.grad.backend.Auth.enums.UserRole;
 import com.grad.backend.Auth.repository.UserRepository;
+import com.grad.backend.Auth.repository.ClientPersonRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final ClientPersonRepository clientPersonRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public User updateProfile(User user, ProfileUpdateRequest request) {
+        // Update User entity
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
-        return userRepository.save(user);
+        user = userRepository.save(user);
+
+        // For CLIENT_PERSON, also update ClientPerson entity
+        if (user.getRole() == UserRole.CLIENT_PERSON) {
+            Optional<ClientPerson> clientPersonOpt = clientPersonRepository.findById(user.getId());
+            if (clientPersonOpt.isPresent()) {
+                ClientPerson clientPerson = clientPersonOpt.get();
+                clientPerson.setFirstName(request.getFirstName());
+                clientPerson.setLastName(request.getLastName());
+                clientPersonRepository.save(clientPerson);
+            }
+        }
+
+        return user;
     }
 
     @Transactional

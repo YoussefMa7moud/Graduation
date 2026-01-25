@@ -6,7 +6,7 @@
  */
 
 
-import React, { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
 import { getUser, isAuthenticated, clearAuth, saveUser } from '../utils/auth.utils';
 import { login as loginService, register as registerService, logout as logoutService } from '../services/auth.service';
 import type { LoginRequest, RegisterRequest } from '../services/auth.service';
@@ -39,6 +39,7 @@ interface AuthContextType {
   login: (credentials: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => void;
 }
 
 /**
@@ -135,6 +136,15 @@ const login = async (credentials: LoginRequest): Promise<void> => {
     }
   };
 
+  /**
+   * Refresh user data from localStorage
+   * Useful after profile updates
+   */
+  const refreshUser = (): void => {
+    const updatedUser = getUser();
+    setUser(updatedUser);
+  };
+
   const value = useMemo(() => ({
     user,
     isAuthenticated: user !== null && user.role !== 'unknown' && isAuthenticated(),
@@ -142,6 +152,7 @@ const login = async (credentials: LoginRequest): Promise<void> => {
     login,
     register,
     logout,
+    refreshUser,
   }), [user, isLoading]);
 
   return (

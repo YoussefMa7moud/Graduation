@@ -31,27 +31,22 @@ def analyze_contract():
         # Format for JSON
         response = {
             "total_clauses": results['total_clauses'],
+            "compliance_score": results['compliance_score'],
+            "message": "Analysis success",
             "violations": [
                 {
                     "clause_id": v.clause.clause_id,
                     "clause_text": v.clause.clause_text,
-                    "violated_law": {
-                        "number": v.violated_law.law_number,
-                        "source_file": v.violated_law.source_file,
-                        "page": v.violated_law.page
-                    },
-                    "confidence": v.confidence,
                     "reason": v.reason,
-                    "suggestion": v.suggestion
+                    "suggestion": v.suggestion,
+                    "confidence": float(v.confidence)
                 } for v in results['violations']
-            ],
-            "compliance_score": results['compliance_score'],
-            "message": "Analysis complete" if results['violations'] else "No violations detected"
+            ]
         }
-
         return jsonify(response)
 
     except Exception as e:
+        print(f"Flask Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

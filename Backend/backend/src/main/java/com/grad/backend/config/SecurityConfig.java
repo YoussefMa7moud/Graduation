@@ -43,6 +43,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/submissions/my-submissions").authenticated()
                 .requestMatchers("/api/submissions/company-queue").authenticated()
                 .requestMatchers("/api/contracts/**").authenticated()
+                .requestMatchers("/api/contracts/main/parties").authenticated()
+                .requestMatchers("/api/contracts/main/draft").authenticated()
+                .requestMatchers("/api/contracts/main/validate/ai/**").authenticated()
+                .requestMatchers("/api/contracts/main/validate/ocl").authenticated()
+                .requestMatchers("/api/contracts/main/send-to-client").authenticated()
+                .requestMatchers("/api/contracts/main/sign/client").authenticated()
+                .requestMatchers("/api/contracts/main/sign/company").authenticated()
+                .requestMatchers("/api/contracts/main/chat/send").authenticated()
+                .requestMatchers("/api/contracts/main/chat/messages").authenticated()
+
 
                 .anyRequest().authenticated() // All other requests require authentication
                 

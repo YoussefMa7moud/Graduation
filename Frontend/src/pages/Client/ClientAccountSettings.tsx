@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import './ClientAccountSettings.css';
+import { useAuth } from '../../contexts/AuthContext';
+
 
 const ClientAccountSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('editProfile');
-  const [user, setUser] = useState<any>(null);
+ 
+const { user } = useAuth();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) setUser(JSON.parse(storedUser));
-  }, []);
+ 
 
   const tabs = [
     { key: 'editProfile', label: 'Edit Profile', icon: 'bi-person' },

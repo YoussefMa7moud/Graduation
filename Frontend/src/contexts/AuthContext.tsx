@@ -17,13 +17,14 @@ import { normalizeRole } from '../utils/role.utils';
  * User information type. The role is a normalized, type-safe FrontendRole.
  */
 export interface User {
-  companyName: string;
   userId: number;
   email: string;
   role: FrontendRole;
   firstName?: string;
   lastName?: string;
+  companyName?: string;
 }
+
 
 /**
  * Authentication context type
@@ -66,34 +67,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Login function
    * Calls the login service, normalizes the role, and updates context state.
    */
-  const login = async (credentials: LoginRequest): Promise<void> => {
-    try {
-      setIsLoading(true);
-      const response = await loginService(credentials);
-      
-      // Normalize the role from the backend
-      const normalizedRole = normalizeRole(response.role);
+const login = async (credentials: LoginRequest): Promise<void> => {
+  try {
+    setIsLoading(true);
+    const response = await loginService(credentials);
 
-      const userToStore: User = {
-        userId: response.userId,
-        email: response.email,
-        role: normalizedRole,
-      };
+    const normalizedRole = normalizeRole(response.role);
 
-      // Save the normalized user object and update state
-      saveUser(userToStore);
-      setUser(userToStore);
+    // Ensure firstName and lastName are extracted from the login response
+    // Handle empty names by using email prefix as fallback
+    const firstName = response.firstName || response.email?.split('@')[0] || 'User';
+    const lastName = response.lastName || '';
+    
+    const userToStore: User = {
+      userId: response.userId,
+      email: response.email,
+      role: normalizedRole,
+      firstName: firstName,
+      lastName: lastName,
+    };
 
-    } catch (error: any) {
-      // On error, ensure user state is cleared
-      clearAuth();
-      setUser(null);
-      // Re-throw error so components can handle it
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    console.log('Storing user data:', userToStore);
+    saveUser(userToStore);
+    setUser(userToStore);
+
+  } catch (error) {
+    clearAuth();
+    setUser(null);
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   /**
    * Register function

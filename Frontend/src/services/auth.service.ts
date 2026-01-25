@@ -10,6 +10,7 @@
 import api from './api';
 import { API_ENDPOINTS } from '../config/api.config';
 import { saveToken, saveUser, clearAuth } from '../utils/auth.utils';
+import { normalizeRole } from '../utils/role.utils';
 
 /**
  * Registration request payload
@@ -55,7 +56,10 @@ export interface LoginResponse {
   userId: number;
   email: string;
   role: string;
+  firstName?: string;
+  lastName?: string;
 }
+
 
 /**
  * API error response
@@ -122,16 +126,28 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
     );
     
     const loginData = response.data;
-    
+
     // Save token and user data to localStorage
     saveToken(loginData.token);
-    saveUser({
+    
+    // Ensure firstName and lastName are returned from the response
+    const result: LoginResponse = {
+      token: loginData.token,
+      type: loginData.type,
       userId: loginData.userId,
       email: loginData.email,
       role: loginData.role,
-    });
+      firstName: loginData.firstName,
+      lastName: loginData.lastName
+    };
     
-    return loginData;
+    console.log('=== LOGIN DEBUG ===');
+    console.log('Raw response data:', response.data);
+    console.log('Processed result:', result);
+    console.log('firstName:', loginData.firstName);
+    console.log('lastName:', loginData.lastName);
+    
+    return result;
   } catch (error: any) {
     // Handle CORS errors specifically
     if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {

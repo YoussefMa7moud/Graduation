@@ -14,6 +14,7 @@ import CompanyHome from "./pages/Company/CompanyHome";
 import DashboardLayout from "./components/Company/DashboardLayout";
 import PolicyConverter from "./pages/Company/PolicyConverter";
 import MyPolicyRepository from "./pages/Company/MyPolicyRepository";
+import CompanyWorkspace from "./pages/Company/CompanyWorkspace";
 import ClientRequests from "./pages/Company/ClientRequests";
 import CompanySettings from "./pages/Company/CompanySettings";
 import ContractRepository from "./pages/Company/ContractRepository";
@@ -182,6 +183,30 @@ const AppRoutes: React.FC = () => {
         }
       />
 
+
+      
+   <Route 
+        path="CompanyWorkspace"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.COMPANY}>
+            <DashboardLayout>
+              <CompanyWorkspace />
+            </DashboardLayout>
+          </RoleBasedRoute>
+        }
+      />
+
+
+
+
+
+
+
+
+
+
+
+
       <Route
         path="/SignNDA"
         element={
@@ -192,6 +217,9 @@ const AppRoutes: React.FC = () => {
           </RoleBasedRoute>
         }
       />
+
+
+      
 
 
 

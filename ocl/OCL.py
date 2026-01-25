@@ -39,6 +39,8 @@ TEMPLATE = """from besser.BUML.metamodel.structural import (
 from besser.BUML.metamodel.object import ObjectModel
 from bocl.OCLWrapper import OCLWrapper
 from datetime import date
+import re
+
 
 # --- Policy Info ---
 # Policy ID: {policy_id}
@@ -54,9 +56,10 @@ from datetime import date
 POLICY_CONSTRAINT = Constraint(
     name="policyConstraint",
     context={context_var},
-    expression=\"\"\"{ocl_expression}\"\"\",
+    expression='{ocl_expression}',
     language="OCL"
 )
+
 
 domain_model = DomainModel(
     name="PolicyModel",
@@ -71,13 +74,45 @@ domain_model = DomainModel(
 
 # --- Evaluate Policy Constraint ---
 print(f"\\nTesting Policy #{policy_id}: '{policy_description}'")
-ocl_wrapper = OCLWrapper(domain_model, context_om)
-result = ocl_wrapper.evaluate(POLICY_CONSTRAINT)
+
+EVAL_MODE = "{eval_mode}"  # "OCL" or "PYTHON_STRING"
+
+if EVAL_MODE == "OCL":
+    ocl_wrapper = OCLWrapper(domain_model, context_om)
+    result = ocl_wrapper.evaluate(POLICY_CONSTRAINT)
+
+else:
+    # Python-based evaluation for string policies (engine limitation)
+    # Expect expression like: self.country = "egypt"
+    expr = "{raw_ocl_expr}".strip()
+
+    # Convert self.<prop> to dynamic_obj.<prop>
+    expr_py = expr.replace("self.", "dynamic_obj.")
+
+    # Make string comparison case-insensitive (normalize both sides)
+    # If left side is something like dynamic_obj.country, normalize it
+    # We'll just lower the attribute value in the object assignment part.
+    expr_py = re.sub(r"(?<![<>=!])=(?![=])", "==", expr_py)
+    # ✅ Case-insensitive string comparison:
+    # convert "dynamic_obj.x == "value"" into "str(dynamic_obj.x).lower() == "value".lower()"
+    m = re.match(r'^(dynamic_obj\.\w+)\s*==\s*"([^"]+)"$', expr_py.strip())
+    if m:
+       left = m.group(1)
+       right = m.group(2)
+       expr_py = f'str({left}).lower() == "{right}".lower()'
+
+    try:
+        result = eval(expr_py)
+    except Exception as e:
+        print("Python evaluation error:", e)
+        result = False
+
 print("Policy evaluation result:", result)
 if result:
     print("[PASS] Constraint PASSED (entered data meets policy)")
 else:
     print("[FAIL] Constraint FAILED (entered data violates policy)")
+
 """
 
 # === Named Entity Recognition Extraction ===
@@ -255,19 +290,33 @@ You are an expert OCL generator. Convert the following policy into a valid OCL c
 
 POLICY:
 "{user_policy}"
+EXAMPLES:
+
+Policy: "employee must be older than 18"
+OCL: self.age > 18
+
+Policy: "employee must be from egypt"
+OCL: self.country = "egypt"
+
+Policy: "salary must be at least 3000"
+OCL: self.salary >= 3000
+
 
 RULES:
 
 1. Always use self.<property> (e.g., self.country, self.salary)
 
 2. STRING POLICIES:
-   - If a policy compares a text value (like country, nationality, city, location, role):
-        Use case-insensitive comparison:
-        self.<property>.toLower() = '<value>'
+   2. STRING POLICIES:
+   - DO NOT use toLower() or includes().
+   - Use direct equality only.
+   - Always wrap string values in DOUBLE quotes.
 
-   - If the policy uses "inside", "in", "based in", "from", "located in":
-        Use substring matching:
-        self.<property>.toLower().includes('<value>')
+   Examples:
+   self.country = "egypt"
+   self.nationality = "egypt"
+   self.city = "cairo"
+
 
 3. NUMERIC POLICIES:
    - "equals X" or "is X" or "= X"  →  self.<prop> = X
@@ -326,6 +375,69 @@ RULES:
         print(f"⚠️ OCL generation failed: {e}")
         return ""
 
+def basic_ocl_sanity_check(ocl_expr: str):
+    errors = []
+    ocl_expr = ocl_expr.strip()
+
+    if not ocl_expr:
+        errors.append("Empty OCL expression.")
+
+    # لازم يبدأ self.
+    if not ocl_expr.startswith("self."):
+        errors.append("OCL must start with self.<property>")
+
+    # ممنوع inv/context
+    if "context" in ocl_expr.lower() or "inv:" in ocl_expr.lower():
+        errors.append("OCL must NOT contain context/inv:")
+
+    # parentheses balance
+    stack = 0
+    for ch in ocl_expr:
+        if ch == "(":
+            stack += 1
+        elif ch == ")":
+            stack -= 1
+        if stack < 0:
+            errors.append("Unbalanced parentheses")
+            break
+
+    if stack != 0:
+        errors.append("Unbalanced parentheses")
+
+    return errors
+def normalize_ocl_for_python(ocl_expr: str):
+    """
+    Make OCL string expressions python-friendly:
+    - remove .toLower()
+    - convert single quotes to double quotes
+    """
+    ocl_expr = ocl_expr.strip()
+    ocl_expr = ocl_expr.replace(".toLower()", "")
+    ocl_expr = re.sub(r"=\s*'([^']*)'", r'= "\1"', ocl_expr)
+    return ocl_expr
+
+def generate_ocl_with_retry(user_policy, client, max_retries=3):
+    last_error = ""
+    ocl_expr = ""
+
+    for attempt in range(1, max_retries + 1):
+        print(f"\n🌀 Attempt {attempt}/{max_retries} generating OCL...")
+
+        ocl_expr = generate_ocl_constraint(user_policy, client)
+        ocl_expr = normalize_ocl_for_python(ocl_expr)
+
+        print("Generated OCL:", ocl_expr)
+
+        sanity_errors = basic_ocl_sanity_check(ocl_expr)
+        if not sanity_errors:
+            print("✅ OCL sanity check passed.")
+            return ocl_expr
+
+        last_error = " | ".join(sanity_errors)
+        print("❌ Sanity failed:", last_error)
+
+    print("⚠️ Failed after retries.")
+    return ""
 
 def extract_properties(ocl_expression):
     return set(re.findall(r"self\.([a-zA-Z_][a-zA-Z0-9_]*)", ocl_expression))
@@ -360,6 +472,26 @@ def extract_property_types(ocl_expression, properties):
         prop_types[prop] = prop_type
     
     return prop_types
+def detect_policy_type(ocl_expr: str):
+    """
+    Decide how to evaluate policy:
+    - If it contains string literals or string operations -> evaluate in Python
+    - Otherwise -> evaluate using OCL engine
+    """
+    ocl_expr = ocl_expr.strip()
+
+    # if contains any quotes, likely string literal
+    if '"' in ocl_expr or "'" in ocl_expr:
+        return "PYTHON_STRING"
+
+    # if contains common string functions
+    if "tolower" in ocl_expr.lower() or "includes" in ocl_expr.lower():
+        return "PYTHON_STRING"
+
+    # otherwise numeric/date
+    return "OCL"
+
+
 
 # === Generate Dynamic Test File ===
 def generate_policy_test_file(policy_id, company_name, policy_description, ocl_code, client, prop_values=None, prop_types=None):
@@ -431,6 +563,8 @@ def generate_policy_test_file(policy_id, company_name, policy_description, ocl_c
         # --- Dynamic input & parsing code ---
         dynamic_input_code = """
 print("\\n--- Setting test data for this policy ---")
+test_description = input("Enter test case description (example: Employee is from Egypt and age is 25): ")
+
 from datetime import date
 import re
 import spacy
@@ -546,34 +680,25 @@ dynamic_obj = {context_var}("obj1").build()
             llm_values = suggest_test_values(policy_description, client)
             suggestions = {**llm_values, **ner_values}
             prop_values = suggestions
+        # ✅ Auto-extract string value from OCL like: self.country = "egypt"
+        m = re.search(r'self\.(\w+)\s*=\s*"([^"]+)"', expression_part)
+        if m and prop_values is not None:
+            extracted_prop = m.group(1)
+            extracted_val = m.group(2)
+            prop_values[extracted_prop] = extracted_val
+
 
         # --- Assign property values ---
+                # --- Assign property values (from user test description) ---
         for prop in sorted(properties):
             dtype = prop_types.get(prop, "StringType")
-            value = prop_values.get(prop, "")
-            if value:
-                dynamic_input_code += f"""
-value = parse_value("{value}", "{dtype}")
+
+            dynamic_input_code += f"""
+value = extract_value_from_text(test_description, "{dtype}")
 dynamic_obj.{prop} = value
-print(f"Set {prop} = {{value}}")
+print(f"Set {prop} = {{value}} (from test description)")
 """
-            else:
-                # Default fallback
-                if dtype == "IntegerType":
-                    dynamic_input_code += f"""
-dynamic_obj.{prop} = 0
-print(f"Set {prop} = 0 (default)")
-"""
-                elif dtype == "DateType":
-                    dynamic_input_code += f"""
-dynamic_obj.{prop} = date.today()
-print(f"Set {prop} = date.today() (default)")
-"""
-                else:
-                    dynamic_input_code += f"""
-dynamic_obj.{prop} = ""
-print(f"Set {prop} = '' (default)")
-"""
+
         dynamic_input_code += f"\ncontext_om = ObjectModel(name=\"{context_part}Model\", objects={{dynamic_obj}})\n"
 
         # --- Build final test file ---
@@ -585,6 +710,11 @@ print(f"Set {prop} = '' (default)")
         model_code = model_code.replace("{context_var_set}", f"{{{context_class_var}}}")
         model_code = model_code.replace("{constraint_set}", "{POLICY_CONSTRAINT}")
         model_code = model_code.replace("{property_assignments}", dynamic_input_code)
+        eval_mode = detect_policy_type(expression_part)  # "OCL" or "PYTHON_STRING"
+        raw_expr_safe = expression_part.replace("\\", "\\\\").replace('"', '\\"')
+        model_code = model_code.replace("{eval_mode}", eval_mode)
+        model_code = model_code.replace("{raw_ocl_expr}", raw_expr_safe)
+
         model_code = model_code.replace("{ocl_expression}", f"context {context_part} inv: {expression_part}")
 
         safe_company_name = re.sub(r'[^a-zA-Z0-9_]+', '', company_name.replace(' ', '_'))
@@ -597,6 +727,7 @@ print(f"Set {prop} = '' (default)")
     except Exception as e:
         print(f"   ❌ Error generating model for policy #{policy_id}: {e}")
         return None
+    
 
 # === MAIN SCRIPT ===
 # Only run this code when the script is executed directly, not when imported
@@ -621,7 +752,14 @@ if __name__ == "__main__":
 
     try:
         print("\nGenerating OCL code...")
-        ocl_code = generate_ocl_constraint(user_policy, client)
+        ocl_code = generate_ocl_with_retry(user_policy, client, max_retries=3)
+        if not ocl_code:
+         print("❌ Could not generate valid OCL. Exiting.")
+         conn, _ = get_db_connection()
+         conn.close()
+         exit()
+
+
 
         print("\n--- Generated OCL Constraint ---")
         print(ocl_code)

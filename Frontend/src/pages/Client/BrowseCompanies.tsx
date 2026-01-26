@@ -46,7 +46,7 @@ const BrowseCompanies: React.FC = () => {
   return (
     <div className="browse-container container mt-4 mb-5 page-fade-in">
       <div className="text-center mb-5">
-        <h2 className="fw-bold section-title">Partner Companies</h2>
+
         <p className="text-muted">Select a company to pitch your project proposal</p>
       </div>
 
@@ -60,14 +60,7 @@ const BrowseCompanies: React.FC = () => {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
-          <select
-            className="form-select border-0 bg-transparent w-auto"
-            value={filterSector}
-            onChange={e => setFilterSector(e.target.value)}
-          >
-            <option value="all">All Industries</option>
-            {sectors.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+         
         </div>
       </div>
 

@@ -11,6 +11,8 @@ import com.grad.backend.contracts.repository.ContractRecordRepository;
 import com.grad.backend.contracts.repository.NdaSigningDraftRepository;
 import com.grad.backend.events.NdaFullySignedEvent;
 import com.grad.backend.config.InternalApiConfig;
+import com.grad.backend.project.repository.ProposalSubmissionRepository;
+import com.grad.backend.contracts.dto.SignedProjectDTO;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
@@ -39,6 +41,7 @@ public class ContractService {
 
     private final NdaSigningDraftRepository draftRepository;
     private final ContractRecordRepository recordRepository;
+    private final ProposalSubmissionRepository submissionRepository;
     private final RestTemplate restTemplate;
     private final InternalApiConfig internalApiConfig;
     private final ApplicationEventPublisher eventPublisher;
@@ -47,7 +50,8 @@ public class ContractService {
     @SuppressWarnings("unchecked")
     private String verifyActor(Long submissionId, Long userId) {
         try {
-            String url = internalApiConfig.getBaseUrl() + "/api/internal/submissions/" + submissionId + "/verify-actor?userId=" + userId;
+            String url = internalApiConfig.getBaseUrl() + "/api/internal/submissions/" + submissionId
+                    + "/verify-actor?userId=" + userId;
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-Internal-Key", internalApiConfig.getInternalKey());
             ResponseEntity<Map> res = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
@@ -63,7 +67,8 @@ public class ContractService {
     @Transactional(readOnly = true)
     public NdaDraftResponse getDraft(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
-        if ("none".equals(actor)) throw new RuntimeException("Not authorized");
+        if ("none".equals(actor))
+            throw new RuntimeException("Not authorized");
         return draftRepository.findBySubmissionId(submissionId)
                 .map(this::toDraftResponse)
                 .orElse(NdaDraftResponse.builder()
@@ -75,9 +80,11 @@ public class ContractService {
     }
 
     @Transactional
-    public NdaDraftResponse signClient(Long submissionId, Long userId, String signatureBase64, String contractPayloadJson) {
+    public NdaDraftResponse signClient(Long submissionId, Long userId, String signatureBase64,
+            String contractPayloadJson) {
         String actor = verifyActor(submissionId, userId);
-        if (!"client".equals(actor)) throw new RuntimeException("Only the client may sign as Party B");
+        if (!"client".equals(actor))
+            throw new RuntimeException("Only the client may sign as Party B");
         NdaSigningDraft draft = draftRepository.findBySubmissionId(submissionId)
                 .orElseGet(() -> {
                     NdaSigningDraft d = new NdaSigningDraft();
@@ -85,26 +92,33 @@ public class ContractService {
                     d.setContractPayloadJson(contractPayloadJson != null ? contractPayloadJson : "{}");
                     return draftRepository.save(d);
                 });
-        if (draft.getClientSignedAt() != null) throw new RuntimeException("Client has already signed");
+        if (draft.getClientSignedAt() != null)
+            throw new RuntimeException("Client has already signed");
         draft.setClientSignatureBase64(signatureBase64);
         draft.setClientSignedAt(LocalDateTime.now());
-        if (contractPayloadJson != null && !contractPayloadJson.isBlank()) draft.setContractPayloadJson(contractPayloadJson);
+        if (contractPayloadJson != null && !contractPayloadJson.isBlank())
+            draft.setContractPayloadJson(contractPayloadJson);
         draftRepository.save(draft);
         return toDraftResponse(draft);
     }
 
     @Transactional
-    public NdaDraftResponse signCompany(Long submissionId, Long userId, String signatureBase64, String contractPayloadJson) {
+    public NdaDraftResponse signCompany(Long submissionId, Long userId, String signatureBase64,
+            String contractPayloadJson) {
         // userId = software company id (Company entity shares id with User)
         String actor = verifyActor(submissionId, userId);
-        if (!"company".equals(actor)) throw new RuntimeException("Only the software company may sign as Party A");
+        if (!"company".equals(actor))
+            throw new RuntimeException("Only the software company may sign as Party A");
         NdaSigningDraft draft = draftRepository.findBySubmissionId(submissionId)
                 .orElseThrow(() -> new RuntimeException("No draft found; client must sign first"));
-        if (draft.getClientSignedAt() == null) throw new RuntimeException("Client must sign first");
-        if (draft.getCompanySignedAt() != null) throw new RuntimeException("Company has already signed");
+        if (draft.getClientSignedAt() == null)
+            throw new RuntimeException("Client must sign first");
+        if (draft.getCompanySignedAt() != null)
+            throw new RuntimeException("Company has already signed");
         draft.setCompanySignatureBase64(signatureBase64);
         draft.setCompanySignedAt(LocalDateTime.now());
-        if (contractPayloadJson != null && !contractPayloadJson.isBlank()) draft.setContractPayloadJson(contractPayloadJson);
+        if (contractPayloadJson != null && !contractPayloadJson.isBlank())
+            draft.setContractPayloadJson(contractPayloadJson);
         draftRepository.save(draft);
 
         byte[] pdf = buildNdaPdf(draft);
@@ -176,9 +190,11 @@ public class ContractService {
             doc.add(Chunk.NEWLINE);
 
             doc.add(new Paragraph("TERMS", boldFont));
-            doc.add(new Paragraph("1. Confidential Information: Information disclosed in connection with the Purpose.", normalFont));
+            doc.add(new Paragraph("1. Confidential Information: Information disclosed in connection with the Purpose.",
+                    normalFont));
             doc.add(new Paragraph("2. Permitted Receivers: Need-to-know basis only.", normalFont));
-            doc.add(new Paragraph("3. Obligations: Use for Purpose only; keep secure; destroy on request.", normalFont));
+            doc.add(new Paragraph("3. Obligations: Use for Purpose only; keep secure; destroy on request.",
+                    normalFont));
             doc.add(new Paragraph("4. Governing Law: Arab Republic of Egypt.", normalFont));
 
             doc.close();
@@ -193,12 +209,17 @@ public class ContractService {
         PdfPCell c = new PdfPCell();
         c.setPadding(8);
         if (party != null) {
-            c.addElement(new Paragraph("Entity details: " + (party.has("details") ? party.get("details").asText("") : ""), normal));
-            c.addElement(new Paragraph("Name: " + (party.has("signatory") ? party.get("signatory").asText("") : ""), normal));
+            c.addElement(new Paragraph(
+                    "Entity details: " + (party.has("details") ? party.get("details").asText("") : ""), normal));
+            c.addElement(new Paragraph("Name: " + (party.has("signatory") ? party.get("signatory").asText("") : ""),
+                    normal));
             c.addElement(new Paragraph("Title: " + (party.has("title") ? party.get("title").asText("") : ""), normal));
             c.addElement(new Paragraph("Email: " + (party.has("email") ? party.get("email").asText("") : ""), normal));
         }
-        c.addElement(new Paragraph("Signature: " + (sigBase64 != null && !sigBase64.isEmpty() ? "[Digitally Signed]" : "_________________"), normal));
+        c.addElement(new Paragraph(
+                "Signature: "
+                        + (sigBase64 != null && !sigBase64.isEmpty() ? "[Digitally Signed]" : "_________________"),
+                normal));
         return c;
     }
 
@@ -217,16 +238,42 @@ public class ContractService {
     }
 
     @Transactional(readOnly = true)
-    public byte[] getPdfByIdAndCompany(Long recordId, Long companyId) {
-        return recordRepository.findByIdAndCompanyId(recordId, companyId)
-                .map(ContractRecord::getPdfBytes)
+    public byte[] getPdfByIdAndCompany(Long recordId, Long userId) {
+        ContractRecord record = recordRepository.findById(recordId).orElse(null);
+        if (record == null)
+            return null;
+
+        // Check if user is the Company (Party A)
+        if (record.getCompanyId().equals(userId)) {
+            return record.getPdfBytes();
+        }
+
+        // Check if user is the Client (Party B) via Submission
+        return submissionRepository.findById(record.getSubmissionId())
+                .filter(sub -> sub.getClient().getId().equals(userId))
+                .map(sub -> record.getPdfBytes())
                 .orElse(null);
     }
 
+    @Transactional(readOnly = true)
+    public List<com.grad.backend.contracts.dto.SignedProjectDTO> getSignedProjectsForClient(Long clientId) {
+        List<com.grad.backend.project.entity.ProposalSubmission> submissions = submissionRepository
+                .findByClient_Id(clientId);
 
-
-
-
-
-
+        // For each submission, find signed contracts
+        return submissions.stream()
+                .flatMap(submission -> recordRepository.findBySubmissionId(submission.getId()).stream()
+                        .map(record -> com.grad.backend.contracts.dto.SignedProjectDTO.builder()
+                                .id(record.getId())
+                                .projectName(submission.getProposal().getProjectTitle())
+                                .projectType(submission.getProposal().getProjectType())
+                                .companyName(submission.getSoftwareCompany().getName()) // Assuming Company has
+                                                                                        // getName()
+                                .signedAt(record.getSignedAt())
+                                .fileName(record.getFileName())
+                                .fileSize(record.getPdfBytes() != null ? (long) record.getPdfBytes().length : 0L)
+                                .contractType(record.getContractType())
+                                .build()))
+                .collect(Collectors.toList());
+    }
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './MyProposals.css';
 import { useNavigate } from 'react-router-dom';
 import { GetAllProposals, DeleteProposal, UpdateProposal } from '../../services/Client/ProposalDocumnet'; 
-import { toast } from 'react-toastify';
+import ViewProposalModal from '../../components/ViewProposalModal';
 
 // 1. Full Interface matching CreateProposal and Backend DTO
 interface Proposal {
@@ -19,7 +19,7 @@ interface Proposal {
   ndaRequired: boolean;
   codeOwnership: string;
   maintenancePeriod: string;
-  status: 'Done' | 'In Progress';
+  status: string;
   createdAt: string;
 }
 
@@ -28,10 +28,14 @@ const MyProposals: React.FC = () => {
   
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'All' | 'Done' | 'In Progress'>('All');
+  const [filterStatus, setFilterStatus] = useState<'All' | 'Done' | 'In Progress' | 'Submitted'>('All');
   const [showFilter, setShowFilter] = useState(false);
+  
+  // Modal State
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch Proposals on Load
@@ -76,11 +80,13 @@ const MyProposals: React.FC = () => {
         setProposals((prev) =>
           prev.map((p) => (p.id === editingProposal.id ? editingProposal : p))
         );
-        toast.success("Proposal updated successfully!");
+        // Using alert since toast was removed/unused, or re-add toast import
+        alert("Proposal updated successfully!");
         setShowModal(false);
         setEditingProposal(null);
       } catch (error) {
-        toast.error("Failed to update proposal.");
+        console.error(error);
+        alert("Failed to update proposal.");
       }
     }
   };
@@ -90,11 +96,15 @@ const MyProposals: React.FC = () => {
       try {
         await DeleteProposal(id);
         setProposals((prev) => prev.filter((p) => p.id !== id));
-        toast.success("Proposal deleted successfully!");
+        alert("Proposal deleted successfully!");
       } catch (error) {
-        toast.error("You cannot delete this proposal it is linked to an ongoing project or proposal.");
+        alert("You cannot delete this proposal it is linked to an ongoing project or proposal.");
       }
     }
+  };
+
+  const handleView = (proposal: Proposal) => {
+    setSelectedProposal(proposal); 
   };
 
   const filteredProposals = proposals.filter((p) => {
@@ -130,7 +140,7 @@ const MyProposals: React.FC = () => {
             <div className="filter-panel shadow-sm">
               <h6 className="mb-2">Filter by Status</h6>
               <div className="d-flex flex-column gap-2">
-                {['All', 'In Progress', 'Done'].map((status) => (
+                {['All', 'In Progress', 'Done', 'Submitted'].map((status) => (
                   <label key={status} className="filter-option">
                     <input
                       type="radio"
@@ -172,13 +182,27 @@ const MyProposals: React.FC = () => {
                         </span>
                       </td>
                       <td>
-                        <span className={`status-pill status-${p.status.toLowerCase().replace(' ', '-')}`}>
-                          {p.status}
+                        <span className={`status-pill status-${(p.status || 'Pending').toLowerCase().replace(' ', '-')}`}>
+                          {p.status || "Submitted"}
                         </span>
                       </td>
                       <td className="text-end pe-4">
-                        <i className="bi bi-pencil text-new cursor-pointer me-3" onClick={() => handleEdit(p)}></i>
-                        <i className="bi bi-trash text-danger cursor-pointer" onClick={() => handleDelete(p.id)}></i>
+                        {['Pending', 'Rejected with Note'].includes(p.status || 'Pending') ? (
+                            <>
+                                <i className="bi bi-pencil text-new cursor-pointer me-3" onClick={() => handleEdit(p)} title="Edit Proposal"></i>
+                                {p.status !== 'Rejected with Note' && (
+                                     <i className="bi bi-trash text-danger cursor-pointer" onClick={() => handleDelete(p.id)} title="Delete Proposal"></i>
+                                )}
+                            </>
+                        ) : (
+                                <button 
+                                    className="btn btn-sm btn-outline-primary" 
+                                    onClick={() => handleView(p)}
+                                    title="View Proposal Details"
+                                >
+                                    <i className="bi bi-eye"></i> View
+                                </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -192,7 +216,7 @@ const MyProposals: React.FC = () => {
           )}
         </div>
 
-        {/* Stat Cards - RESTORED */}
+        {/* Stat Cards */}
         <div className="row g-4 mb-5">
           <div className="col-md-4">
             <div className="card stat-card bg-mint-light">
@@ -313,6 +337,14 @@ const MyProposals: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* VIEW MODAL */}
+      {selectedProposal && (
+        <ViewProposalModal 
+            proposal={selectedProposal} 
+            onClose={() => setSelectedProposal(null)} 
+        />
       )}
     </>
   );

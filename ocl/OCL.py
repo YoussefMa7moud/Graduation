@@ -3,6 +3,8 @@ import warnings
 import sqlite3
 import re
 import json
+import logging
+from typing import Dict, Set, Optional, Tuple, List
 import spacy
 from groq import Groq
 from dotenv import load_dotenv
@@ -17,7 +19,26 @@ from bocl.OCLWrapper import OCLWrapper
 
 # === Setup ===
 load_dotenv()
-nlp = spacy.load("en_core_web_sm")
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Cache spacy model to avoid reloading
+_nlp_cache = None
+
+def get_nlp_model():
+    """Get or load spacy model (cached)."""
+    global _nlp_cache
+    if _nlp_cache is None:
+        logger.info("Loading spacy model...")
+        _nlp_cache = spacy.load("en_core_web_sm")
+    return _nlp_cache
+
+nlp = get_nlp_model()
 
 DB_file = "policy.db"
 
@@ -25,12 +46,34 @@ DB_file = "policy.db"
 import threading
 _thread_local = threading.local()
 
-def get_db_connection():
-    """Get a thread-local database connection."""
+def get_db_connection() -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
+    """
+    Get a thread-local database connection.
+    
+    Returns:
+        Tuple of (connection, cursor)
+    """
     if not hasattr(_thread_local, 'conn') or _thread_local.conn is None:
-        _thread_local.conn = sqlite3.connect(DB_file, check_same_thread=False)
-        _thread_local.cursor = _thread_local.conn.cursor()
+        try:
+            _thread_local.conn = sqlite3.connect(DB_file, check_same_thread=False)
+            _thread_local.conn.row_factory = sqlite3.Row  # Enable column access by name
+            _thread_local.cursor = _thread_local.conn.cursor()
+            logger.debug("Database connection created")
+        except sqlite3.Error as e:
+            logger.error(f"Error creating database connection: {e}")
+            raise
     return _thread_local.conn, _thread_local.cursor
+
+def close_db_connection() -> None:
+    """Close the thread-local database connection."""
+    if hasattr(_thread_local, 'conn') and _thread_local.conn is not None:
+        try:
+            _thread_local.conn.close()
+            _thread_local.conn = None
+            _thread_local.cursor = None
+            logger.debug("Database connection closed")
+        except sqlite3.Error as e:
+            logger.error(f"Error closing database connection: {e}")
 
 # === Template for Generated Policy Test File ===
 TEMPLATE = """from besser.BUML.metamodel.structural import (
@@ -157,7 +200,17 @@ def extract_entities_from_description(description):
     return data
 
 # === Metadata Extraction ===
-def extract_metadata(policy_text, client):
+def extract_metadata(policy_text: str, client: Groq) -> Tuple[str, List[str]]:
+    """
+    Extract metadata (category and keywords) from policy text using LLM.
+    
+    Args:
+        policy_text: The policy description text
+        client: Groq client instance
+        
+    Returns:
+        Tuple of (category, keywords_list)
+    """
     prompt = f"""
     You are a precise JSON extractor.
     From this policy, output ONLY a valid JSON object with two fields:
@@ -196,8 +249,17 @@ def extract_metadata(policy_text, client):
         return "Uncategorized", []
 
 # === Helper: Suggest Test Data (LLM-based) ===
-def suggest_test_values(policy_text, client):
-    """Use LLM to suggest example test values from the policy."""
+def suggest_test_values(policy_text: str, client: Groq) -> Dict[str, str]:
+    """
+    Use LLM to suggest example test values from the policy.
+    
+    Args:
+        policy_text: The policy description text
+        client: Groq client instance
+        
+    Returns:
+        Dictionary of suggested property values
+    """
     prompt = f"""
     Extract possible property values mentioned in this policy as a JSON object.
     Example:
@@ -223,7 +285,10 @@ def suggest_test_values(policy_text, client):
         return {}
 
 # === Database Setup ===
-def setup_database():
+def setup_database() -> None:
+    """
+    Initialize database schema with tables and indexes.
+    """
     try:
         conn, cursor = get_db_connection()
         cursor.execute("PRAGMA foreign_keys = ON;")
@@ -241,40 +306,88 @@ def setup_database():
                 ocl_code TEXT NOT NULL,
                 category TEXT DEFAULT 'Uncategorized',
                 keywords TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (company_id) REFERENCES companies (id)
             );
         """)
+        # Add indexes for better query performance
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_policies_company_id 
+            ON policies(company_id);
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_policies_category 
+            ON policies(category);
+        """)
         conn.commit()
+        logger.info("Database setup completed successfully")
     except Exception as e:
+        logger.error(f"Error setting up database: {e}")
         print(f"\n ERROR setting up database: {e}")
 
-def get_or_create_company_id(company_name):
+def get_or_create_company_id(company_name: str) -> Optional[int]:
+    """
+    Get existing company ID or create new company.
+    
+    Args:
+        company_name: Name of the company
+        
+    Returns:
+        Company ID, or None if error occurred
+    """
     try:
         conn, cursor = get_db_connection()
         cursor.execute("SELECT id FROM companies WHERE name = ?", (company_name,))
         company_row = cursor.fetchone()
         if company_row:
+            logger.debug(f"Found existing company: {company_name} (ID: {company_row[0]})")
             return company_row[0]
         else:
             cursor.execute("INSERT INTO companies (name) VALUES (?)", (company_name,))
             conn.commit()
+            company_id = cursor.lastrowid
             print(f"✅ New company '{company_name}' added to database.")
-            return cursor.lastrowid
+            logger.info(f"Created new company: {company_name} (ID: {company_id})")
+            return company_id
     except Exception as e:
+        logger.error(f"Error finding or creating company: {e}")
         print(f"\n ERROR finding or creating company: {e}")
         return None
 
-def insert_policy(company_id, policy_description, ocl_code, category, keywords):
+def insert_policy(
+    company_id: int, 
+    policy_description: str, 
+    ocl_code: str, 
+    category: str, 
+    keywords: List[str]
+) -> Optional[int]:
+    """
+    Insert a new policy into the database.
+    
+    Args:
+        company_id: ID of the company
+        policy_description: Policy description text
+        ocl_code: Generated OCL constraint code
+        category: Policy category
+        keywords: List of keywords
+        
+    Returns:
+        Policy ID if successful, None otherwise
+    """
     try:
         conn, cursor = get_db_connection()
+        keywords_str = ", ".join(keywords) if keywords else ""
         cursor.execute(
             "INSERT INTO policies (company_id, policy_description, ocl_code, category, keywords) VALUES (?, ?, ?, ?, ?)",
-            (company_id, policy_description, ocl_code.strip(), category, ", ".join(keywords))
+            (company_id, policy_description, ocl_code.strip(), category, keywords_str)
         )
         conn.commit()
+        policy_id = cursor.lastrowid
         print("✅ Policy inserted successfully with metadata.")
-        return cursor.lastrowid
+        logger.info(f"Policy inserted (ID: {policy_id}, Category: {category})")
+        return policy_id
     except Exception as e:
+        logger.error(f"Error saving policy to database: {e}")
         print(f"\n ERROR saving policy to database: {e}")
         return None
 
@@ -300,6 +413,12 @@ OCL: self.country = "egypt"
 
 Policy: "salary must be at least 3000"
 OCL: self.salary >= 3000
+
+Policy: "money should be paid 2 times"
+OCL: self.money = 2
+
+Policy: "employee age must be 25"
+OCL: self.age = 25
 
 
 RULES:
@@ -372,6 +491,7 @@ RULES:
         return ocl_code
 
     except Exception as e:
+        logger.error(f"OCL generation failed: {e}")
         print(f"⚠️ OCL generation failed: {e}")
         return ""
 
@@ -405,11 +525,17 @@ def basic_ocl_sanity_check(ocl_expr: str):
         errors.append("Unbalanced parentheses")
 
     return errors
-def normalize_ocl_for_python(ocl_expr: str):
+def normalize_ocl_for_python(ocl_expr: str) -> str:
     """
     Make OCL string expressions python-friendly:
     - remove .toLower()
     - convert single quotes to double quotes
+    
+    Args:
+        ocl_expr: OCL expression to normalize
+        
+    Returns:
+        Normalized OCL expression
     """
     ocl_expr = ocl_expr.strip()
     ocl_expr = ocl_expr.replace(".toLower()", "")
@@ -439,63 +565,166 @@ def generate_ocl_with_retry(user_policy, client, max_retries=3):
     print("⚠️ Failed after retries.")
     return ""
 
-def extract_properties(ocl_expression):
+def extract_properties(ocl_expression: str) -> Set[str]:
+    """
+    Extract property names from OCL expression.
+    
+    Args:
+        ocl_expression: The OCL constraint expression
+        
+    Returns:
+        Set of property names found in the expression
+    """
     return set(re.findall(r"self\.([a-zA-Z_][a-zA-Z0-9_]*)", ocl_expression))
 
-def extract_property_types(ocl_expression, properties):
+def extract_property_types(ocl_expression: str, properties: Set[str]) -> Dict[str, str]:
     """
     Extract property types from OCL expression based on usage patterns.
-    Returns a dictionary mapping property names to their types.
+    
+    Enhanced logic:
+    1. Check if property is compared to a number (e.g., self.money = 2) -> IntegerType
+    2. Check if property is compared to a string literal -> StringType
+    3. Check if property is compared to a date -> DateType
+    4. Check property name patterns (fallback)
+    5. Check comparison operators (>=, >, <=, <) -> IntegerType
+    
+    Args:
+        ocl_expression: The OCL constraint expression
+        properties: Set of property names to infer types for
+        
+    Returns:
+        Dictionary mapping property names to their inferred types
     """
-    prop_types = {}
+    prop_types: Dict[str, str] = {}
     expression_part = ocl_expression.split("inv:")[-1].strip() if "inv:" in ocl_expression else ocl_expression
     
     for prop in properties:
-        if re.search(fr"{prop}\s*=\s*'[^']*'", expression_part):
-            prop_type = "StringType"
-        elif any(x in prop.lower() for x in [
-            "country", "city", "name", "type", "category", "role",
-            "department", "position", "region", "location", "company"
-        ]):
-            prop_type = "StringType"
-        elif "date" in prop.lower():
-            prop_type = "DateType"
-        elif any(x in prop.lower() for x in [
-            "salary", "age", "amount", "price", "days", "count",
-            "quantity", "score", "id", "number", "total", "limit"
-        ]):
+        prop_type = None
+        
+        # Priority 1: Check if property is compared to a number (e.g., self.money = 2, self.age > 18)
+        # Pattern: self.prop = number or self.prop >= number, etc.
+        numeric_pattern = re.search(
+            fr"self\.{re.escape(prop)}\s*([=<>!]+)\s*(\d+\.?\d*)",
+            expression_part
+        )
+        if numeric_pattern:
             prop_type = "IntegerType"
-        elif re.search(fr"{prop}\s*(>=|>|<=|<)", expression_part):
-            prop_type = "IntegerType"
-        else:
+            logger.debug(f"Property '{prop}' inferred as IntegerType (compared to number)")
+        
+        # Priority 2: Check if property is compared to a string literal
+        if prop_type is None:
+            string_pattern = re.search(
+                fr"self\.{re.escape(prop)}\s*=\s*[\"']([^\"']+)[\"']",
+                expression_part
+            )
+            if string_pattern:
+                prop_type = "StringType"
+                logger.debug(f"Property '{prop}' inferred as StringType (compared to string)")
+        
+        # Priority 3: Check if property is compared to a date
+        if prop_type is None:
+            date_pattern = re.search(
+                fr"self\.{re.escape(prop)}\s*[<>=]+\s*date\(",
+                expression_part,
+                re.IGNORECASE
+            )
+            if date_pattern:
+                prop_type = "DateType"
+                logger.debug(f"Property '{prop}' inferred as DateType (compared to date)")
+        
+        # Priority 4: Check property name patterns
+        if prop_type is None:
+            prop_lower = prop.lower()
+            if any(x in prop_lower for x in [
+                "country", "city", "name", "type", "category", "role",
+                "department", "position", "region", "location", "company",
+                "nationality", "address", "email", "phone"
+            ]):
+                prop_type = "StringType"
+                logger.debug(f"Property '{prop}' inferred as StringType (name pattern)")
+            elif "date" in prop_lower:
+                prop_type = "DateType"
+                logger.debug(f"Property '{prop}' inferred as DateType (name pattern)")
+            elif any(x in prop_lower for x in [
+                "salary", "age", "amount", "price", "days", "count",
+                "quantity", "score", "id", "number", "total", "limit",
+                "money", "times", "frequency", "rate", "percentage"
+            ]):
+                prop_type = "IntegerType"
+                logger.debug(f"Property '{prop}' inferred as IntegerType (name pattern)")
+        
+        # Priority 5: Check comparison operators (if not already determined)
+        if prop_type is None:
+            comparison_pattern = re.search(
+                fr"self\.{re.escape(prop)}\s*(>=|>|<=|<)",
+                expression_part
+            )
+            if comparison_pattern:
+                prop_type = "IntegerType"
+                logger.debug(f"Property '{prop}' inferred as IntegerType (comparison operator)")
+        
+        # Default to StringType if no pattern matched
+        if prop_type is None:
             prop_type = "StringType"
+            logger.debug(f"Property '{prop}' defaulted to StringType")
+        
         prop_types[prop] = prop_type
     
     return prop_types
-def detect_policy_type(ocl_expr: str):
+def detect_policy_type(ocl_expr: str) -> str:
     """
     Decide how to evaluate policy:
     - If it contains string literals or string operations -> evaluate in Python
     - Otherwise -> evaluate using OCL engine
+    
+    Args:
+        ocl_expr: OCL expression to analyze
+        
+    Returns:
+        "PYTHON_STRING" or "OCL"
     """
     ocl_expr = ocl_expr.strip()
 
-    # if contains any quotes, likely string literal
+    # If contains any quotes, likely string literal
     if '"' in ocl_expr or "'" in ocl_expr:
         return "PYTHON_STRING"
 
-    # if contains common string functions
+    # If contains common string functions
     if "tolower" in ocl_expr.lower() or "includes" in ocl_expr.lower():
         return "PYTHON_STRING"
 
-    # otherwise numeric/date
+    # Otherwise numeric/date - use OCL engine
     return "OCL"
 
 
 
 # === Generate Dynamic Test File ===
-def generate_policy_test_file(policy_id, company_name, policy_description, ocl_code, client, prop_values=None, prop_types=None):
+def generate_policy_test_file(
+    policy_id: int,
+    company_name: str,
+    policy_description: str,
+    ocl_code: str,
+    client: Groq,
+    prop_values: Optional[Dict[str, str]] = None,
+    prop_types: Optional[Dict[str, str]] = None
+) -> Optional[str]:
+    """
+    Generate a dynamic test file for a policy.
+    
+    Args:
+        policy_id: ID of the policy
+        company_name: Name of the company
+        policy_description: Policy description text
+        ocl_code: Generated OCL constraint code
+        client: Groq client instance
+        prop_values: Optional dictionary of property values
+        prop_types: Optional dictionary of property types
+        
+    Returns:
+        Filename of generated test file, or None if error occurred
+    """
     print(f"   Generating model for Policy #{policy_id}...")
+    logger.info(f"Generating test file for policy #{policy_id}")
     try:
         ocl_code_clean = ocl_code.strip()
         if "context" in ocl_code_clean and "inv:" in ocl_code_clean:
@@ -514,37 +743,15 @@ def generate_policy_test_file(policy_id, company_name, policy_description, ocl_c
         props_list = []
         prop_types_dict = {}  # store prop name → type mapping (inferred)
 
-        # --- Smart property type inference ---
+        # --- Smart property type inference using improved function ---
         if properties:
+            # Use the improved extract_property_types function
+            prop_types_dict = extract_property_types(expression_part, properties)
+            
             for prop in sorted(properties):
                 prop_var = f"{prop}_prop"
-
-                if re.search(fr"{prop}\s*=\s*'[^']*'", expression_part):
-                    prop_type = "StringType"
-                elif any(x in prop.lower() for x in [
-                    "country", "city", "name", "type", "category", "role",
-                    "department", "position", "region", "location", "company"
-                ]):
-                    prop_type = "StringType"
-                elif "date" in prop.lower():
-                    prop_type = "DateType"
-                elif any(x in prop.lower() for x in [
-                    "score", "rate", "ratio", "percentage", "percent", "coverage", 
-                    "test", "ratio", "fraction", "decimal"
-                ]):
-                    # Use RealType for decimal numbers (but besser uses IntegerType, so we'll use IntegerType and handle conversion)
-                    prop_type = "IntegerType"  # Note: besser may not have RealType, so we use IntegerType
-                elif any(x in prop.lower() for x in [
-                    "salary", "age", "amount", "price", "days", "count",
-                    "quantity", "id", "number", "total", "limit"
-                ]):
-                    prop_type = "IntegerType"
-                elif re.search(fr"{prop}\s*(>=|>|<=|<)", expression_part):
-                    prop_type = "IntegerType"
-                else:
-                    prop_type = "StringType"
-
-                prop_types_dict[prop] = prop_type
+                prop_type = prop_types_dict.get(prop, "StringType")
+                
                 context_properties_def += f"{prop_var} = Property(name=\"{prop}\", type={prop_type})\n"
                 props_list.append(prop_var)
 
@@ -722,9 +929,11 @@ print(f"Set {prop} = {{value}} (from test description)")
         with open(file_name, "w", encoding="utf-8") as f:
             f.write(model_code)
         print(f"   ✅ Dynamic model code generated and saved as: {file_name}")
+        logger.info(f"Test file generated: {file_name}")
         return file_name
 
     except Exception as e:
+        logger.error(f"Error generating model for policy #{policy_id}: {e}")
         print(f"   ❌ Error generating model for policy #{policy_id}: {e}")
         return None
     
@@ -737,15 +946,13 @@ if __name__ == "__main__":
     company_name = input("Enter the company name: ")
     if not company_name:
         print("Company name cannot be empty. Exiting.")
-        conn, _ = get_db_connection()
-        conn.close()
+        close_db_connection()
         exit()
 
     user_policy = input(f"Enter your policy for '{company_name}': ")
     if not user_policy:
         print("Policy cannot be empty. Exiting.")
-        conn, _ = get_db_connection()
-        conn.close()
+        close_db_connection()
         exit()
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -754,10 +961,9 @@ if __name__ == "__main__":
         print("\nGenerating OCL code...")
         ocl_code = generate_ocl_with_retry(user_policy, client, max_retries=3)
         if not ocl_code:
-         print("❌ Could not generate valid OCL. Exiting.")
-         conn, _ = get_db_connection()
-         conn.close()
-         exit()
+            print("❌ Could not generate valid OCL. Exiting.")
+            close_db_connection()
+            exit()
 
 
 
@@ -777,8 +983,8 @@ if __name__ == "__main__":
                 generate_policy_test_file(new_policy_id, company_name, user_policy, ocl_code, client)
 
     except Exception as e:
+        logger.error(f"Error during API call: {e}")
         print(f"\n An error occurred during API call: {e}")
     finally:
-        conn, _ = get_db_connection()
-        conn.close()
+        close_db_connection()
         print("\nDatabase connection closed.")

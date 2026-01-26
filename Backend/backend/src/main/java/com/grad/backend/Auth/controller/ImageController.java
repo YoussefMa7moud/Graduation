@@ -9,6 +9,7 @@ import com.grad.backend.Auth.entity.ClientCompany;
 import com.grad.backend.Auth.entity.Company;
 import com.grad.backend.Auth.repository.ClientCompanyRepository;
 import com.grad.backend.Auth.repository.CompanyRepository;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/api/images")
@@ -46,5 +47,25 @@ public class ImageController {
                 .ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(clientCompany.getLogo());
+    }
+
+    @PostMapping("/company")
+    public ResponseEntity<?> uploadCompanyLogo(
+            @AuthenticationPrincipal com.grad.backend.Auth.entity.User user,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+
+        try {
+            Company company = companyRepository.findById(user.getId()).orElse(null);
+            if (company == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            company.setLogo(file.getBytes());
+            companyRepository.save(company);
+
+            return ResponseEntity.ok("Logo updated successfully");
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(500).body("Error uploading image");
+        }
     }
 }

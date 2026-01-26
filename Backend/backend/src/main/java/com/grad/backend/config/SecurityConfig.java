@@ -12,6 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.security.config.Customizer;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.http.HttpStatus;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -24,43 +28,44 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
- @Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Allow authentication endpoints
-                .requestMatchers("/api/images/**").permitAll() // Allow image endpoints
-                .requestMatchers("/api/internal/**").permitAll() // Internal API (key-checked in controller)
-                .requestMatchers("/api/companies/browse").permitAll() // Allow anyone to browse companies
-                .requestMatchers("/api/proposals/create").permitAll()
-                .requestMatchers("/api/proposals/MyProposals/**").authenticated()
-                .requestMatchers("/api/proposals/delete/**").authenticated()
-                .requestMatchers("/api/proposals/**").authenticated()
-                .requestMatchers("/api/proposals/update/**").authenticated()
-                .requestMatchers("/api/submissions/**").authenticated()
-                .requestMatchers("/api/submissions/send-to-company").authenticated()
-                .requestMatchers("/api/submissions/my-submissions").authenticated()
-                .requestMatchers("/api/submissions/company-queue").authenticated()
-                .requestMatchers("/api/contracts/**").authenticated()
-                .requestMatchers("/api/contracts/main/parties").authenticated()
-                .requestMatchers("/api/contracts/main/draft").authenticated()
-                .requestMatchers("/api/contracts/main/validate/ai/**").authenticated()
-                .requestMatchers("/api/contracts/main/validate/ocl").authenticated()
-                .requestMatchers("/api/contracts/main/send-to-client").authenticated()
-                .requestMatchers("/api/contracts/main/sign/client").authenticated()
-                .requestMatchers("/api/contracts/main/sign/company").authenticated()
-                .requestMatchers("/api/contracts/main/chat/send").authenticated()
-                .requestMatchers("/api/contracts/main/chat/messages").authenticated()
+                .cors(Customizer.withDefaults()) // Enable CORS
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll() // Allow authentication endpoints
+                        .requestMatchers("/api/images/**").permitAll() // Allow image endpoints
+                        .requestMatchers("/api/internal/**").permitAll() // Internal API (key-checked in controller)
+                        .requestMatchers("/api/companies/browse").permitAll() // Allow anyone to browse companies
+                        .requestMatchers("/api/proposals/create").permitAll()
+                        .requestMatchers("/api/proposals/MyProposals/**").authenticated()
+                        .requestMatchers("/api/proposals/delete/**").authenticated()
+                        .requestMatchers("/api/proposals/**").authenticated()
+                        .requestMatchers("/api/proposals/update/**").authenticated()
+                        .requestMatchers("/api/submissions/**").authenticated()
+                        .requestMatchers("/api/submissions/send-to-company").authenticated()
+                        .requestMatchers("/api/submissions/my-submissions").authenticated()
+                        .requestMatchers("/api/submissions/company-queue").authenticated()
+                        .requestMatchers("/api/contracts/**").authenticated()
+                        .requestMatchers("/api/contracts/main/parties").authenticated()
+                        .requestMatchers("/api/contracts/main/draft").authenticated()
+                        .requestMatchers("/api/contracts/main/validate/ai/**").authenticated()
+                        .requestMatchers("/api/contracts/main/validate/ocl").authenticated()
+                        .requestMatchers("/api/contracts/main/send-to-client").authenticated()
+                        .requestMatchers("/api/contracts/main/sign/client").authenticated()
+                        .requestMatchers("/api/contracts/main/sign/company").authenticated()
+                        .requestMatchers("/api/contracts/main/chat/send").authenticated()
+                        .requestMatchers("/api/contracts/main/chat/messages").authenticated()
 
+                        .anyRequest().authenticated() // All other requests require authentication
 
-                .anyRequest().authenticated() // All other requests require authentication
-                
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Use stateless sessions for JWT
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
+                )
+                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Use stateless sessions for JWT
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
 
         return http.build();
     }

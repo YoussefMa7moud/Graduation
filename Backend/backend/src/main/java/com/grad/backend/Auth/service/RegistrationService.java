@@ -21,6 +21,7 @@ public class RegistrationService {
     private final CompanyRepository companyRepo;
     private final ClientPersonRepository personRepo;
     private final ClientCompanyRepository clientCompanyRepo;
+    private final ProjectManagerRepository projectManagerRepo;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -37,8 +38,7 @@ public class RegistrationService {
             String nationalId,
             String title,
             String companyRegNo,
-            String phoneNumber
-    ) {
+            String phoneNumber) {
 
         // ===== Basic validation =====
         if (email == null || email.trim().isEmpty()) {
@@ -72,7 +72,8 @@ public class RegistrationService {
                 // Validate file size (max 1MB = 1,048,576 bytes)
                 long maxSize = 1024 * 1024; // 1MB
                 if (logoFile.getSize() > maxSize) {
-                    throw new IllegalArgumentException("Logo file size must be less than 1MB. Please compress or resize your image.");
+                    throw new IllegalArgumentException(
+                            "Logo file size must be less than 1MB. Please compress or resize your image.");
                 }
                 logoData = logoFile.getBytes();
             }
@@ -111,7 +112,8 @@ public class RegistrationService {
             if (title == null || title.trim().isEmpty()) {
                 throw new IllegalArgumentException("Title is required for software company");
             }
-            if (!title.equalsIgnoreCase("CEO") && !title.equalsIgnoreCase("CTO") && !title.equalsIgnoreCase("Legal Rep")) {
+            if (!title.equalsIgnoreCase("CEO") && !title.equalsIgnoreCase("CTO")
+                    && !title.equalsIgnoreCase("Legal Rep")) {
                 throw new IllegalArgumentException("Title must be one of: CEO, CTO, or Legal Rep");
             }
             if (companyRegNo == null || companyRegNo.trim().isEmpty()) {
@@ -186,7 +188,8 @@ public class RegistrationService {
                 if (title == null || title.trim().isEmpty()) {
                     throw new IllegalArgumentException("Title is required for corporate client");
                 }
-                if (!title.equalsIgnoreCase("CEO") && !title.equalsIgnoreCase("CTO") && !title.equalsIgnoreCase("Legal Rep")) {
+                if (!title.equalsIgnoreCase("CEO") && !title.equalsIgnoreCase("CTO")
+                        && !title.equalsIgnoreCase("Legal Rep")) {
                     throw new IllegalArgumentException("Title must be one of: CEO, CTO, or Legal Rep");
                 }
                 if (companyRegNo == null || companyRegNo.trim().isEmpty()) {
@@ -217,6 +220,54 @@ public class RegistrationService {
         else {
             throw new IllegalArgumentException("Invalid role");
         }
+
+        return new RegisterResponse(user.getId(), user.getRole().name());
+    }
+
+    @Transactional
+    public RegisterResponse registerProjectManager(
+            Long companyUserId, // The ID of the logged-in company user
+            String firstName,
+            String lastName,
+            String email,
+            String password) {
+        // 1. Validate
+        if (email == null || email.trim().isEmpty())
+            throw new IllegalArgumentException("Email is required");
+        if (password == null || password.trim().isEmpty())
+            throw new IllegalArgumentException("Password is required");
+        if (firstName == null || firstName.trim().isEmpty())
+            throw new IllegalArgumentException("First name is required");
+        if (lastName == null || lastName.trim().isEmpty())
+            throw new IllegalArgumentException("Last name is required");
+
+        if (userRepo.existsByEmail(email.trim().toLowerCase())) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+
+        // 2. Get the Company (Parent)
+        // Ensure the companyUserId refers to a User who is a SOFTWARE_COMPANY
+        // Then get the Company entity associated with that User.
+        Company company = companyRepo.findByUser_Id(companyUserId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Company profile not found for the provided user ID: " + companyUserId));
+
+        // 3. Create User
+        User user = new User();
+        user.setEmail(email.trim().toLowerCase());
+        user.setPassword(passwordEncoder.encode(password));
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setRole(UserRole.PROJECT_MANAGER);
+
+        user = userRepo.save(user);
+
+        // 4. Create ProjectManager Entity
+        ProjectManager pm = new ProjectManager();
+        pm.setUser(user);
+        pm.setCompany(company);
+
+        projectManagerRepo.save(pm);
 
         return new RegisterResponse(user.getId(), user.getRole().name());
     }

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatCard from '../../components/Company/CompanyHome/StatCard';
 import Header from '../../components/Company/CompanyHome/Header';
 import Modal from '../../components/Company/CompanyHome/Modal';
 import AddManagerForm from '../../components/Company/CompanyHome/AddManagerForm';
+import { getDashboardStats, registerProjectManager, getProjectManagers, updateProjectManager, deleteProjectManager } from '../../services/Company/companyService';
+import { toast } from 'react-toastify';
 import './CompanyHome.css';
 
 // Define the Manager Interface
@@ -18,51 +20,95 @@ interface Manager {
 
 const CompanyHome: React.FC = () => {
   // 1. STATE MANAGEMENT
-  const [managers, setManagers] = useState<Manager[]>([
-    { id: 1, name: "Ahmed Mansour", email: "ahmed.m@lexguard.ai", role: "General Counsel", dept: "CAIRO HQ", status: "Active", history: ["Project Alpha", "Q3 Compliance Audit"] },
-    { id: 2, name: "Dina Kamal", email: "dina.k@lexguard.ai", role: "Junior Associate", dept: "COMPLIANCE UNIT", status: "Active", history: ["Contract Review X"] },
-    { id: 3, name: "Omar Sherif", email: "omar.s@lexguard.ai", role: "Compliance Lead", dept: "LEGAL OPERATIONS", status: "Inactive", history: ["Global Expansion"] },
-  ]);
+  const [managers, setManagers] = useState<Manager[]>([]);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedManager, setSelectedManager] = useState<Manager | null>(null);
+  
+  const [stats, setStats] = useState({
+      totalContracts: 0,
+      activeRequests: 0,
+      totalProjectManagers: 0
+  });
 
-  // 2. HANDLERS
-  const handleAddManager = (newData: any) => {
-    const newManager: Manager = {
-      id: Date.now(),
-      name: newData.name,
-      email: newData.email,
-      role: newData.role,
-      dept: newData.department,
-      status: 'Active',
-      history: []
-    };
-    setManagers([...managers, newManager]);
-    setIsAddModalOpen(false);
-  };
+  useEffect(() => {
+    loadDashboardStats();
+    loadProjectManagers();
+  }, []);
 
-  const handleEditManager = (updatedData: any) => {
-    setManagers(managers.map(m => m.id === selectedManager?.id ? { ...m, ...updatedData, dept: updatedData.department } : m));
-    setIsEditModalOpen(false);
-  };
-
-  const handleDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this manager?")) {
-      setManagers(managers.filter(m => m.id !== id));
+  const loadDashboardStats = async () => {
+    const data = await getDashboardStats();
+    if (data) {
+        setStats(data);
     }
   };
 
-  const toggleStatus = (id: number) => {
-    setManagers(managers.map(m => {
-      if (m.id === id) {
-        return { ...m, status: m.status === 'Active' ? 'Inactive' : 'Active' };
+  const loadProjectManagers = async () => {
+      const data = await getProjectManagers();
+      if (data) {
+          // Map backend entity to frontend Manager interface
+          // Backend ProjectManager has: id, user: { firstName, lastName, email, role }
+          const mappedManagers = data.map((pm: any) => ({
+              id: pm.id,
+              name: `${pm.user.firstName} ${pm.user.lastName}`,
+              email: pm.user.email,
+              role: "Project Manager", // Fixed role
+              dept: "Projects",        // Default or remove if not needed
+              status: "Active",        // Default since we removed status management
+              history: []
+          }));
+          setManagers(mappedManagers);
       }
-      return m;
-    }));
   };
+
+  // 2. HANDLERS
+  const handleAddManager = async (newData: any) => {
+    try {
+        await registerProjectManager(newData);
+        toast.success("Project Manager registered successfully!");
+        setIsAddModalOpen(false);
+        loadDashboardStats();
+        loadProjectManagers();
+    } catch (error: any) {
+        toast.error(error.response?.data?.error || "Failed to register manager");
+    }
+  };
+
+  const handleEditManager = async (updatedData: any) => {
+    if (!selectedManager) return;
+    try {
+        // We only support updating firstName, lastName, email in the UI form currently
+        // We need to split name back to first/last if form returns full name or handle accordingly
+        // Assuming AddManagerForm (reused) returns firstName, lastName logic we added:
+        await updateProjectManager(selectedManager.id, {
+            firstName: updatedData.firstName,
+            lastName: updatedData.lastName,
+            email: updatedData.email
+        });
+        toast.success("Project Manager updated successfully");
+        setIsEditModalOpen(false);
+        loadProjectManagers();
+    } catch (error: any) {
+        toast.error("Failed to update manager");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Are you sure you want to delete this manager? This action cannot be undone.")) {
+      try {
+          await deleteProjectManager(id);
+          toast.success("Project Manager deleted successfully");
+          loadProjectManagers();
+          loadDashboardStats();
+      } catch (error) {
+          toast.error("Failed to delete manager");
+      }
+    }
+  };
+  
+  // Toggle status removed as requested
 
   const openEdit = (manager: Manager) => {
     setSelectedManager(manager);
@@ -81,9 +127,10 @@ const CompanyHome: React.FC = () => {
       <div className="corporate-container w-100 p-0">
         <div className="row g-4 mb-5">
            {/* Stat cards remain the same */}
-           <div className="col-md-4"><StatCard title="Total Contracts" value="1,284" icon="bi-file-earmark-text" variant="gray" /></div>
-           <div className="col-md-4"><StatCard title="Active Requests" value={managers.length.toString()} icon="bi-people" variant="mint" /></div>
-           <div className="col-md-4"><StatCard title="Team Leads" value="18" icon="bi-people" variant="blue" /></div>
+           {/* Stat cards remain the same */}
+           <div className="col-md-4"><StatCard title="Total Contracts" value={stats.totalContracts.toLocaleString()} icon="bi-file-earmark-text" variant="gray" /></div>
+           <div className="col-md-4"><StatCard title="Active Requests" value={stats.activeRequests.toString()} icon="bi-people" variant="mint" /></div>
+           <div className="col-md-4"><StatCard title="Project Managers" value={stats.totalProjectManagers.toString()} icon="bi-people" variant="blue" /></div>
         </div>
 
         <div className="flat-table-container bg-white rounded-4 shadow-sm border overflow-hidden w-100">
@@ -94,12 +141,12 @@ const CompanyHome: React.FC = () => {
             </button>
           </div>
 
+
           <table className="table corporate-table align-middle mb-0 w-100">
             <thead>
               <tr className="text-muted small text-uppercase bg-light">
                 <th className="ps-5 py-3 border-0">Manager Name</th>
-                <th className="border-0">Role / Department</th>
-                <th className="border-0">Status</th>
+                {/* Removed Role/Dept and Status columns as requested */}
                 <th className="text-end pe-5 border-0">Actions</th>
               </tr>
             </thead>
@@ -115,23 +162,7 @@ const CompanyHome: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td>
-                    <div className="fw-bold small">{m.role}</div>
-                    <div className="text-muted x-small">{m.dept}</div>
-                  </td>
-                  <td>
-                    <div className="form-check form-switch d-flex align-items-center gap-2">
-                      <input 
-                        className="form-check-input cursor-pointer" 
-                        type="checkbox" 
-                        checked={m.status === 'Active'} 
-                        onChange={() => toggleStatus(m.id)}
-                      />
-                      <span className={`status-pill status-${m.status.toLowerCase().replace(' ', '-')}`}>
-                        {m.status.toUpperCase()}
-                      </span>
-                    </div>
-                  </td>
+                  {/* Removed Role/Dept and Status columns */}
                   <td className="text-end pe-5">
                     <div className="action-icons">
                       <i className="bi bi-pencil me-3 cursor-pointer text-primary" onClick={() => openEdit(m)}></i>

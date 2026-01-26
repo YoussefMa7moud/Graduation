@@ -35,6 +35,7 @@ import 'react-toastify/dist/ReactToastify.css'; // Don't forget the CSS!
 import ProposalFeedback from "./pages/Client/MangeProject/ProposalFeedback";
 import NDASigning from "./pages/Client/MangeProject/NDASigning";
 import SignNDA from "./pages/Company/SignNDA";
+
 /**
  * Component that redirects authenticated users away from auth pages
  */
@@ -346,6 +347,16 @@ const AppRoutes: React.FC = () => {
 
 
       
+      {/* Project Manager Routes - Only accessible by PROJECT_MANAGER role */}
+ 
+
+  
+
+
+
+
+      
+
     </Routes>
 
 

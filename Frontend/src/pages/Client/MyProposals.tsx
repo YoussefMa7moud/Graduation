@@ -21,6 +21,7 @@ interface Proposal {
   maintenancePeriod: string;
   status: string;
   createdAt: string;
+  hasContract?: boolean; // Added check from backend
 }
 
 const MyProposals: React.FC = () => {
@@ -187,7 +188,7 @@ const MyProposals: React.FC = () => {
                         </span>
                       </td>
                       <td className="text-end pe-4">
-                        {['Pending', 'Rejected with Note'].includes(p.status || 'Pending') ? (
+                        {['Pending', 'Rejected with Note'].includes(p.status || 'Pending') && !p.hasContract ? (
                             <>
                                 <i className="bi bi-pencil text-new cursor-pointer me-3" onClick={() => handleEdit(p)} title="Edit Proposal"></i>
                                 {p.status !== 'Rejected with Note' && (

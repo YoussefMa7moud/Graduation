@@ -19,7 +19,7 @@ const ClientRequests: React.FC = () => {
   const [declineType, setDeclineType] = useState<'delete' | 'note'>('delete');
   const [rejectionNote, setRejectionNote] = useState('');
 
-  const ALLOWED_STATUSES = ['WAITING_FOR_COMPANY', 'WAITING_FOR_NDA', 'REJECTED_WITH_NOTE', 'RESUBMITTED'];
+  const ALLOWED_STATUSES = ['WAITING_FOR_COMPANY', 'REJECTED_WITH_NOTE', 'RESUBMITTED'];
 
   useEffect(() => { loadSubmissions(); }, []);
 

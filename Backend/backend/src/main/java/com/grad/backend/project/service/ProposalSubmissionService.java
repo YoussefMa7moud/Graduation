@@ -16,6 +16,8 @@ import com.grad.backend.project.enums.ClientType;
 import com.grad.backend.project.enums.SubmissionStatus;
 import com.grad.backend.project.repository.ProjectProposalRepository;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
+import com.grad.backend.contracts.repository.ContractRecordRepository;
+import com.grad.backend.contracts.entity.ContractRecord;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class ProposalSubmissionService {
     private final CompanyRepository companyRepository;
     private final ClientCompanyRepository clientCompanyRepo;
     private final ClientPersonRepository clientPersonRepo;
+    private final ContractRecordRepository contractRepository;
 
     @Transactional
     public ProposalSubmission sendProposalToCompany(Long proposalId, Long softwareCompanyId, User currentUser) {
@@ -124,6 +127,12 @@ public class ProposalSubmissionService {
     public void deleteSubmission(Long submissionId) {
         ProposalSubmission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        // Cleanup associated contracts (NDAs, etc) to prevent zombie records
+        List<ContractRecord> contracts = contractRepository.findBySubmissionId(submissionId);
+        if (!contracts.isEmpty()) {
+            contractRepository.deleteAll(contracts);
+        }
 
         ProjectProposal proposal = submission.getProposal();
         proposal.setStatus("Pending");

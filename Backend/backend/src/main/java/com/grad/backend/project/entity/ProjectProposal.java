@@ -68,4 +68,7 @@ public class ProjectProposal {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Transient
+    private boolean hasContract = false;
 }

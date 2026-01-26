@@ -30,13 +30,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("JwtAuthFilter: No Bearer token found");
             filterChain.doFilter(request, response);
             return;
         }
@@ -44,22 +44,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwt = authHeader.substring(7);
         try {
             userEmail = jwtService.extractUsername(jwt);
-            
+            System.out.println("JwtAuthFilter: Extracted email: " + userEmail);
+
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                userRepository.findByEmail(userEmail).ifPresent(user -> {
+                userRepository.findByEmail(userEmail).ifPresentOrElse(user -> {
+                    System.out.println("JwtAuthFilter: Found user in DB: " + user.getEmail());
                     if (jwtService.validateToken(jwt)) {
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                 user,
                                 null,
-                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
-                        );
+                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authToken);
+                        System.out.println("JwtAuthFilter: Authenticated user " + userEmail);
+                    } else {
+                        System.out.println("JwtAuthFilter: Token validation failed");
                     }
-                });
+                }, () -> System.out.println("JwtAuthFilter: User not found in DB"));
             }
         } catch (Exception e) {
-            // Token is invalid, continue without authentication
+            System.out.println("JwtAuthFilter: Error processing token: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);

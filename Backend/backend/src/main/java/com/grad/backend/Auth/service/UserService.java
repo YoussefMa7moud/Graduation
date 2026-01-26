@@ -25,9 +25,15 @@ public class UserService {
     @Transactional
     public User updateProfile(User user, ProfileUpdateRequest request) {
         // Update User entity
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
         user = userRepository.save(user);
 
         // For CLIENT_PERSON, also update ClientPerson entity
@@ -35,8 +41,10 @@ public class UserService {
             Optional<ClientPerson> clientPersonOpt = clientPersonRepository.findById(user.getId());
             if (clientPersonOpt.isPresent()) {
                 ClientPerson clientPerson = clientPersonOpt.get();
-                clientPerson.setFirstName(request.getFirstName());
-                clientPerson.setLastName(request.getLastName());
+                if (request.getFirstName() != null)
+                    clientPerson.setFirstName(request.getFirstName());
+                if (request.getLastName() != null)
+                    clientPerson.setLastName(request.getLastName());
                 clientPersonRepository.save(clientPerson);
             }
         }
@@ -50,7 +58,7 @@ public class UserService {
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new RuntimeException("Old password does not match!");
         }
-        
+
         // 2. Encrypt and save the new password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);

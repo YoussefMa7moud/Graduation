@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { saveUser } from '../../utils/auth.utils';
+import { normalizeRole } from '../../utils/role.utils';
+import { API_BASE_URL } from '../../config/api.config';
 
 const CompanySettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('editProfile');
-  const { user } = useAuth(); // user contains firstName, lastName, email, role
+  const { user, refreshUser } = useAuth(); // user contains firstName, lastName, email, role
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Form states for firstName, lastName, timezone, logo
+  // Form states for firstName, lastName
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
-  const [timezone, setTimezone] = useState('(GMT+02:00) Cairo, Egypt');
   const [logo, setLogo] = useState<File | null>(null);
 
   const tabs = [
@@ -22,27 +24,43 @@ const CompanySettings: React.FC = () => {
     { key: 'security', label: 'Security', icon: 'bi-shield-lock' },
   ];
 
-const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  try {
-    const token = localStorage.getItem('auth_token');
+  const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      // 1. Update Profile (Name)
+      const response = await api.put('/api/users/profile', {
+        firstName,
+        lastName
+      });
 
-    await axios.put('/api/users/profile', {
-      firstName,
-      lastName
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+      // 2. Update Logo (if changed)
+      if (logo instanceof File) {
+        const formData = new FormData();
+        formData.append('file', logo);
+        await api.post('/api/images/company', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
 
-    // update localStorage
-    const updatedUser = { ...user, firstName, lastName };
-    localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      // update localStorage
+      const updatedUser = { 
+        ...user, 
+        firstName, 
+        lastName,
+        // Ensure required fields are present if user was null (shouldn't be)
+        userId: user?.userId || 0,
+        email: user?.email || '',
+        role: user?.role || 'company'
+      };
+      
+      saveUser(updatedUser);
+      refreshUser();
 
-    toast.success("Profile updated successfully!");
-  } catch (err) {
-    toast.error("Failed to update profile.");
-  }
-};
+      toast.success("Profile updated successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update profile.");
+    }
+  };
 
 
   const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -55,10 +73,7 @@ const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     }
 
     try {
-      const token = localStorage.getItem('auth_token');
-      await axios.put('/api/users/password', { currentPassword, newPassword }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put('/api/users/password', { currentPassword, newPassword });
       toast.success("Password updated successfully!");
       e.currentTarget.reset();
     } catch (err: any) {
@@ -94,28 +109,31 @@ const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
                 />
               </div>
 
-              <div style={{ position: 'relative', marginTop: '12px' }}>
-                <select
-                  name="timezone"
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  style={styles.select}
-                >
-                  <option>(GMT+02:00) Cairo, Egypt</option>
-                  <option>(GMT+00:00) London, UK</option>
-                  <option>(GMT-05:00) New York, USA</option>
-                </select>
-                <i className="bi bi-chevron-down" style={{ position: 'absolute', right: '10px', top: '12px', color: '#64748b', pointerEvents: 'none' }}></i>
-              </div>
-
               <div style={{ marginTop: '12px' }}>
                 <label style={styles.label}>Company Logo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setLogo(e.target.files?.[0] || null)}
-                  style={styles.input}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                    <div style={styles.avatarPreview}>
+                        {logo ? (
+                             <img src={URL.createObjectURL(logo)} alt="Preview" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                             <img 
+                                src={`${API_BASE_URL}/api/images/company/${user?.userId}`} 
+                                alt="Company Logo" 
+                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none'; 
+                                    e.currentTarget.parentElement!.innerText = firstName?.substring(0,1) || 'C';
+                                }}
+                             />
+                        )}
+                    </div>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setLogo(e.target.files?.[0] || null)}
+                        style={styles.input}
+                    />
+                </div>
               </div>
 
               <button type="submit" style={styles.button}>Save Changes</button>
@@ -161,7 +179,18 @@ const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
       <aside style={styles.sidebar}>
         <div style={styles.profileCard}>
           <div style={styles.avatar}>
-            {firstName?.substring(0,1) || 'C'}
+            <img 
+                src={`${API_BASE_URL}/api/images/company/${user?.userId}`} 
+                alt="Profile" 
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerText = firstName?.substring(0,1) || 'C';
+                    e.currentTarget.parentElement!.style.display = 'flex';
+                    e.currentTarget.parentElement!.style.alignItems = 'center';
+                    e.currentTarget.parentElement!.style.justifyContent = 'center';
+                }} 
+            />
           </div>
           <div style={styles.profileInfo}>
             <div style={styles.profileName}>
@@ -188,7 +217,8 @@ const styles: { [key: string]: React.CSSProperties } = {
   container: { display: 'flex', gap: '24px', padding: '24px', flexWrap: 'wrap', fontFamily: 'Inter, system-ui, sans-serif', color: '#1e293b' },
   sidebar: { flex: '1 1 220px', minWidth: '220px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px' },
   profileCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#f1f5f9', borderRadius: '12px', flexShrink: 0 },
-  avatar: { width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#17253b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px' },
+  avatar: { width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#17253b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px', overflow: 'hidden' },
+  avatarPreview: { width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#17253b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '20px', overflow: 'hidden' },
   profileInfo: { display: 'flex', flexDirection: 'column' },
   profileName: { fontWeight: 600 },
   profileEmail: { fontSize: '12px', color: '#64748b' },
@@ -198,8 +228,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   card: { backgroundColor: '#fff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' },
   cardTitle: { marginBottom: '16px', fontSize: '20px', color: '#1e293b' },
   form: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  input: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#1e293b' },
-  select: { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', backgroundColor: '#f8fafc', color: '#1e293b', appearance: 'none', cursor: 'pointer' },
+  input: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#1e293b', flex: 1 },
   button: { padding: '10px 12px', borderRadius: '8px', border: 'none', backgroundColor: '#17253b', color: '#fff', cursor: 'pointer', fontWeight: 600 },
   passwordField: { position: 'relative', display: 'flex', alignItems: 'center' },
   passwordInput: { width: '100%', padding: '10px 30px 10px 12px', border: 'none', borderBottom: '1px solid #cbd5e1', backgroundColor: 'transparent', outline: 'none', color: '#1e293b', fontSize: '14px' },

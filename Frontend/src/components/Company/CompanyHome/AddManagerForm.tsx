@@ -8,21 +8,25 @@ interface AddManagerFormProps {
 
 const AddManagerForm: React.FC<AddManagerFormProps> = ({ onClose, onSubmit, initialData }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
-    department: 'CAIRO HQ',
     role: 'Project Manager'
   });
 
   // Effect to populate data if we are editing
   useEffect(() => {
     if (initialData) {
+      // Assuming initialData might just have 'name', we might need to split it if we reuse this form for edit
+      // For simplicity in this task, we focus on ADD (User request mentioned Add Project Manager)
+      // If we need to support edit, we'd need to parse name or change initialData structure.
+      const [first, ...rest] = initialData.name ? initialData.name.split(' ') : ['', ''];
       setFormData({
-        name: initialData.name,
+        firstName: first,
+        lastName: rest.join(' '),
         email: initialData.email,
-        password: '', // Usually don't pre-fill password for security
-        department: initialData.dept,
+        password: '', 
         role: initialData.role
       });
     }
@@ -39,15 +43,27 @@ const AddManagerForm: React.FC<AddManagerFormProps> = ({ onClose, onSubmit, init
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }}>
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Full Name</label>
-        <input 
-          type="text" 
-          value={formData.name}
-          style={styles.input} 
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
-          required 
-        />
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <div style={{ flex: 1 }}>
+            <label style={styles.label}>First Name</label>
+            <input 
+            type="text" 
+            value={formData.firstName}
+            style={styles.input} 
+            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+            required 
+            />
+        </div>
+        <div style={{ flex: 1 }}>
+            <label style={styles.label}>Last Name</label>
+            <input 
+            type="text" 
+            value={formData.lastName}
+            style={styles.input} 
+            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+            required 
+            />
+        </div>
       </div>
       <div style={styles.formGroup}>
         <label style={styles.label}>Email Address</label>
@@ -70,18 +86,7 @@ const AddManagerForm: React.FC<AddManagerFormProps> = ({ onClose, onSubmit, init
             />
         </div>
       )}
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Department</label>
-        <select 
-            style={styles.input} 
-            value={formData.department}
-            onChange={(e) => setFormData({...formData, department: e.target.value})}
-        >
-          <option>CAIRO HQ</option>
-          <option>COMPLIANCE UNIT</option>
-          <option>LEGAL OPERATIONS</option>
-        </select>
-      </div>
+
 
       <div style={styles.footer}>
         <button type="button" onClick={onClose} style={styles.cancelBtn}>Cancel</button>

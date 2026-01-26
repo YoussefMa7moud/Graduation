@@ -83,8 +83,25 @@ const OngoingContracts: React.FC = () => {
   }, []);
 
   const handleManage = (p: Project) => {
-    // Navigate company to their specific workflow workspace
-    navigate('/CompanyWorkspace', { state: { submissionId: p.id } });
+    // Logic for specific status actions
+    if (p.rawStatus === 'WAITING_FOR_NDA') {
+        // Replicate logic from ClientRequests for Sign NDA
+        navigate('/SignNda', { state: { project: { id: p.id, company: p.clientName } } });
+    } else {
+        // Navigate company to their specific workflow workspace
+        navigate('/CompanyWorkspace', { state: { submissionId: p.id } });
+    }
+  };
+
+  const handleWithdraw = async (id: number) => {
+      if (!window.confirm("Are you sure you want to withdraw and delete this project?")) return;
+      try {
+          await submissionService.deleteSubmission(id);
+          toast.success("Project withdrawn successfully");
+          fetchProjects();
+      } catch (error) {
+          toast.error("Failed to withdraw project");
+      }
   };
 
   if (isLoading) return <div className="loading-screen"><div className="spinner"></div></div>;
@@ -139,12 +156,21 @@ const OngoingContracts: React.FC = () => {
                   <div><small>CLIENT TYPE</small><strong>ACTIVE</strong></div>
                 </div>
 
-                <div className="card-actions">
+                <div className="card-actions d-flex gap-2">
                   <button 
-                    className="primary w-100" 
+                    className="primary flex-grow-1" 
                     onClick={() => handleManage(p)}
+                    disabled={p.rawStatus === "WAITING_FOR_COMPANY"} 
                   >
-                    Open Workspace
+                    {p.rawStatus === 'WAITING_FOR_NDA' ? 'Sign NDA' : 
+                     p.rawStatus === 'WAITING_FOR_COMPANY' ? 'Pending Approval' : 'Open Workspace'}
+                  </button>
+
+                  <button 
+                    className="btn btn-outline-danger"
+                    onClick={() => handleWithdraw(p.id)}
+                  >
+                    Withdraw
                   </button>
                 </div>
               </div>

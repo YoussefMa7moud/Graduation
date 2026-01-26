@@ -3,6 +3,10 @@ package com.grad.backend.project.service;
 import com.grad.backend.project.entity.ProjectProposal;
 import com.grad.backend.project.DTO.ProjectProposalRequest;
 import com.grad.backend.project.repository.ProjectProposalRepository;
+import com.grad.backend.contracts.repository.ContractRecordRepository;
+import com.grad.backend.contracts.entity.ContractRecord;
+import com.grad.backend.project.repository.ProposalSubmissionRepository;
+import com.grad.backend.project.entity.ProposalSubmission;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -15,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectProposalServiceImpl implements ProjectProposalService {
 
     private final ProjectProposalRepository proposalRepository;
+    private final ProposalSubmissionRepository submissionRepository;
+    private final ContractRecordRepository contractRepository;
 
     @Override
     @Transactional
@@ -42,7 +48,25 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
 
     @Override
     public List<ProjectProposal> getProposalsByClientId(Long clientId) {
-        return proposalRepository.findByClientId(clientId);
+        List<ProjectProposal> proposals = proposalRepository.findByClientId(clientId);
+
+        // Populate hasContract for each proposal
+        for (ProjectProposal p : proposals) {
+            checkAndSetContractStatus(p);
+        }
+
+        return proposals;
+    }
+
+    private void checkAndSetContractStatus(ProjectProposal p) {
+        List<ProposalSubmission> submissions = submissionRepository.findByProposal_Id(p.getId());
+        for (ProposalSubmission s : submissions) {
+            List<ContractRecord> contracts = contractRepository.findBySubmissionId(s.getId());
+            if (!contracts.isEmpty()) {
+                p.setHasContract(true);
+                break;
+            }
+        }
     }
 
     @Override
@@ -62,43 +86,43 @@ public class ProjectProposalServiceImpl implements ProjectProposalService {
 
     @Override
     public ProjectProposal getProposalById(Long proposalId, Long authenticatedClientId) {
- ProjectProposal proposal = proposalRepository.findById(proposalId)
- .orElseThrow(() -> new RuntimeException("Proposal not found"));
+        ProjectProposal proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new RuntimeException("Proposal not found"));
 
-        // 🔐 Ownership check
         if (!proposal.getClientId().equals(authenticatedClientId)) {
- throw new RuntimeException("You are not allowed to view this proposal");
+            throw new RuntimeException("You are not allowed to view this proposal");
         }
- return proposal;
+
+        checkAndSetContractStatus(proposal);
+
+        return proposal;
     }
 
-
-    
     @Override
     public ProjectProposal updateProposal(Long proposalId, ProjectProposalRequest request, Long authenticatedClientId) {
- ProjectProposal proposal = proposalRepository.findById(proposalId)
- .orElseThrow(() -> new RuntimeException("Proposal not found"));
+        ProjectProposal proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new RuntimeException("Proposal not found"));
 
         // 🔐 Ownership check
         if (!proposal.getClientId().equals(authenticatedClientId)) {
- throw new RuntimeException("You are not allowed to update this proposal");
+            throw new RuntimeException("You are not allowed to update this proposal");
         }
 
         // Update fields
- proposal.setProjectTitle(request.getProjectTitle());
- proposal.setProjectType(request.getProjectType());
- proposal.setProblemSolved(request.getProblemSolved());
- proposal.setDescription(request.getDescription());
- proposal.setMainFeatures(request.getMainFeatures());
- proposal.setUserRoles(request.getUserRoles());
- proposal.setScalability(request.getScalability() != null ? request.getScalability() : "Small");
- proposal.setDurationDays(request.getDurationDays());
- proposal.setBudgetUsd(request.getBudgetUsd());
- proposal.setNdaRequired(Boolean.TRUE.equals(request.getNdaRequired()));
- proposal.setCodeOwnership(request.getCodeOwnership());
- proposal.setMaintenancePeriod(request.getMaintenancePeriod());
+        proposal.setProjectTitle(request.getProjectTitle());
+        proposal.setProjectType(request.getProjectType());
+        proposal.setProblemSolved(request.getProblemSolved());
+        proposal.setDescription(request.getDescription());
+        proposal.setMainFeatures(request.getMainFeatures());
+        proposal.setUserRoles(request.getUserRoles());
+        proposal.setScalability(request.getScalability() != null ? request.getScalability() : "Small");
+        proposal.setDurationDays(request.getDurationDays());
+        proposal.setBudgetUsd(request.getBudgetUsd());
+        proposal.setNdaRequired(Boolean.TRUE.equals(request.getNdaRequired()));
+        proposal.setCodeOwnership(request.getCodeOwnership());
+        proposal.setMaintenancePeriod(request.getMaintenancePeriod());
         // Status should probably not be updated by the client directly
 
- return proposalRepository.save(proposal);
+        return proposalRepository.save(proposal);
     }
 }

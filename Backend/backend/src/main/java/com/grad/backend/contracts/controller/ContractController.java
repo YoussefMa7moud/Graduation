@@ -24,9 +24,9 @@ public class ContractController {
     @GetMapping("/nda/draft")
     public ResponseEntity<NdaDraftResponse> getNdaDraft(
             @RequestParam Long submissionId,
-            @AuthenticationPrincipal User user
-    ) {
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User user) {
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         try {
             NdaDraftResponse r = contractService.getDraft(submissionId, user.getId());
             return ResponseEntity.ok(r);
@@ -38,16 +38,15 @@ public class ContractController {
     @PostMapping("/nda/sign/client")
     public ResponseEntity<NdaDraftResponse> signClient(
             @RequestBody NdaSignRequest request,
-            @AuthenticationPrincipal User user
-    ) {
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User user) {
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         try {
             NdaDraftResponse r = contractService.signClient(
                     request.getSubmissionId(),
                     user.getId(),
                     request.getSignatureBase64(),
-                    request.getContractPayloadJson()
-            );
+                    request.getContractPayloadJson());
             return ResponseEntity.ok(r);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -57,16 +56,15 @@ public class ContractController {
     @PostMapping("/nda/sign/company")
     public ResponseEntity<NdaDraftResponse> signCompany(
             @RequestBody NdaSignRequest request,
-            @AuthenticationPrincipal User user
-    ) {
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User user) {
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         try {
             NdaDraftResponse r = contractService.signCompany(
                     request.getSubmissionId(),
                     user.getId(),
                     request.getSignatureBase64(),
-                    request.getContractPayloadJson()
-            );
+                    request.getContractPayloadJson());
             return ResponseEntity.ok(r);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -75,16 +73,28 @@ public class ContractController {
 
     @GetMapping("/records")
     public ResponseEntity<List<ContractRecordResponse>> listRecords(@AuthenticationPrincipal User user) {
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         List<ContractRecordResponse> list = contractService.listRecordsByCompany(user.getId());
         return ResponseEntity.ok(list);
     }
 
     @GetMapping(value = "/records/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<byte[]> getRecordPdf(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         byte[] pdf = contractService.getPdfByIdAndCompany(id, user.getId());
-        if (pdf == null) return ResponseEntity.notFound().build();
+        if (pdf == null)
+            return ResponseEntity.notFound().build();
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
+    }
+
+    @GetMapping("/client/signed")
+    public ResponseEntity<List<com.grad.backend.contracts.dto.SignedProjectDTO>> getSignedContractsForClient(
+            @AuthenticationPrincipal User user) {
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        // user.getId() matches the client_id in ProposalSubmission
+        return ResponseEntity.ok(contractService.getSignedProjectsForClient(user.getId()));
     }
 }

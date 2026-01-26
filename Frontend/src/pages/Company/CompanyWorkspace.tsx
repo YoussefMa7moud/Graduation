@@ -61,6 +61,9 @@ const CompanyWorkspace: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ContractChatMessageDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+
+
+  
   // --- Helpers ---
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 

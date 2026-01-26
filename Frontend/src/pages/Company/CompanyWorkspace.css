@@ -1,6 +1,6 @@
 :root {
   --navy: #0f172a;
-  --accent: #2563eb;
+  --accent: #17253b;
   --mint: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
@@ -627,7 +627,7 @@
   margin-top: 15px;
   padding: 5px 15px;
   background: #e8f5e9;
-  color: #2e7d32;
+  color: #17253b;
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.8rem;

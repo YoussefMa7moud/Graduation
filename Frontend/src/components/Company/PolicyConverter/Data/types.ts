@@ -9,6 +9,8 @@ export interface OCLGenerationResponse {
   oclCode: string;
   articleRef: string;
   validation: ValidationResult[];
+  category: string;
+  keywords: string[];
 }
 
 export interface PolicyInput {

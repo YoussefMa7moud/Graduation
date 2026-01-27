@@ -1,6 +1,6 @@
 
-import React from 'react';
-import type { OCLGenerationResponse } from './Data/types';
+import React, { useState } from 'react';
+import type { OCLGenerationResponse, PolicyInput } from './Data/types';
 import CodeEditor from './CodeEditor';
 import'./style.css';
 
@@ -9,9 +9,45 @@ interface LogicOutputPanelProps {
   result: OCLGenerationResponse | null;
   isGenerating: boolean;
   onDiscard: () => void;
+  onSave: (saveData: {
+    policyName: string;
+    legalFramework: string;
+    policyText: string;
+    oclCode: string;
+    explanation: string;
+    articleRef: string;
+  }) => Promise<void>;
+  currentInput: PolicyInput | null;
 }
 
-const LogicOutputPanel: React.FC<LogicOutputPanelProps> = ({ result, isGenerating, onDiscard }) => {
+const LogicOutputPanel: React.FC<LogicOutputPanelProps> = ({ 
+  result, 
+  isGenerating, 
+  onDiscard, 
+  onSave,
+  currentInput 
+}) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!result || !currentInput) return;
+    
+    setIsSaving(true);
+    try {
+      await onSave({
+        policyName: currentInput.name,
+        legalFramework: currentInput.framework,
+        policyText: currentInput.text,
+        oclCode: result.oclCode,
+        explanation: result.explanation,
+        articleRef: result.articleRef
+      });
+    } catch (error) {
+      // Error is already handled in onSave
+    } finally {
+      setIsSaving(false);
+    }
+  };
   return (
     <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900">
       <div className="p-6 bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
@@ -87,11 +123,21 @@ const LogicOutputPanel: React.FC<LogicOutputPanelProps> = ({ result, isGeneratin
             Discard Suggestion
           </button>
           <button 
-            disabled={!result}
+            onClick={handleSave}
+            disabled={!result || !currentInput || isSaving}
             className=" btn-lex-primary flex-[1.5] py-3 bg-primary text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span className="material-symbols-outlined text-lg">save</span>
-            Save as Rule
+            {isSaving ? (
+              <>
+                <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-lg">save</span>
+                Save as Rule
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/contracts/main/sign/company").authenticated()
                         .requestMatchers("/api/contracts/main/chat/send").authenticated()
                         .requestMatchers("/api/contracts/main/chat/messages").authenticated()
+                        .requestMatchers("/api/policies/**").authenticated()
 
                         .anyRequest().authenticated() // All other requests require authentication
 

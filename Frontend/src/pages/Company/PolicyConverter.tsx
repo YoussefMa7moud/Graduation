@@ -5,7 +5,7 @@ import HistoryBar from '../../components/Company/PolicyConverter/HistoryBar';
 import PolicyInputPanel from '../../components/Company/PolicyConverter/PolicyInputPanel';
 import LogicOutputPanel from '../../components/Company/PolicyConverter/LogicOutputPanel';
 import { type OCLGenerationResponse, LegalFramework, type PolicyInput, type HistoryItem } from '../../components/Company/PolicyConverter/Data/types';
-import { generateOCLLogic } from '../../services/geminiService';
+import { convertPolicy } from '../../services/Policy/policyService';
 
 const PolicyConverter: React.FC = () => {
   const [inputs, setInputs] = useState<PolicyInput[]>([
@@ -22,7 +22,11 @@ const PolicyConverter: React.FC = () => {
     
     setIsGenerating(true);
     try {
-      const result = await generateOCLLogic(activeInput.name, activeInput.framework, activeInput.text);
+      const result = await convertPolicy({
+        policyName: activeInput.name,
+        legalFramework: activeInput.framework,
+        policyText: activeInput.text
+      });
       setGeneratedResult(result);
       
       // Add to history
@@ -33,11 +37,46 @@ const PolicyConverter: React.FC = () => {
         result: result
       };
       setHistory(prev => [newHistoryItem, ...prev]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Generation failed:", error);
-      alert("Failed to generate logic.");
+      const errorMessage = error.message || "Failed to generate logic.";
+      
+      // If it's an authentication error, suggest logging in
+      if (errorMessage.includes('session') || errorMessage.includes('logged in')) {
+        if (confirm(`${errorMessage}\n\nWould you like to go to the login page?`)) {
+          window.location.href = '/auth';
+        }
+      } else {
+        alert(errorMessage);
+      }
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSave = async (saveData: {
+    policyName: string;
+    legalFramework: string;
+    policyText: string;
+    oclCode: string;
+    explanation: string;
+    articleRef: string;
+  }) => {
+    try {
+      const { savePolicy } = await import('../../services/Policy/policyService');
+      if (!generatedResult) {
+        throw new Error('No generated result to save.');
+      }
+
+      await savePolicy({
+        ...saveData,
+        category: generatedResult.category,
+        keywords: generatedResult.keywords ?? []
+      });
+      alert('Policy saved successfully!');
+    } catch (error: any) {
+      console.error("Save failed:", error);
+      alert(error.message || "Failed to save policy.");
     }
   };
 
@@ -72,6 +111,8 @@ const PolicyConverter: React.FC = () => {
           result={generatedResult}
           isGenerating={isGenerating}
           onDiscard={() => setGeneratedResult(null)}
+          onSave={handleSave}
+          currentInput={inputs.find(i => i.text.trim().length > 0) || null}
         />
       </div>
     </div>

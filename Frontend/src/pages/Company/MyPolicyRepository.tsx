@@ -3,6 +3,7 @@ import './MyPolicyRepository.css';
 // Import the new component
 import StatCard from '../../components/Company/MyPolicyRepository/StatCard';
 import api from '../../services/api';
+import { LegalFramework } from '../../components/Company/PolicyConverter/Data/types';
 
 interface Policy {
   id: number;
@@ -16,6 +17,8 @@ interface Policy {
 const MyPolicyRepository: React.FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedFramework, setSelectedFramework] = useState<string>('All');
 
   useEffect(() => {
     fetchPolicies();
@@ -44,12 +47,23 @@ const MyPolicyRepository: React.FC = () => {
     }
   };
 
+  const filteredPolicies = policies.filter(policy => {
+    const matchesSearch = 
+      policy.policyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      policy.policyText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      policy.oclCode.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesFramework = selectedFramework === 'All' || policy.legalFramework === selectedFramework;
+
+    return matchesSearch && matchesFramework;
+  });
+
   const totalRules = policies.length;
 
   return (
     <div className="w-100 p-0 m-0">
        <div className="container page-fade-in">
-      {/* Search Header (No Changes) */}
+      {/* Search Header */}
       <div className="bg-white p-3 rounded-3 shadow-sm border mb-4 d-flex align-items-center justify-content-between">
         <div className="position-relative flex-grow-1 me-4">
           <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
@@ -57,14 +71,23 @@ const MyPolicyRepository: React.FC = () => {
             type="text" 
             className="form-control border-0 bg-light ps-5 py-2 w-100" 
             placeholder="Search policies or rules..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="d-flex align-items-center gap-3">
-          <span className="text-muted small fw-bold">FRAMEWORK:</span>
-          <select className="form-select border-0 bg-light py-2 px-3" style={{ width: '220px' }}>
-            <option>All Frameworks</option>
+          <span className="text-muted small fw-bold">Associated with:</span>
+          <select 
+            className="form-select border-0 bg-light py-2 px-3" 
+            style={{ width: '220px' }}
+            value={selectedFramework}
+            onChange={(e) => setSelectedFramework(e.target.value)}
+          >
+            <option value="All">All Frameworks</option>
+            {Object.values(LegalFramework).map((framework) => (
+              <option key={framework} value={framework}>{framework}</option>
+            ))}
           </select>
-          <button className="btn btn-light border"><i className="bi bi-sliders"></i></button>
         </div>
       </div>
 
@@ -97,12 +120,12 @@ const MyPolicyRepository: React.FC = () => {
               <tr>
                 <td colSpan={5} className="text-center py-4">Loading policies...</td>
               </tr>
-            ) : policies.length === 0 ? (
+            ) : filteredPolicies.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-4">No policies found.</td>
+                <td colSpan={5} className="text-center py-4">No policies found matching your search.</td>
               </tr>
             ) : (
-              policies.map((p) => (
+              filteredPolicies.map((p) => (
                 <tr key={p.id}>
                   <td className="ps-4 py-3">
                     <div className="fw-bold text-dark">{p.policyName}</div>

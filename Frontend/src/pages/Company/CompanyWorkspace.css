@@ -57,24 +57,25 @@
 
 .btn-navy {
   background: var(--navy);
-  color: white;
+  color: #1e293b;
   border: none;
   padding: 10px 24px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
   transition: 0.2s;
+  color: white;
 }
-.btn-navy:hover { background: #000; }
 
 .btn-sec {
-  background: white;
+  background: #10b981;
   border: 1px solid var(--border-color);
   padding: 10px 24px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
   margin-right: 12px;
+  color: white;
 }
 
 .btn-success {

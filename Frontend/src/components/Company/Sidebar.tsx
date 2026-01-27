@@ -83,7 +83,7 @@ const Sidebar: React.FC = () => {
             <i className="bi bi-file-earmark-text-fill me-3"></i> Ongoing Contracts
           </NavLink>
           <NavLink to="/ContractRepository" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
-            <i className="bi bi-file-earmark-text-fill me-3"></i> Contract Repository
+            <i className="bi bi-database me-3"></i> Contract Repository
           </NavLink>
           <NavLink to="/PolicyConverter" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-ui-checks me-3"></i> Policy Converter

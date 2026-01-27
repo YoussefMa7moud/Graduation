@@ -4,68 +4,90 @@
     max-width: none !important;
 }
 
-/* NORMAL TABLE - No moving/scaling on hover */
+/* TABLE STYLES */
+.table-hover tbody tr {
+    transition: all 0.2s ease-in-out;
+}
+
 .table-hover tbody tr:hover {
-    background-color: #f8fafd !important;
-    transform: none !important; /* This removes the movement */
-    transition: none !important;
-    box-shadow: none !important;
+    background-color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+    position: relative;
 }
 
-/* Rule Badges */
-.badge-rule {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
+/* OCL Code Badge */
+code {
+    background-color: #17253b;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: #0d6efd;
+    border: 1px solid #17253b;
 }
-.badge-ocl { background-color: #e3fcef; color: #059669; }
-.badge-ai { background-color: #f3e8ff; color: #7c3aed; }
 
-/* Status Styles */
-.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.dot-active { background-color: #10b981; }
-.dot-draft { background-color: #cbd5e1; }
-.status-text { font-size: 13px; font-weight: 500; }
-.text-active { color: #10b981; }
-.text-draft { color: #64748b; }
-
-
-/* Existing CSS... */
-
-/* New Stat Card Styles */
+/* Stat Card Styles */
 .stat-card {
     min-height: 120px;
+    border: 1px solid #edf2f7 !important;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
 }
 
 .icon-container {
     width: 64px;
     height: 64px;
+    transition: all 0.3s ease;
 }
 
 .bg-mint-light {
-    background-color: #e6f7f1;
+    background-color: #d1fae5;
 }
 
 .bg-blue-light {
-    background-color: #e6efff;
+    background-color: #dbeafe;
 }
 
 .text-mint {
-    color: #00a87e;
+    color: #059669;
 }
 
 .text-blue {
-    color: #0056b3;
+    color: #2563eb;
 }
 
 .stat-title {
-    letter-spacing: 0.5px;
-    color: #8997a6;
+    letter-spacing: 0.8px;
+    color: #64748b;
+    font-size: 0.75rem;
 }
 
 .stat-count {
     color: #1e293b;
     font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -1px;
 }
 
+/* Page Fade In */
+.page-fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

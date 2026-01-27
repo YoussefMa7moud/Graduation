@@ -1,19 +1,50 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './MyPolicyRepository.css';
 // Import the new component
 import StatCard from '../../components/Company/MyPolicyRepository/StatCard';
+import api from '../../services/api';
+
+interface Policy {
+  id: number;
+  policyName: string;
+  policyText: string;
+  legalFramework: string;
+  oclCode: string;
+  createdAt: string;
+}
 
 const MyPolicyRepository: React.FC = () => {
-  // Sample data - in a real app, you'd calculate these
-  const totalRules = 24;
-  const activeRules = 18;
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const policies = [
-    { name: "Cairo HQ Data Residency", id: "OCL-2023-0892", law: "Egyptian Data Protection (151/2020)", type: "OCL", date: "Oct 12, 2023", status: "Active" },
-    { name: "Remote Work Overtime Clause", id: "AI-2023-1104", law: "Egyptian Labor Law (12/2003)", type: "AI", date: "Nov 04, 2023", status: "Draft" },
-    { name: "Financial Reporting Intervals", id: "OCL-2023-1255", law: "FRA Regulatory Rules", type: "OCL", date: "Dec 20, 2023", status: "Active" },
-    { name: "IP Assignment Standard", id: "OCL-2024-0102", law: "Egyptian Civil Code", type: "OCL", date: "Jan 15, 2024", status: "Active" },
-  ];
+  useEffect(() => {
+    fetchPolicies();
+  }, []);
+
+  const fetchPolicies = async () => {
+    try {
+      const response = await api.get<Policy[]>('/api/policies');
+      setPolicies(response.data);
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Are you sure you want to delete this policy?')) {
+      try {
+        await api.delete(`/api/policies/${id}`);
+        setPolicies(policies.filter(p => p.id !== id));
+      } catch (error) {
+        console.error('Error deleting policy:', error);
+        alert('Failed to delete policy');
+      }
+    }
+  };
+
+  const totalRules = policies.length;
 
   return (
     <div className="w-100 p-0 m-0">
@@ -43,51 +74,58 @@ const MyPolicyRepository: React.FC = () => {
         <div className="col-md-6">
           <StatCard title="Total Rules" count={totalRules} isActive={false} />
         </div>
-        <div className="col-md-6">
-          <StatCard title="Active Rules" count={activeRules} isActive={true} />
-        </div>
+        {/* Removed Active Rules Card as requested */}
       </div>
 
 
       <br />
 
-      {/* THE TABLE (No Changes) */}
+      {/* THE TABLE */}
       <div className="bg-white rounded-3 shadow-sm border overflow-hidden w-100 mb-4">
         <table className="table table-hover align-middle mb-0 w-100">
           <thead className="bg-light">
             <tr className="text-muted small text-uppercase">
               <th className="ps-4 py-3 border-0">Policy Name</th>
-              <th className="border-0">Associated Law</th>
-              <th className="text-center border-0">Rule Type</th>
-              <th className="border-0">Last Updated</th>
-              <th className="border-0">Status</th>
+              <th className="border-0">Policy Text</th>
+              <th className="border-0">Associated with</th>
+              <th className="border-0">Constraint</th>
               <th className="text-end pe-4 border-0">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {policies.map((p, i) => (
-              <tr key={i}>
-                <td className="ps-4 py-3">
-                  <div className="fw-bold text-dark">{p.name}</div>
-                  <small className="text-muted" style={{fontSize: '10px'}}>{p.id}</small>
-                </td>
-                <td className="text-muted small">{p.law}</td>
-                <td className="text-center">
-                  <span className={`badge-rule badge-${p.type.toLowerCase()}`}>{p.type}</span>
-                </td>
-                <td className="text-muted small">{p.date}</td>
-                <td>
-                  <div className="d-flex align-items-center gap-2">
-                    <span className={`status-dot dot-${p.status.toLowerCase()}`}></span>
-                    <span className={`status-text text-${p.status.toLowerCase()}`}>{p.status}</span>
-                  </div>
-                </td>
-                <td className="text-end pe-4">
-                  <button className="btn btn-sm text-muted border-0"><i className="bi bi-pencil"></i></button>
-                  <button className="btn btn-sm text-muted border-0"><i className="bi bi-trash"></i></button>
-                </td>
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="text-center py-4">Loading policies...</td>
               </tr>
-            ))}
+            ) : policies.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center py-4">No policies found.</td>
+              </tr>
+            ) : (
+              policies.map((p) => (
+                <tr key={p.id}>
+                  <td className="ps-4 py-3">
+                    <div className="fw-bold text-dark">{p.policyName}</div>
+                  </td>
+                  <td className="text-muted small" style={{ maxWidth: '300px' }}>
+                    <div className="text-truncate" title={p.policyText}>{p.policyText}</div>
+                  </td>
+                  <td className="text-muted small">{p.legalFramework}</td>
+                  <td className="text-muted small">
+                    <code className="text-primary">{p.oclCode}</code>
+                  </td>
+                  <td className="text-end pe-4">
+                    <button 
+                      className="btn btn-sm text-danger border-0"
+                      onClick={() => handleDelete(p.id)}
+                      title="Delete"
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 

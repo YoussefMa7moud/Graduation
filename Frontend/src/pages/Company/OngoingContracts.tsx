@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 // Updated service import
 import { submissionService } from '../../services/Company/Proposlals'; 
 import { toast } from 'react-toastify';
+import './OngoingContracts.css';
 
 
 interface Project {
@@ -118,8 +119,7 @@ const OngoingContracts: React.FC = () => {
       ) : (
         <div className="projects-grid">
           {projects.map((p) => {
-            // Company usually shouldn't be blocked from viewing/managing
-            const isManageDisabled = p.rawStatus === "WAITING_FOR_NDA";
+
 
             return (
               <div className="project-card" key={p.id}>

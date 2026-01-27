@@ -16,34 +16,24 @@ const PolicyInputPanel: React.FC<PolicyInputPanelProps> = ({
   isGenerating,
   onGenerate
 }) => {
-  const addRow = () => {
-    const newRow: PolicyInput = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: '',
-      framework: LegalFramework.DEVELOPERS_DUTIES,
-      text: ''
-    };
-    setInputs([...inputs, newRow]);
-  };
-
-  const removeRow = (id: string) => {
-    if (inputs.length > 1) {
-      setInputs(inputs.filter(i => i.id !== id));
-    }
-  };
+  // Removed addRow since we only allow one policy
+  // Removed removeRow for the same reason
 
   const updateRow = (id: string, field: keyof PolicyInput, value: string) => {
     setInputs(inputs.map(i => i.id === id ? { ...i, [field]: value } : i));
   };
 
   const applyTemplate = (name: string, text: string) => {
-    const newRow: PolicyInput = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      framework: LegalFramework.DEVELOPERS_DUTIES,
-      text
-    };
-    setInputs([...inputs, newRow]);
+    // Replace the current input instead of adding new one
+    if (inputs.length > 0) {
+      const currentId = inputs[0].id;
+      setInputs([{
+        id: currentId,
+        name,
+        framework: LegalFramework.DEVELOPERS_DUTIES,
+        text
+      }]);
+    }
   };
 
   const templates = [
@@ -60,29 +50,16 @@ const PolicyInputPanel: React.FC<PolicyInputPanelProps> = ({
             <span className="material-symbols-outlined text-primary text-xl">gavel</span>
             Policy Definition
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Define one or more policy clauses to convert.</p>
+          <p className="text-xs text-slate-500 mt-0.5">Define policy clause to convert.</p>
         </div>
-        <button 
-          onClick={addRow}
-          className="text-xs font-bold text-teal-accent flex items-center gap-1 hover:text-primary transition-all bg-teal-50 dark:bg-teal-900/20 px-3 py-1.5 rounded-lg"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>
-          Add Policy
-        </button>
+        {/* Removed Add Button */}
       </div>
 
       <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
         <div className="space-y-4">
           {inputs.map((row) => (
             <div key={row.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3 relative group animate-in fade-in slide-in-from-left-2 shadow-sm">
-              <button 
-                onClick={() => removeRow(row.id)}
-                disabled={inputs.length <= 1}
-                className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                title={inputs.length <= 1 ? "Cannot delete - at least one policy is required" : "Delete Policy"}
-              >
-                <span className="material-symbols-outlined text-sm">delete</span>
-              </button>
+
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">

@@ -5,20 +5,24 @@ import HistoryBar from '../../components/Company/PolicyConverter/HistoryBar';
 import PolicyInputPanel from '../../components/Company/PolicyConverter/PolicyInputPanel';
 import LogicOutputPanel from '../../components/Company/PolicyConverter/LogicOutputPanel';
 import { type OCLGenerationResponse, LegalFramework, type PolicyInput, type HistoryItem } from '../../components/Company/PolicyConverter/Data/types';
+import { toast } from 'react-toastify';
 import { convertPolicy } from '../../services/Policy/policyService';
 
 const PolicyConverter: React.FC = () => {
   const [inputs, setInputs] = useState<PolicyInput[]>([
-    { id: '1', name: 'Standard Return Policy', framework: LegalFramework.DEVELOPERS_DUTIES, text: 'No return after 14 days of purchase.' }
+    { id: '1', name: '', framework: LegalFramework.DEVELOPERS_DUTIES, text: '' }
   ]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<OCLGenerationResponse | null>(null);
 
   const handleGenerate = async () => {
-    // For simplicity, we generate logic for the first valid input in the list
-    const activeInput = inputs.find(i => i.text.trim().length > 0);
-    if (!activeInput) return;
+    // We only use the first input now
+    const activeInput = inputs[0];
+    if (!activeInput || !activeInput.text.trim()) {
+      toast.warning("Please enter policy text to generate logic.");
+      return;
+    }
     
     setIsGenerating(true);
     try {
@@ -41,13 +45,12 @@ const PolicyConverter: React.FC = () => {
       console.error("Generation failed:", error);
       const errorMessage = error.message || "Failed to generate logic.";
       
-      // If it's an authentication error, suggest logging in
       if (errorMessage.includes('session') || errorMessage.includes('logged in')) {
         if (confirm(`${errorMessage}\n\nWould you like to go to the login page?`)) {
-          window.location.href = '/auth';
-        }
+            window.location.href = '/auth';
+          }
       } else {
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setIsGenerating(false);
@@ -73,10 +76,15 @@ const PolicyConverter: React.FC = () => {
         category: generatedResult.category,
         keywords: generatedResult.keywords ?? []
       });
-      alert('Policy saved successfully!');
+      toast.success('Policy saved successfully!');
+      
+      // Reset after save
+      setInputs([{ id: '1', name: '', framework: LegalFramework.DEVELOPERS_DUTIES, text: '' }]);
+      setGeneratedResult(null);
+      
     } catch (error: any) {
       console.error("Save failed:", error);
-      alert(error.message || "Failed to save policy.");
+      toast.error(error.message || "Failed to save policy.");
     }
   };
 
@@ -112,7 +120,7 @@ const PolicyConverter: React.FC = () => {
           isGenerating={isGenerating}
           onDiscard={() => setGeneratedResult(null)}
           onSave={handleSave}
-          currentInput={inputs.find(i => i.text.trim().length > 0) || null}
+          currentInput={inputs[0] || null}
         />
       </div>
     </div>

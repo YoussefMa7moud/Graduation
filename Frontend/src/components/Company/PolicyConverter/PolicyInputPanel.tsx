@@ -20,7 +20,7 @@ const PolicyInputPanel: React.FC<PolicyInputPanelProps> = ({
     const newRow: PolicyInput = {
       id: Math.random().toString(36).substr(2, 9),
       name: '',
-      framework: LegalFramework.EgyptianCivilCode,
+      framework: LegalFramework.DEVELOPERS_DUTIES,
       text: ''
     };
     setInputs([...inputs, newRow]);
@@ -40,7 +40,7 @@ const PolicyInputPanel: React.FC<PolicyInputPanelProps> = ({
     const newRow: PolicyInput = {
       id: Math.random().toString(36).substr(2, 9),
       name,
-      framework: LegalFramework.EgyptianCivilCode,
+      framework: LegalFramework.DEVELOPERS_DUTIES,
       text
     };
     setInputs([...inputs, newRow]);

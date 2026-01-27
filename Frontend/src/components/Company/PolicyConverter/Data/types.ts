@@ -28,10 +28,14 @@ export interface HistoryItem {
 }
 
 export const LegalFramework = {
-  EgyptianDataProtection: "Egyptian Data Protection Law (151/2020)",
-  EgyptianCivilCode: "Egyptian Civil Code",
-  EgyptianLaborLaw: "Egyptian Labor Law",
-  FRA: "Financial Regulatory Authority (FRA) Rules"
+  DEVELOPERS_DUTIES: "DEVELOPER'S DUTIES",
+  DELIVERY: "DELIVERY",
+  COMPENSATION: "COMPENSATION",
+  INTELLECTUAL_PROPERTY: "INTELLECTUAL PROPERTY RIGHTS",
+  CHANGE_IN_SPECIFICATIONS: "CHANGE IN SPECIFICATIONS",
+  CONFIDENTIALITY: "CONFIDENTIALITY",
+  WARRANTIES: "DEVELOPER WARRANTIES",
+  INDEMNIFICATION: "INDEMNIFICATION",
 } as const;
 
 // This creates a type out of the object values

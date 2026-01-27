@@ -25,8 +25,7 @@ public class PolicyController {
     @PostMapping("/convert")
     public ResponseEntity<PolicyConvertResponse> convertPolicy(
             @RequestBody PolicyConvertRequest request,
-            @AuthenticationPrincipal User currentUser
-    ) {
+            @AuthenticationPrincipal User currentUser) {
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -44,8 +43,7 @@ public class PolicyController {
     @PostMapping("/save")
     public ResponseEntity<PolicyResponse> savePolicy(
             @RequestBody PolicySaveRequest request,
-            @AuthenticationPrincipal User currentUser
-    ) {
+            @AuthenticationPrincipal User currentUser) {
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -57,7 +55,7 @@ public class PolicyController {
             if (companyOpt.isPresent() && companyOpt.get().getName() != null) {
                 companyName = companyOpt.get().getName();
             }
-            
+
             PolicyResponse response = policyService.savePolicy(request, currentUser.getId(), companyName);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
@@ -68,8 +66,7 @@ public class PolicyController {
 
     @GetMapping
     public ResponseEntity<List<PolicyResponse>> getPolicies(
-            @AuthenticationPrincipal User currentUser
-    ) {
+            @AuthenticationPrincipal User currentUser) {
         if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -77,6 +74,24 @@ public class PolicyController {
         try {
             List<PolicyResponse> policies = policyService.getPoliciesByCompany(currentUser.getId());
             return ResponseEntity.ok(policies);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePolicy(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            policyService.deletePolicy(id, currentUser.getId());
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

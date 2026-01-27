@@ -9,7 +9,7 @@ import { convertPolicy } from '../../services/Policy/policyService';
 
 const PolicyConverter: React.FC = () => {
   const [inputs, setInputs] = useState<PolicyInput[]>([
-    { id: '1', name: 'Standard Return Policy', framework: LegalFramework.EgyptianCivilCode, text: 'No return after 14 days of purchase.' }
+    { id: '1', name: 'Standard Return Policy', framework: LegalFramework.DEVELOPERS_DUTIES, text: 'No return after 14 days of purchase.' }
   ]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);

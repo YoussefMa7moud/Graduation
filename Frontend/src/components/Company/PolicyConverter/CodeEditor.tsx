@@ -8,7 +8,15 @@ interface CodeEditorProps {
 const CodeEditor: React.FC<CodeEditorProps> = ({ code }) => {
   // Simple regex-based highlighting for OCL
   const highlight = (text: string) => {
-    return text
+    // Escape HTML first
+    const escaped = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+    return escaped
       .replace(/\b(context|inv|self|or|and|not|implies)\b/g, '<span class="text-purple-400">$1</span>')
       .replace(/--.*$/gm, '<span class="text-green-500">$0</span>')
       .replace(/\b(forAll|exists|select|reject|collect|iterate)\b/g, '<span class="text-yellow-400">$1</span>')

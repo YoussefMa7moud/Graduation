@@ -65,7 +65,7 @@ const Sidebar: React.FC = () => {
         LexGuard <span className="brand-accent">AI</span>
       </h2>
       <small className="brand-subtext">
-        MENA Legal Unit
+        Company Portal
       </small>
     </div>
   </div>

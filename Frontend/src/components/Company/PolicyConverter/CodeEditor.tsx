@@ -8,21 +8,24 @@ interface CodeEditorProps {
 const CodeEditor: React.FC<CodeEditorProps> = ({ code }) => {
   // Simple regex-based highlighting for OCL
   const highlight = (text: string) => {
-    // Escape HTML first
+    // Escape HTML first (but keep single quotes for the regex)
     const escaped = text
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+      .replace(/"/g, "&quot;");
 
     return escaped
+      // Highlight numbers FIRST to avoid replacing numbers in CSS classes
+      .replace(/\b(\d+)\b/g, '<span class="text-orange-400">$1</span>')
+      // Highlight strings
+      .replace(/('[^']*')/g, '<span class="text-orange-400">$1</span>')
+      // Highlight keywords
       .replace(/\b(context|inv|self|or|and|not|implies)\b/g, '<span class="text-purple-400">$1</span>')
-      .replace(/--.*$/gm, '<span class="text-green-500">$0</span>')
       .replace(/\b(forAll|exists|select|reject|collect|iterate)\b/g, '<span class="text-yellow-400">$1</span>')
-      .replace(/'[^']*'/g, '<span class="text-orange-400">$0</span>')
-      .replace(/\b\d+\b/g, '<span class="text-orange-400">$0</span>')
-      .replace(/\b(true|false|null)\b/g, '<span class="text-blue-400">$1</span>');
+      .replace(/\b(true|false|null)\b/g, '<span class="text-blue-400">$1</span>')
+      // Highlight comments last
+      .replace(/(--.*$)/gm, '<span class="text-green-500">$1</span>');
   };
 
   return (

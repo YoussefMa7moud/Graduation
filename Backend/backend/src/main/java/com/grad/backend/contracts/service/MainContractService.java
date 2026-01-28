@@ -348,6 +348,11 @@ private String verifyActor(Long submissionId, Long userId) {
             JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
             if (root.has("sections")) {
                 for (JsonNode section : root.get("sections")) {
+                    // Skip locked template section (Applicable Law) - not user-editable and should not be policy-validated
+                    String sectionId = section.path("id").asText("");
+                    if ("s10".equals(sectionId)) {
+                        continue;
+                    }
                     JsonNode clauseNodes = section.get("clauses");
                     if (clauseNodes != null && clauseNodes.isArray()) {
                         for (JsonNode clause : clauseNodes) {
@@ -366,6 +371,16 @@ private String verifyActor(Long submissionId, Long userId) {
             // Evaluate only policies relevant to each clause (keyword/category match)
             List<ViolationDTO> oclViolations = new ArrayList<>();
             log.info("Starting OCL validation. Total clauses: {}, Total policies: {}", clauses.size(), policies.size());
+            int totalMatchedPolicyChecks = 0;
+
+            // Common stop-words / overly generic keywords that should not trigger matching on their own
+            final java.util.Set<String> keywordStoplist = java.util.Set.of(
+                    "policy", "policies", "company", "contract", "agreement", "shall", "must", "may",
+                    "employee", "employees", "client", "customer", "customers", "user", "users",
+                    "data", "information", "security", "service", "services", "system", "systems",
+                    "process", "processing", "law", "legal", "compliance", "requirements", "requirement",
+                    "standard", "terms", "term"
+            );
             
             for (Map<String, String> clause : clauses) {
                 String clauseId = clause.get("id");
@@ -374,24 +389,53 @@ private String verifyActor(Long submissionId, Long userId) {
 
                 List<Policy> matched = policies.stream().filter(p -> {
                     if (p == null) return false;
-                    // Category match
+                    int score = 0;
+
+                    // Category match (word-boundary-ish)
                     if (p.getCategory() != null && !p.getCategory().isBlank()) {
-                        if (clauseLower.contains(p.getCategory().toLowerCase())) return true;
+                        String cat = p.getCategory().trim().toLowerCase();
+                        if (cat.length() >= 4 && clauseLower.matches(".*\\b" + java.util.regex.Pattern.quote(cat) + "\\b.*")) {
+                            score += 2;
+                        }
                     }
+
                     // Keyword match (stored as comma-separated)
                     if (p.getKeywords() != null && !p.getKeywords().isBlank()) {
                         String[] kws = p.getKeywords().split(",");
+                        int hits = 0;
                         for (String kw : kws) {
-                            String k = kw.trim().toLowerCase();
-                            if (k.length() >= 3 && clauseLower.contains(k)) return true;
+                            String k = kw == null ? "" : kw.trim().toLowerCase();
+                            if (k.isBlank()) continue;
+                            if (keywordStoplist.contains(k)) continue;
+                            // Avoid tiny keywords that cause false positives
+                            if (k.length() < 5) continue;
+                            // Prefer whole-word matches to avoid "alex" matching "alexandria" etc.
+                            if (clauseLower.matches(".*\\b" + java.util.regex.Pattern.quote(k) + "\\b.*")) {
+                                hits++;
+                            }
+                        }
+                        // One hit is often still too weak; require 2 hits OR a single long hit (>=8)
+                        if (hits >= 2) score += 2;
+                        else {
+                            for (String kw : kws) {
+                                String k = kw == null ? "" : kw.trim().toLowerCase();
+                                if (k.length() >= 8 && !keywordStoplist.contains(k)
+                                        && clauseLower.matches(".*\\b" + java.util.regex.Pattern.quote(k) + "\\b.*")) {
+                                    score += 1;
+                                    break;
+                                }
+                            }
                         }
                     }
-                    return false;
+
+                    // Require a minimum score to consider it a real match
+                    return score >= 2;
                 }).collect(Collectors.toList());
 
                 log.info("Clause {} matched {} policies", clauseId, matched.size());
                 
                 for (Policy policy : matched) {
+                    totalMatchedPolicyChecks++;
                     log.info("Evaluating clause {} against policy: {}", clauseId, policy.getPolicyName());
                     boolean passed = evaluatePolicyWithOclService(policy, clauseText, userId);
                     log.info("Policy {} evaluation result: passed={}", policy.getPolicyName(), passed);
@@ -419,6 +463,19 @@ private String verifyActor(Long submissionId, Long userId) {
             }
             
             log.info("OCL validation complete. Total violations: {}", oclViolations.size());
+
+            // If nothing matched at all, then by definition nothing violates company policy
+            if (totalMatchedPolicyChecks == 0) {
+                log.info("No clause matched any company policy. Marking OCL validation as passed.");
+                draft.setOclValidated(true);
+                draftRepository.save(draft);
+                return ContractValidationResponse.builder()
+                        .isValid(true)
+                        .complianceScore(100.0)
+                        .violations(new ArrayList<>())
+                        .message("OCL validation approved (no matching company policies)")
+                        .build();
+            }
 
             // Merge with existing validation results (if AI ran before)
             Map<String, Object> mergedResults = new HashMap<>();

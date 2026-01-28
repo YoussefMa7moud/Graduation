@@ -17,6 +17,8 @@ import com.grad.backend.contracts.repository.ContractChatMessageRepository;
 import com.grad.backend.contracts.repository.ContractDraftRepository;
 import com.grad.backend.contracts.repository.ContractRecordRepository;
 import com.grad.backend.config.InternalApiConfig;
+import com.grad.backend.policy.entity.Policy;
+import com.grad.backend.policy.repository.PolicyRepository;
 import com.grad.backend.project.DTO.NdaPartiesDTO;
 import com.grad.backend.project.entity.ProposalSubmission;
 import com.grad.backend.project.enums.ClientType;
@@ -57,10 +59,14 @@ public class MainContractService {
     private final ClientPersonRepository clientPersonRepo;
     private final RestTemplate restTemplate;
     private final InternalApiConfig internalApiConfig;
+    private final PolicyRepository policyRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${app.ai-model.url:http://localhost:5000}")
     private String aiModelUrl;
+
+    @Value("${app.ocl.api.url:http://localhost:5001}")
+    private String oclApiUrl;
 
    @SuppressWarnings("rawtypes")
 private String verifyActor(Long submissionId, Long userId) {
@@ -318,18 +324,207 @@ private String verifyActor(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
         if (!"company".equals(actor)) throw new RuntimeException("Only company can validate contract");
 
-        // For now, just approve (will be implemented later)
         ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
-                .orElseThrow(() -> new RuntimeException("Draft not found"));
-        draft.setOclValidated(true);
-        draftRepository.save(draft);
+                .orElseThrow(() -> new RuntimeException("Draft not found. Please save first."));
 
-        return ContractValidationResponse.builder()
-                .isValid(true)
-                .complianceScore(100.0)
-                .violations(new ArrayList<>())
-                .message("OCL validation approved")
-                .build();
+        try {
+            // Load all policies for this company (stored under currentUserId)
+            List<Policy> policies = policyRepository.findByCompanyIdOrderByCreatedAtDesc(userId);
+            
+            if (policies.isEmpty()) {
+                log.info("No policies found for company {}. Setting oclValidated=true (nothing to validate against)", userId);
+                draft.setOclValidated(true);
+                draftRepository.save(draft);
+                return ContractValidationResponse.builder()
+                        .isValid(true)
+                        .complianceScore(100.0)
+                        .violations(new ArrayList<>())
+                        .message("OCL validation approved (no policies to validate against)")
+                        .build();
+            }
+
+            // Parse contract clauses
+            List<Map<String, String>> clauses = new ArrayList<>();
+            JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
+            if (root.has("sections")) {
+                for (JsonNode section : root.get("sections")) {
+                    JsonNode clauseNodes = section.get("clauses");
+                    if (clauseNodes != null && clauseNodes.isArray()) {
+                        for (JsonNode clause : clauseNodes) {
+                            String cId = clause.path("id").asText();
+                            String rawText = clause.path("text").asText("").trim();
+                            if (rawText.length() < 10) continue;
+                            Map<String, String> c = new HashMap<>();
+                            c.put("id", cId);
+                            c.put("text", rawText);
+                            clauses.add(c);
+                        }
+                    }
+                }
+            }
+
+            // Evaluate only policies relevant to each clause (keyword/category match)
+            List<ViolationDTO> oclViolations = new ArrayList<>();
+            log.info("Starting OCL validation. Total clauses: {}, Total policies: {}", clauses.size(), policies.size());
+            
+            for (Map<String, String> clause : clauses) {
+                String clauseId = clause.get("id");
+                String clauseText = clause.get("text");
+                String clauseLower = clauseText.toLowerCase();
+
+                List<Policy> matched = policies.stream().filter(p -> {
+                    if (p == null) return false;
+                    // Category match
+                    if (p.getCategory() != null && !p.getCategory().isBlank()) {
+                        if (clauseLower.contains(p.getCategory().toLowerCase())) return true;
+                    }
+                    // Keyword match (stored as comma-separated)
+                    if (p.getKeywords() != null && !p.getKeywords().isBlank()) {
+                        String[] kws = p.getKeywords().split(",");
+                        for (String kw : kws) {
+                            String k = kw.trim().toLowerCase();
+                            if (k.length() >= 3 && clauseLower.contains(k)) return true;
+                        }
+                    }
+                    return false;
+                }).collect(Collectors.toList());
+
+                log.info("Clause {} matched {} policies", clauseId, matched.size());
+                
+                for (Policy policy : matched) {
+                    log.info("Evaluating clause {} against policy: {}", clauseId, policy.getPolicyName());
+                    boolean passed = evaluatePolicyWithOclService(policy, clauseText, userId);
+                    log.info("Policy {} evaluation result: passed={}", policy.getPolicyName(), passed);
+                    
+                    if (!passed) {
+                        Map<String, String> violatedLaw = new HashMap<>();
+                        violatedLaw.put("policyId", String.valueOf(policy.getId()));
+                        violatedLaw.put("policyName", policy.getPolicyName());
+                        if (policy.getCategory() != null) violatedLaw.put("category", policy.getCategory());
+                        if (policy.getArticleRef() != null) violatedLaw.put("articleRef", policy.getArticleRef());
+
+                        oclViolations.add(ViolationDTO.builder()
+                                .clauseId(clauseId)
+                                .clauseText(clauseText)
+                                .violatedLaw(violatedLaw)
+                                .confidence(1.0)
+                                .reason("This clause violates company policy: " + policy.getPolicyName())
+                                .suggestion("Revise this clause to comply with: " + policy.getPolicyName())
+                                .build());
+                        log.warn("Violation detected: clause {} violates policy {}", clauseId, policy.getPolicyName());
+                    } else {
+                        log.info("Clause {} passed policy {} validation", clauseId, policy.getPolicyName());
+                    }
+                }
+            }
+            
+            log.info("OCL validation complete. Total violations: {}", oclViolations.size());
+
+            // Merge with existing validation results (if AI ran before)
+            Map<String, Object> mergedResults = new HashMap<>();
+            if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
+                try {
+                    mergedResults.putAll(objectMapper.readValue(draft.getValidationResultsJson(), Map.class));
+                } catch (Exception ignore) {
+                    // ignore parsing issues and overwrite below
+                }
+            }
+            mergedResults.put("oclViolations", oclViolations);
+
+            // Keep a unified "violations" list for frontend compatibility
+            List<Map<String, Object>> unified = new ArrayList<>();
+            Object existingViolations = mergedResults.get("violations");
+            if (existingViolations instanceof List) {
+                unified.addAll((List<Map<String, Object>>) existingViolations);
+            }
+            // Add OCL violations (as maps) - ObjectMapper will serialize DTOs fine, but keep explicit
+            for (ViolationDTO v : oclViolations) {
+                Map<String, Object> mv = objectMapper.convertValue(v, Map.class);
+                unified.add(mv);
+            }
+            mergedResults.put("violations", unified);
+
+            boolean isValid = oclViolations.isEmpty();
+            draft.setOclValidated(isValid);
+            draft.setValidationResultsJson(objectMapper.writeValueAsString(mergedResults));
+            ContractDraft saved = draftRepository.save(draft);
+            
+            log.info("OCL validation saved. isValid={}, oclValidated={}, violations={}", 
+                    isValid, saved.getOclValidated(), oclViolations.size());
+
+            return ContractValidationResponse.builder()
+                    .isValid(isValid)
+                    .complianceScore(isValid ? 100.0 : 60.0)
+                    .violations(oclViolations)
+                    .message(isValid
+                            ? "OCL validation approved (no policy violations)"
+                            : "Policy violations detected: " + oclViolations.size() + " violation(s)")
+                    .build();
+        } catch (Exception e) {
+            log.error("OCL validation error", e);
+            throw new RuntimeException("OCL Validation error: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private boolean evaluatePolicyWithOclService(Policy policy, String testDescription, Long companyId) {
+        // Call the OCL FastAPI /evaluate-file endpoint, which runs the generated file non-interactively
+        String url = oclApiUrl + "/evaluate-file";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String companyName = "Company_" + companyId;
+        try {
+            Company c = companyRepository.findById(companyId).orElse(null);
+            if (c != null && c.getName() != null && !c.getName().isBlank()) companyName = c.getName();
+        } catch (Exception ignore) {}
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("policyName", policy.getPolicyName());
+        body.put("policyText", policy.getPolicyText());
+        body.put("oclCode", policy.getOclCode());
+        body.put("companyName", companyName);
+        body.put("testDescription", testDescription);
+        body.put("policyId", policy.getId() != null ? policy.getId().intValue() : 0);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            log.info("Calling OCL evaluate-file API for policy {} with test: {}", policy.getPolicyName(), testDescription);
+            ResponseEntity<Map> res = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
+            
+            if (!res.getStatusCode().is2xxSuccessful() || res.getBody() == null) {
+                log.warn("OCL API returned non-2xx or null body. Status: {}, Body: {}", res.getStatusCode(), res.getBody());
+                return true; // fail-open: assume passed if API fails
+            }
+            
+            Object passed = res.getBody().get("passed");
+            boolean result;
+            if (passed instanceof Boolean) {
+                result = (Boolean) passed;
+            } else if (passed instanceof String) {
+                result = Boolean.parseBoolean((String) passed);
+            } else {
+                log.warn("OCL API returned unexpected 'passed' type: {}. Assuming passed=true", passed);
+                return true; // fail-open
+            }
+            
+            log.info("OCL evaluation result for policy {}: passed={}", policy.getPolicyName(), result);
+            return result;
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("HTTP client error calling OCL API: Status={}, Body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            return true; // fail-open
+        } catch (org.springframework.web.client.HttpServerErrorException e) {
+            log.error("HTTP server error calling OCL API: Status={}, Body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            return true; // fail-open
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            log.error("Cannot connect to OCL API at {}: {}", url, e.getMessage());
+            return true; // fail-open
+        } catch (Exception e) {
+            log.error("Unexpected error calling OCL API: {}", e.getMessage(), e);
+            return true; // fail-open
+        }
     }
 
     @Transactional

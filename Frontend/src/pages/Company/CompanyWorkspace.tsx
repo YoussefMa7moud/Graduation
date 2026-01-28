@@ -337,10 +337,8 @@ const CompanyWorkspace: React.FC = () => {
               {sections.map((section, sIdx) => (
                 <div key={section.id} className="section-container">
                   <h3 className="section-h3">{section.num}. {section.title}</h3>
-                  {section.clauses.map((clause, cIdx) => {
-                    const isOk = isValidated && !clause.violation && clause.text.trim().length > 0;
-                    return (
-                    <div key={clause.id} className={`clause-row ${clause.violation ? 'has-issue' : isOk ? 'has-ok' : ''}`}>
+                  {section.clauses.map((clause, cIdx) => (
+                    <div key={clause.id} className={`clause-row ${clause.violation ? 'has-issue' : ''}`}>
                       <span className="c-num">{section.num}.{cIdx + 1}</span>
                       <div className="clause-input-wrapper">
                         {section.id === 's10' ? (
@@ -362,7 +360,7 @@ const CompanyWorkspace: React.FC = () => {
                         )}
                       </div>
                     </div>
-                  )})}
+                  ))}
                 </div>
               ))}
 

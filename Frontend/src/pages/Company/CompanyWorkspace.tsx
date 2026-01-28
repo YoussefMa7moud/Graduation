@@ -234,27 +234,8 @@ const CompanyWorkspace: React.FC = () => {
     if (!submissionId) return;
     setIsValidatingOCL(true);
     try {
-      await saveDraft();
       const result = await validateWithOCL(submissionId);
-      const uniqueViolations = getUniqueViolations(result.violations || []);
-
-      setViolations(uniqueViolations);
-      applyViolationsToClauses(uniqueViolations);
-      setIsValidated(true);
-
-      if (result.isValid) {
-        toast.success('OCL validation approved!');
-      } else {
-        if (uniqueViolations.length > 0) {
-          toast.warning(result.message || `OCL found ${uniqueViolations.length} policy violations.`);
-        } else {
-          toast.error(result.message || 'OCL reported errors but returned no violation details.');
-        }
-      }
-
-      // Refresh draft flags from backend (oclValidated) so UI reflects DB state
-      const updated = await getContractDraft(submissionId);
-      setDraft(updated);
+      if (result.isValid) toast.success('OCL validation approved!');
     } catch (e: any) {
       toast.error('OCL validation failed.');
     } finally {

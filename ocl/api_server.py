@@ -9,6 +9,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+import subprocess
+import tempfile
+import re
 from groq import Groq
 from dotenv import load_dotenv
 import logging
@@ -23,6 +26,7 @@ from OCL import (
     extract_property_types,
     detect_policy_type,
     generate_policy_test_file,
+    generate_test_scenario_from_clause,
     get_or_create_company_id,
     insert_policy,
     setup_database
@@ -85,6 +89,18 @@ class PolicyConvertResponse(BaseModel):
     validation: List[ValidationResult]
     category: str
     keywords: List[str]
+
+class PolicyEvaluateRequest(BaseModel):
+    policyName: str
+    policyText: str
+    oclCode: str
+    companyName: str = "Default Company"
+    testDescription: str
+    policyId: int = 0
+
+class PolicyEvaluateResponse(BaseModel):
+    passed: bool
+    rawOutput: str
 
 @app.get("/")
 def root():
@@ -197,6 +213,85 @@ async def generate_file(
             status_code=500,
             detail=f"Error generating file: {str(e)}"
         )
+
+@app.post("/evaluate-file", response_model=PolicyEvaluateResponse)
+async def evaluate_file(request: PolicyEvaluateRequest):
+    """
+    Evaluate a policy by generating its dynamic test file and executing it with a test scenario.
+    The test scenario is generated from the clause text to represent what the clause is saying.
+
+    Returns:
+      - passed: true if constraint passes (clause is compliant), false if violates
+      - rawOutput: full stdout/stderr for debugging
+    """
+    try:
+        client = get_groq_client()
+        
+        # Generate a test scenario from the clause text that represents what it's saying
+        # This converts abstract clause text into concrete test data
+        test_scenario = generate_test_scenario_from_clause(
+            clause_text=request.testDescription,  # The clause text
+            policy_text=request.policyText,
+            ocl_code=request.oclCode,
+            client=client
+        )
+        
+        logger.info(f"Generated test scenario for policy {request.policyId}: {test_scenario}")
+
+        # Generate a temp test file for evaluation (in a temp dir to avoid polluting repo)
+        with tempfile.TemporaryDirectory(prefix="ocl_eval_") as tmpdir:
+            cwd_before = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                file_path = generate_policy_test_file(
+                    policy_id=request.policyId,
+                    company_name=request.companyName,
+                    policy_description=request.policyText,
+                    ocl_code=request.oclCode,
+                    client=client,
+                    prop_values=None,
+                    prop_types=None
+                )
+                if not file_path:
+                    raise HTTPException(status_code=500, detail="Failed to generate policy test file for evaluation")
+
+                # Run script, feed the generated test scenario to stdin
+                proc = subprocess.run(
+                    [sys.executable, file_path],
+                    input=(test_scenario.strip() + "\n"),
+                    text=True,
+                    capture_output=True,
+                    timeout=30
+                )
+
+                output = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
+
+                # Parse "Policy evaluation result: True/False"
+                logger.info(f"OCL script output for policy {request.policyId}:\n{output}")
+                m = re.search(r"Policy evaluation result:\s*(True|False)", output)
+                if not m:
+                    # Fall back: if script prints [FAIL] treat as violation
+                    if "[FAIL]" in output:
+                        logger.warning(f"Policy {request.policyId} evaluation: [FAIL] detected in output")
+                        return PolicyEvaluateResponse(passed=False, rawOutput=output)
+                    if "[PASS]" in output:
+                        logger.info(f"Policy {request.policyId} evaluation: [PASS] detected in output")
+                        return PolicyEvaluateResponse(passed=True, rawOutput=output)
+                    logger.error(f"Could not parse evaluation result from script output for policy {request.policyId}")
+                    raise HTTPException(status_code=500, detail="Could not parse evaluation result from script output")
+
+                passed = m.group(1) == "True"
+                logger.info(f"Policy {request.policyId} evaluation result: passed={passed} (scenario: {test_scenario})")
+                return PolicyEvaluateResponse(passed=passed, rawOutput=output)
+            finally:
+                os.chdir(cwd_before)
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Policy evaluation timed out")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error evaluating policy: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error evaluating policy: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -205,6 +205,10 @@
   background: #fff1f2;
 }
 
+.clause-row.has-ok {
+  background: #ecfdf3;
+}
+
 .c-num {
   font-weight: 700;
   color: #94a3b8;

@@ -31,10 +31,11 @@ import SignedProjects from "./pages/Client/SignedProjects";
 import ActiveProjects from "./pages/Client/ActiveProjects";
 import LoadingAnimation from "./components/LoadingAnimation";
 import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; // Don't forget the CSS!
+import 'react-toastify/dist/ReactToastify.css';
 import ProposalFeedback from "./pages/Client/MangeProject/ProposalFeedback";
 import NDASigning from "./pages/Client/MangeProject/NDASigning";
 import SignNDA from "./pages/Company/SignNDA";
+import VerifySignature from "./pages/VerifySignature";
 
 /**
  * Component that redirects authenticated users away from auth pages
@@ -75,6 +76,7 @@ const AppRoutes: React.FC = () => {
       
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/verify-signature/:id" element={<VerifySignature />} />
       <Route
         path="/auth"
         element={

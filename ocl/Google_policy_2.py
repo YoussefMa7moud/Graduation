@@ -9,22 +9,22 @@ import re
 
 # --- Policy Info ---
 # Policy ID: 2
-# Description: No return after 14 days of purchase.
+# Description: Confidentiality remains in effect for 5 years post-termination.
 
 # --- Context Class ---
 basemodel_class = Class(name="BaseModel")
 
 # --- Add dynamic properties ---
-purchaseDate_prop = Property(name="purchaseDate", type=DateType)
-returnDate_prop = Property(name="returnDate", type=DateType)
-basemodel_class.attributes = {purchaseDate_prop, returnDate_prop}
+confidentialityExpiryDate_prop = Property(name="confidentialityExpiryDate", type=DateType)
+terminationDate_prop = Property(name="terminationDate", type=DateType)
+basemodel_class.attributes = {confidentialityExpiryDate_prop, terminationDate_prop}
 
 
 # --- Constraint from policy ---
 POLICY_CONSTRAINT = Constraint(
     name="policyConstraint",
     context=basemodel_class,
-    expression='context BaseModel inv: self.returnDate - self.purchaseDate %3C%3D 14',
+    expression='context BaseModel inv: self.terminationDate %2B 1825 %3C%3D self.confidentialityExpiryDate',
     language="OCL"
 )
 
@@ -150,18 +150,18 @@ def parse_value(value, dtype):
 dynamic_obj = basemodel_class("obj1").build()
 
 value = extract_value_from_text(test_description, "DateType")
-dynamic_obj.purchaseDate = value
-print(f"Set purchaseDate = {value} (from test description)")
+dynamic_obj.confidentialityExpiryDate = value
+print(f"Set confidentialityExpiryDate = {value} (from test description)")
 
 value = extract_value_from_text(test_description, "DateType")
-dynamic_obj.returnDate = value
-print(f"Set returnDate = {value} (from test description)")
+dynamic_obj.terminationDate = value
+print(f"Set terminationDate = {value} (from test description)")
 
 context_om = ObjectModel(name="BaseModelModel", objects={dynamic_obj})
 
 
 # --- Evaluate Policy Constraint ---
-print(f"\nTesting Policy #2: 'No return after 14 days of purchase.'")
+print(f"\nTesting Policy #2: 'Confidentiality remains in effect for 5 years post-termination.'")
 
 EVAL_MODE = "OCL"  # "OCL" or "PYTHON_STRING"
 
@@ -172,7 +172,7 @@ if EVAL_MODE == "OCL":
 else:
     # Python-based evaluation for string policies (engine limitation)
     # Expect expression like: self.country = "egypt"
-    expr = "self.returnDate - self.purchaseDate %3C%3D 14".strip()
+    expr = "self.terminationDate %2B 1825 %3C%3D self.confidentialityExpiryDate".strip()
 
     # Convert self.<prop> to dynamic_obj.<prop>
     expr_py = expr.replace("self.", "dynamic_obj.")

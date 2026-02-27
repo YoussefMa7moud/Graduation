@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getMyActiveSubmissions } from '../../../services/Client/RetriveSubmitions'; 
-import { withdrawSubmission } from '../../../services/Client/withdrawSubmission'; 
+import { getMyActiveSubmissions } from '../../../services/Client/RetriveSubmitions';
+import { withdrawSubmission } from '../../../services/Client/withdrawSubmission';
 import { toast } from 'react-toastify';
-import { 
-  XCircle, 
-  MessageSquare, 
-  Building2, 
-  ExternalLink, 
-  Lightbulb, 
-  ArrowLeft, 
-  FileEdit 
+import {
+  XCircle,
+  MessageSquare,
+  Building2,
+  Lightbulb,
+  ArrowLeft,
+  FileEdit
 } from 'lucide-react';
 import './ProposalFeedback.css';
 

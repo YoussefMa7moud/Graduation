@@ -1,0 +1,638 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------------< com.grad:backend >--------------------------
+[INFO] Building backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ backend ---
+[INFO] Deleting C:\Users\Dark Energy\Desktop\GP\Graduation\Backend\backend\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ backend ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 95 source files with javac [debug release 21] to target\classes
+[INFO] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/MainContractService.java: C:\Users\Dark Energy\Desktop\GP\Graduation\Backend\backend\src\main\java\com\grad\backend\contracts\service\MainContractService.java uses unchecked or unsafe operations.
+[INFO] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/MainContractService.java: Recompile with -Xlint:unchecked for details.
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[43,13] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[44,13] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[45,28] cannot find symbol
+  symbol:   method getPolicyName()
+  location: variable request of type com.grad.backend.policy.dto.PolicyConvertRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[45,53] cannot find symbol
+  symbol:   method getLegalFramework()
+  location: variable request of type com.grad.backend.policy.dto.PolicyConvertRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[45,82] cannot find symbol
+  symbol:   method getPolicyText()
+  location: variable request of type com.grad.backend.policy.dto.PolicyConvertRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[60,21] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[64,17] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[67,17] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[72,17] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[77,17] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[85,13] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[93,35] cannot find symbol
+  symbol:   method builder()
+  location: class com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[95,40] cannot find symbol
+  symbol:   method getPolicyName()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[96,44] cannot find symbol
+  symbol:   method getLegalFramework()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[97,40] cannot find symbol
+  symbol:   method getPolicyText()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[98,37] cannot find symbol
+  symbol:   method getOclCode()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[99,41] cannot find symbol
+  symbol:   method getExplanation()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[100,40] cannot find symbol
+  symbol:   method getArticleRef()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[101,38] cannot find symbol
+  symbol:   method getCategory()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[102,38] cannot find symbol
+  symbol:   method getKeywords()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[102,87] cannot find symbol
+  symbol:   method getKeywords()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[110,26] cannot find symbol
+  symbol:   method getId()
+  location: variable saved of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[111,28] cannot find symbol
+  symbol:   method getPolicyName()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[112,28] cannot find symbol
+  symbol:   method getPolicyText()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[113,28] cannot find symbol
+  symbol:   method getOclCode()
+  location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[117,18] cannot find symbol
+  symbol:   method setFilePath(java.lang.String)
+  location: variable saved of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[122,13] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[156,17] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[159,17] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[163,13] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[164,13] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[191,13] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[204,30] cannot find symbol
+  symbol:   method builder()
+  location: class com.grad.backend.policy.dto.PolicyResponse
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[205,27] cannot find symbol
+  symbol:   method getId()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[206,35] cannot find symbol
+  symbol:   method getPolicyName()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[207,39] cannot find symbol
+  symbol:   method getLegalFramework()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[208,35] cannot find symbol
+  symbol:   method getPolicyText()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[209,32] cannot find symbol
+  symbol:   method getOclCode()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[210,36] cannot find symbol
+  symbol:   method getExplanation()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[211,35] cannot find symbol
+  symbol:   method getArticleRef()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[212,33] cannot find symbol
+  symbol:   method getCategory()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[213,33] cannot find symbol
+  symbol:   method getKeywords()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[214,33] cannot find symbol
+  symbol:   method getFilePath()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[215,34] cannot find symbol
+  symbol:   method getCreatedAt()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[216,34] cannot find symbol
+  symbol:   method getUpdatedAt()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[224,20] cannot find symbol
+  symbol:   method getCompanyId()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[229,19] cannot find symbol
+  symbol:   method getFilePath()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[231,60] cannot find symbol
+  symbol:   method getFilePath()
+  location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[234,17] cannot find symbol
+  symbol:   variable log
+  location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[43,57] cannot find symbol
+  symbol:   method getContractType()
+  location: variable r of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[49,58] cannot find symbol
+  symbol:   method getContractType()
+  location: variable r of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[60,36] cannot find symbol
+  symbol:   method getCompanySignatoryName()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[62,38] cannot find symbol
+  symbol:   method getSoftwareCompany()
+  location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[63,46] cannot find symbol
+  symbol:   method getName()
+  location: variable comp of type com.grad.backend.Auth.entity.Company
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[66,35] cannot find symbol
+  symbol:   method getClientSignatoryName()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[68,27] cannot find symbol
+  symbol:   method getClientType()
+  location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[69,73] cannot find symbol
+  symbol:   method getClient()
+  location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[70,45] cannot find symbol
+  symbol:   method getCompanyName()
+  location: variable cc of type com.grad.backend.Auth.entity.ClientCompany
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[72,71] cannot find symbol
+  symbol:   method getClient()
+  location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[73,46] cannot find symbol
+  symbol:   method getFirstName()
+  location: variable cp of type com.grad.backend.Auth.entity.ClientPerson
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[73,72] cannot find symbol
+  symbol:   method getLastName()
+  location: variable cp of type com.grad.backend.Auth.entity.ClientPerson
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[77,64] cannot find symbol
+  symbol:   method builder()
+  location: class com.grad.backend.contracts.dto.SignatureVerificationDTO
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[79,38] cannot find symbol
+  symbol:   method getContractType()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[81,44] cannot find symbol
+  symbol:   method getClientSignatoryName()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[82,39] cannot find symbol
+  symbol:   method getClientSignedAt()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[83,46] cannot find symbol
+  symbol:   method getClientSignatureBase64()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[85,45] cannot find symbol
+  symbol:   method getCompanySignatoryName()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[86,40] cannot find symbol
+  symbol:   method getSignedAt()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[87,47] cannot find symbol
+  symbol:   method getCompanySignatureBase64()
+  location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[28,20] cannot find symbol
+  symbol:   method getFirstName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[29,38] cannot find symbol
+  symbol:   method getFirstName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[31,20] cannot find symbol
+  symbol:   method getLastName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[32,37] cannot find symbol
+  symbol:   method getLastName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[34,20] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[35,34] cannot find symbol
+  symbol:   method getEmail()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[40,17] cannot find symbol
+  symbol:   method getRole()
+  location: variable user of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[41,90] cannot find symbol
+  symbol:   method getId()
+  location: variable user of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[44,28] cannot find symbol
+  symbol:   method getFirstName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[45,54] cannot find symbol
+  symbol:   method getFirstName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[46,28] cannot find symbol
+  symbol:   method getLastName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[47,53] cannot find symbol
+  symbol:   method getLastName()
+  location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[58,45] cannot find symbol
+  symbol:   method getCurrentPassword()
+  location: variable request of type com.grad.backend.Auth.dto.PasswordUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[58,72] cannot find symbol
+  symbol:   method getPassword()
+  location: variable user of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[63,56] cannot find symbol
+  symbol:   method getNewPassword()
+  location: variable request of type com.grad.backend.Auth.dto.PasswordUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/controller/DashboardController.java:[25,78] cannot find symbol
+  symbol:   method getId()
+  location: variable currentUser of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[33,33] cannot find symbol
+  symbol:   method getId()
+  location: variable company of type com.grad.backend.Auth.entity.Company
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[45,31] cannot find symbol
+  symbol:   method getStatus()
+  location: variable s of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[51,35] cannot find symbol
+  symbol:   method builder()
+  location: class com.grad.backend.Auth.dto.CompanyDashboardDTO
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[79,41] cannot find symbol
+  symbol:   method builder()
+  location: class com.grad.backend.contracts.dto.NdaDraftResponse
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[96,22] cannot find symbol
+  symbol:   method setSubmissionId(java.lang.Long)
+  location: variable d of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[97,22] cannot find symbol
+  symbol:   method setContractPayloadJson(contractPa[...] "{}")
+  location: variable d of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[100,18] cannot find symbol
+  symbol:   method getClientSignedAt()
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[102,14] cannot find symbol
+  symbol:   method setClientSignatureBase64(java.lang.String)
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[103,14] cannot find symbol
+  symbol:   method setClientSignedAt(java.time.LocalDateTime)
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[105,18] cannot find symbol
+  symbol:   method setContractPayloadJson(java.lang.String)
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[119,18] cannot find symbol
+  symbol:   method getClientSignedAt()
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[121,18] cannot find symbol
+  symbol:   method getCompanySignedAt()
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[123,14] cannot find symbol
+  symbol:   method setCompanySignatureBase64(java.lang.String)
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[124,14] cannot find symbol
+  symbol:   method setCompanySignedAt(java.time.LocalDateTime)
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[126,18] cannot find symbol
+  symbol:   method setContractPayloadJson(java.lang.String)
+  location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.498 s
+[INFO] Finished at: 2026-02-27T22:17:44+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project backend: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[43,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[44,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[45,28] cannot find symbol
+[ERROR]   symbol:   method getPolicyName()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicyConvertRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[45,53] cannot find symbol
+[ERROR]   symbol:   method getLegalFramework()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicyConvertRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[45,82] cannot find symbol
+[ERROR]   symbol:   method getPolicyText()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicyConvertRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[60,21] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[64,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[67,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[72,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[77,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[85,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[93,35] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[95,40] cannot find symbol
+[ERROR]   symbol:   method getPolicyName()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[96,44] cannot find symbol
+[ERROR]   symbol:   method getLegalFramework()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[97,40] cannot find symbol
+[ERROR]   symbol:   method getPolicyText()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[98,37] cannot find symbol
+[ERROR]   symbol:   method getOclCode()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[99,41] cannot find symbol
+[ERROR]   symbol:   method getExplanation()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[100,40] cannot find symbol
+[ERROR]   symbol:   method getArticleRef()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[101,38] cannot find symbol
+[ERROR]   symbol:   method getCategory()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[102,38] cannot find symbol
+[ERROR]   symbol:   method getKeywords()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[102,87] cannot find symbol
+[ERROR]   symbol:   method getKeywords()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[110,26] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable saved of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[111,28] cannot find symbol
+[ERROR]   symbol:   method getPolicyName()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[112,28] cannot find symbol
+[ERROR]   symbol:   method getPolicyText()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[113,28] cannot find symbol
+[ERROR]   symbol:   method getOclCode()
+[ERROR]   location: variable request of type com.grad.backend.policy.dto.PolicySaveRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[117,18] cannot find symbol
+[ERROR]   symbol:   method setFilePath(java.lang.String)
+[ERROR]   location: variable saved of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[122,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[156,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[159,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[163,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[164,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[191,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[204,30] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.grad.backend.policy.dto.PolicyResponse
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[205,27] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[206,35] cannot find symbol
+[ERROR]   symbol:   method getPolicyName()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[207,39] cannot find symbol
+[ERROR]   symbol:   method getLegalFramework()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[208,35] cannot find symbol
+[ERROR]   symbol:   method getPolicyText()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[209,32] cannot find symbol
+[ERROR]   symbol:   method getOclCode()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[210,36] cannot find symbol
+[ERROR]   symbol:   method getExplanation()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[211,35] cannot find symbol
+[ERROR]   symbol:   method getArticleRef()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[212,33] cannot find symbol
+[ERROR]   symbol:   method getCategory()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[213,33] cannot find symbol
+[ERROR]   symbol:   method getKeywords()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[214,33] cannot find symbol
+[ERROR]   symbol:   method getFilePath()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[215,34] cannot find symbol
+[ERROR]   symbol:   method getCreatedAt()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[216,34] cannot find symbol
+[ERROR]   symbol:   method getUpdatedAt()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[224,20] cannot find symbol
+[ERROR]   symbol:   method getCompanyId()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[229,19] cannot find symbol
+[ERROR]   symbol:   method getFilePath()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[231,60] cannot find symbol
+[ERROR]   symbol:   method getFilePath()
+[ERROR]   location: variable policy of type com.grad.backend.policy.entity.Policy
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/policy/service/PolicyService.java:[234,17] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.grad.backend.policy.service.PolicyService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[43,57] cannot find symbol
+[ERROR]   symbol:   method getContractType()
+[ERROR]   location: variable r of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[49,58] cannot find symbol
+[ERROR]   symbol:   method getContractType()
+[ERROR]   location: variable r of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[60,36] cannot find symbol
+[ERROR]   symbol:   method getCompanySignatoryName()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[62,38] cannot find symbol
+[ERROR]   symbol:   method getSoftwareCompany()
+[ERROR]   location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[63,46] cannot find symbol
+[ERROR]   symbol:   method getName()
+[ERROR]   location: variable comp of type com.grad.backend.Auth.entity.Company
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[66,35] cannot find symbol
+[ERROR]   symbol:   method getClientSignatoryName()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[68,27] cannot find symbol
+[ERROR]   symbol:   method getClientType()
+[ERROR]   location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[69,73] cannot find symbol
+[ERROR]   symbol:   method getClient()
+[ERROR]   location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[70,45] cannot find symbol
+[ERROR]   symbol:   method getCompanyName()
+[ERROR]   location: variable cc of type com.grad.backend.Auth.entity.ClientCompany
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[72,71] cannot find symbol
+[ERROR]   symbol:   method getClient()
+[ERROR]   location: variable submission of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[73,46] cannot find symbol
+[ERROR]   symbol:   method getFirstName()
+[ERROR]   location: variable cp of type com.grad.backend.Auth.entity.ClientPerson
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[73,72] cannot find symbol
+[ERROR]   symbol:   method getLastName()
+[ERROR]   location: variable cp of type com.grad.backend.Auth.entity.ClientPerson
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[77,64] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.grad.backend.contracts.dto.SignatureVerificationDTO
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[79,38] cannot find symbol
+[ERROR]   symbol:   method getContractType()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[81,44] cannot find symbol
+[ERROR]   symbol:   method getClientSignatoryName()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[82,39] cannot find symbol
+[ERROR]   symbol:   method getClientSignedAt()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[83,46] cannot find symbol
+[ERROR]   symbol:   method getClientSignatureBase64()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[85,45] cannot find symbol
+[ERROR]   symbol:   method getCompanySignatoryName()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[86,40] cannot find symbol
+[ERROR]   symbol:   method getSignedAt()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/controller/PublicSignatureVerificationController.java:[87,47] cannot find symbol
+[ERROR]   symbol:   method getCompanySignatureBase64()
+[ERROR]   location: variable record of type com.grad.backend.contracts.entity.ContractRecord
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[28,20] cannot find symbol
+[ERROR]   symbol:   method getFirstName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[29,38] cannot find symbol
+[ERROR]   symbol:   method getFirstName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[31,20] cannot find symbol
+[ERROR]   symbol:   method getLastName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[32,37] cannot find symbol
+[ERROR]   symbol:   method getLastName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[34,20] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[35,34] cannot find symbol
+[ERROR]   symbol:   method getEmail()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[40,17] cannot find symbol
+[ERROR]   symbol:   method getRole()
+[ERROR]   location: variable user of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[41,90] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable user of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[44,28] cannot find symbol
+[ERROR]   symbol:   method getFirstName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[45,54] cannot find symbol
+[ERROR]   symbol:   method getFirstName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[46,28] cannot find symbol
+[ERROR]   symbol:   method getLastName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[47,53] cannot find symbol
+[ERROR]   symbol:   method getLastName()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.ProfileUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[58,45] cannot find symbol
+[ERROR]   symbol:   method getCurrentPassword()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.PasswordUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[58,72] cannot find symbol
+[ERROR]   symbol:   method getPassword()
+[ERROR]   location: variable user of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/UserService.java:[63,56] cannot find symbol
+[ERROR]   symbol:   method getNewPassword()
+[ERROR]   location: variable request of type com.grad.backend.Auth.dto.PasswordUpdateRequest
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/controller/DashboardController.java:[25,78] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable currentUser of type com.grad.backend.Auth.entity.User
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[33,33] cannot find symbol
+[ERROR]   symbol:   method getId()
+[ERROR]   location: variable company of type com.grad.backend.Auth.entity.Company
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[45,31] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable s of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[51,35] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.grad.backend.Auth.dto.CompanyDashboardDTO
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[79,41] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.grad.backend.contracts.dto.NdaDraftResponse
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[96,22] cannot find symbol
+[ERROR]   symbol:   method setSubmissionId(java.lang.Long)
+[ERROR]   location: variable d of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[97,22] cannot find symbol
+[ERROR]   symbol:   method setContractPayloadJson(contractPa[...] "{}")
+[ERROR]   location: variable d of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[100,18] cannot find symbol
+[ERROR]   symbol:   method getClientSignedAt()
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[102,14] cannot find symbol
+[ERROR]   symbol:   method setClientSignatureBase64(java.lang.String)
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[103,14] cannot find symbol
+[ERROR]   symbol:   method setClientSignedAt(java.time.LocalDateTime)
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[105,18] cannot find symbol
+[ERROR]   symbol:   method setContractPayloadJson(java.lang.String)
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[119,18] cannot find symbol
+[ERROR]   symbol:   method getClientSignedAt()
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[121,18] cannot find symbol
+[ERROR]   symbol:   method getCompanySignedAt()
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[123,14] cannot find symbol
+[ERROR]   symbol:   method setCompanySignatureBase64(java.lang.String)
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[124,14] cannot find symbol
+[ERROR]   symbol:   method setCompanySignedAt(java.time.LocalDateTime)
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/ContractService.java:[126,18] cannot find symbol
+[ERROR]   symbol:   method setContractPayloadJson(java.lang.String)
+[ERROR]   location: variable draft of type com.grad.backend.contracts.entity.NdaSigningDraft
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

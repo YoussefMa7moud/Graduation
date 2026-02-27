@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import StatCard from '../../components/Company/CompanyHome/StatCard';
-import Header from '../../components/Company/CompanyHome/Header';
 import Modal from '../../components/Company/CompanyHome/Modal';
 import AddManagerForm from '../../components/Company/CompanyHome/AddManagerForm';
 import { getDashboardStats, registerProjectManager, getProjectManagers, updateProjectManager, deleteProjectManager } from '../../services/Company/companyService';

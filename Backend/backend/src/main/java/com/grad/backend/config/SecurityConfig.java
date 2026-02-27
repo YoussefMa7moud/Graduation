@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/images/**").permitAll() // Allow image endpoints
                         .requestMatchers("/api/internal/**").permitAll() // Internal API (key-checked in controller)
                         .requestMatchers("/api/companies/browse").permitAll() // Allow anyone to browse companies
+                        .requestMatchers("/api/public/**").permitAll() // Allow public access to signature verification
                         .requestMatchers("/api/proposals/create").permitAll()
                         .requestMatchers("/api/proposals/MyProposals/**").authenticated()
                         .requestMatchers("/api/proposals/delete/**").authenticated()

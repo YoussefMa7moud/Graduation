@@ -24,7 +24,7 @@ basemodel_class.attributes = {purchaseDate_prop, returnDate_prop}
 POLICY_CONSTRAINT = Constraint(
     name="policyConstraint",
     context=basemodel_class,
-    expression='context BaseModel inv: self.returnDate %3E self.purchaseDate %2B 14',
+    expression='context BaseModel inv: self.returnDate - self.purchaseDate %3E 14',
     language="OCL"
 )
 
@@ -172,7 +172,7 @@ if EVAL_MODE == "OCL":
 else:
     # Python-based evaluation for string policies (engine limitation)
     # Expect expression like: self.country = "egypt"
-    expr = "self.returnDate %3E self.purchaseDate %2B 14".strip()
+    expr = "self.returnDate - self.purchaseDate %3E 14".strip()
 
     # Convert self.<prop> to dynamic_obj.<prop>
     expr_py = expr.replace("self.", "dynamic_obj.")

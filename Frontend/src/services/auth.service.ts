@@ -9,8 +9,7 @@
 
 import api from './api';
 import { API_ENDPOINTS } from '../config/api.config';
-import { saveToken, saveUser, clearAuth } from '../utils/auth.utils';
-import { normalizeRole } from '../utils/role.utils';
+import { saveToken, clearAuth } from '../utils/auth.utils';
 
 /**
  * Registration request payload
@@ -93,19 +92,19 @@ export const register = async (data: RegisterRequest): Promise<RegisterResponse>
       API_ENDPOINTS.AUTH.REGISTER,
       formData
     );
-    
+
     return response.data;
   } catch (error: any) {
     // Handle CORS errors specifically
     if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
       throw new Error('Cannot connect to server. Please check if the backend is running and CORS is configured correctly.');
     }
-    
+
     // Handle CORS policy errors
     if (error.message?.includes('CORS') || error.response?.status === 0) {
       throw new Error('CORS error: Backend server needs to allow requests from this origin. Please configure CORS on your Spring Boot backend.');
     }
-    
+
     // Extract error message from response
     const errorMessage = error.response?.data?.error || error.message || 'Registration failed';
     throw new Error(errorMessage);
@@ -124,12 +123,12 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
       API_ENDPOINTS.AUTH.LOGIN,
       data
     );
-    
+
     const loginData = response.data;
 
     // Save token and user data to localStorage
     saveToken(loginData.token);
-    
+
     // Ensure firstName and lastName are returned from the response
     const result: LoginResponse = {
       token: loginData.token,
@@ -140,25 +139,25 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
       firstName: loginData.firstName,
       lastName: loginData.lastName
     };
-    
+
     console.log('=== LOGIN DEBUG ===');
     console.log('Raw response data:', response.data);
     console.log('Processed result:', result);
     console.log('firstName:', loginData.firstName);
     console.log('lastName:', loginData.lastName);
-    
+
     return result;
   } catch (error: any) {
     // Handle CORS errors specifically
     if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
       throw new Error('Cannot connect to server. Please check if the backend is running and CORS is configured correctly.');
     }
-    
+
     // Handle CORS policy errors
     if (error.message?.includes('CORS') || error.response?.status === 0) {
       throw new Error('CORS error: Backend server needs to allow requests from this origin. Please configure CORS on your Spring Boot backend.');
     }
-    
+
     // Extract error message from response
     const errorMessage = error.response?.data?.error || error.message || 'Login failed';
     throw new Error(errorMessage);
@@ -173,7 +172,7 @@ export const logout = async (): Promise<void> => {
   try {
     // If your backend has a logout endpoint, uncomment this:
     // await api.post(API_ENDPOINTS.AUTH.LOGOUT);
-    
+
     // Clear local storage
     clearAuth();
   } catch (error) {

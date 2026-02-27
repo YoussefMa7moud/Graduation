@@ -14,8 +14,11 @@ import {
   type ContractDraftResponse,
   type ContractChatMessageDTO,
   type ViolationDTO,
+  signCompany,
 } from '../../services/Contract/mainContract';
+import { X, Eraser } from 'lucide-react';
 import './CompanyWorkspace.css';
+import '../Client/ActiveProjectsModal.css'; // Reusing the same modal CSS
 
 interface Clause {
   id: string;
@@ -60,6 +63,12 @@ const CompanyWorkspace: React.FC = () => {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ContractChatMessageDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // --- Signature State ---
+  const [isSignModalOpen, setIsSignModalOpen] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
 
 
@@ -262,6 +271,63 @@ const CompanyWorkspace: React.FC = () => {
     } catch (e) { toast.error('Message failed.'); }
   };
 
+  // --- Signature Logic ---
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => { setIsDrawing(true); draw(e); };
+  const stopDrawing = () => { setIsDrawing(false); canvasRef.current?.getContext('2d')?.beginPath(); };
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const ev = 'touches' in e ? e.touches[0] : e;
+    const x = ('clientX' in ev ? ev.clientX : 0) - rect.left;
+    const y = ('clientY' in ev ? ev.clientY : 0) - rect.top;
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+    ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const getCanvasBase64 = (): string => {
+    const c = canvasRef.current;
+    if (!c) return '';
+    return c.toDataURL('image/png').replace(/^data:image\/\w+;base64,/, '');
+  };
+
+  const handleConfirmSign = async () => {
+    if (!submissionId) return;
+    const base64 = getCanvasBase64();
+    if (!base64.trim()) {
+      toast.error('Please draw your signature first.');
+      return;
+    }
+    setSigning(true);
+    try {
+      const contractPayload = JSON.stringify({ sections });
+      const draftRes = await signCompany({ 
+        submissionId: submissionId, 
+        signatureBase64: base64,
+        contractPayloadJson: contractPayload
+      });
+      setDraft(draftRes);
+      setIsSignModalOpen(false);
+      toast.success('Contract fully executed! Redirecting to Repository...');
+      setTimeout(() => {
+        navigate('/ContractRepository');
+      }, 2000);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || e?.message || 'Signing failed.');
+    } finally {
+      setSigning(false);
+    }
+  };
+
   if (isLoading) return <div className="loading-screen"><div className="spinner"></div></div>;
 
   return (
@@ -281,6 +347,11 @@ const CompanyWorkspace: React.FC = () => {
           {draft?.aiValidated && draft?.oclValidated && !draft?.sentToClient && (
             <button className="btn-success" onClick={handleSendToClient} style={{ marginLeft: '10px' }}>
               Finalize & Send
+            </button>
+          )}
+          {draft?.sentToClient && draft?.clientSignedAt && !draft?.companySignedAt && (
+            <button className="btn-success" onClick={() => setIsSignModalOpen(true)} style={{ marginLeft: '10px' }}>
+              Sign Final Agreement
             </button>
           )}
         </div>
@@ -347,12 +418,26 @@ const CompanyWorkspace: React.FC = () => {
 
               <div className="signature-area">
                 <div className="sig-row">
-                  <div className="sig-box"><span>Client (Authorized Signatory)</span></div>
-                  <div className="sig-box"><span>Developer (Authorized Signatory)</span></div>
+                  <div className="sig-box">
+                    <span>Client (Authorized Signatory)</span>
+                    {draft?.clientSignedAt && (
+                      <div className="text-success mt-2 fw-bold">[Digitally Signed]</div>
+                    )}
+                  </div>
+                  <div className="sig-box">
+                    <span>Developer (Authorized Signatory)</span>
+                    {draft?.companySignedAt && (
+                      <div className="text-success mt-2 fw-bold">[Digitally Signed]</div>
+                    )}
+                  </div>
                 </div>
                 <div className="sig-row mt-4">
-                  <div className="sig-date">Dated: {new Date().toLocaleDateString('en-GB')}</div>
-                  <div className="sig-date">Dated: {new Date().toLocaleDateString('en-GB')}</div>
+                  <div className="sig-date">
+                    {draft?.clientSignedAt ? `Dated: ${new Date(draft.clientSignedAt).toLocaleDateString('en-GB')}` : `Dated: ${new Date().toLocaleDateString('en-GB')}`}
+                  </div>
+                  <div className="sig-date">
+                    {draft?.companySignedAt ? `Dated: ${new Date(draft.companySignedAt).toLocaleDateString('en-GB')}` : `Dated: ${new Date().toLocaleDateString('en-GB')}`}
+                  </div>
                 </div>
               </div>
             </div>
@@ -452,6 +537,49 @@ const CompanyWorkspace: React.FC = () => {
           </div>
         </aside>
       </div>
+
+      {/* Signature Modal */}
+      {isSignModalOpen && (
+        <div className="custom-modal-backdrop">
+          <div className="signature-modal">
+            <div className="modal-head">
+              <h3>Apply Digital Signature</h3>
+              <button type="button" className="close-btn" onClick={() => setIsSignModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <p className="modal-sub">
+              By signing, you confirm that you are authorized to bind <strong>{parties?.partyA?.name || 'Company'}</strong> and agree to the finalized terms of the Master Agreement.
+            </p>
+            
+            <div className="canvas-wrapper">
+              <canvas 
+                ref={canvasRef} 
+                width={520} 
+                height={200} 
+                onMouseDown={startDrawing} 
+                onMouseUp={stopDrawing} 
+                onMouseLeave={stopDrawing} 
+                onMouseMove={draw} 
+                onTouchStart={startDrawing}
+                onTouchEnd={stopDrawing}
+                onTouchMove={draw}
+              />
+              <button type="button" className="canvas-clear" onClick={clearCanvas}>
+                <Eraser size={14} /> Clear
+              </button>
+            </div>
+            
+            <div className="modal-foot">
+              <button type="button" className="btn-cancel" onClick={() => setIsSignModalOpen(false)}>Cancel</button>
+              <button type="button" className="btn-confirm" onClick={handleConfirmSign} disabled={signing}>
+                {signing ? 'Signing…' : 'Confirm & Sign'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

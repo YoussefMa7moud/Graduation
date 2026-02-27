@@ -21,7 +21,7 @@ const BrowseCompanies: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSector, setFilterSector] = useState<string>('all');
+  const [filterSector] = useState<string>('all');
 
   useEffect(() => {
     const loadData = async () => {
@@ -38,8 +38,6 @@ const BrowseCompanies: React.FC = () => {
     const matchesSector = filterSector === 'all' ? true : c.sector === filterSector;
     return matchesSearch && matchesSector;
   });
-
-  const sectors = Array.from(new Set(companies.map(c => c.sector).filter(Boolean)));
 
   if (loading) return <div className="loader-container"><h4>Loading Partners...</h4></div>;
 

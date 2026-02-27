@@ -17,9 +17,11 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.grad.backend.contracts.util.QrCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -46,6 +48,9 @@ public class ContractService {
     private final InternalApiConfig internalApiConfig;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     @SuppressWarnings("unchecked")
     private String verifyActor(Long submissionId, Long userId) {
@@ -121,7 +126,7 @@ public class ContractService {
             draft.setContractPayloadJson(contractPayloadJson);
         draftRepository.save(draft);
 
-        byte[] pdf = buildNdaPdf(draft);
+        byte[] pdf = buildNdaPdf(draft, submissionId);
         String fileName = "NDA-Submission-" + submissionId + "-" + System.currentTimeMillis() + ".pdf";
         ContractRecord record = ContractRecord.builder()
                 .submissionId(submissionId)
@@ -130,6 +135,9 @@ public class ContractService {
                 .pdfBytes(pdf)
                 .fileName(fileName)
                 .signedAt(LocalDateTime.now())
+                .clientSignedAt(draft.getClientSignedAt())
+                .clientSignatureBase64(draft.getClientSignatureBase64())
+                .companySignatureBase64(signatureBase64)
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);
@@ -153,7 +161,7 @@ public class ContractService {
                 .build();
     }
 
-    private byte[] buildNdaPdf(NdaSigningDraft draft) {
+    private byte[] buildNdaPdf(NdaSigningDraft draft, Long submissionId) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document doc = new Document(PageSize.A4);
@@ -196,6 +204,28 @@ public class ContractService {
             doc.add(new Paragraph("3. Obligations: Use for Purpose only; keep secure; destroy on request.",
                     normalFont));
             doc.add(new Paragraph("4. Governing Law: Arab Republic of Egypt.", normalFont));
+
+            // Add QR Code for verification
+            try {
+                String verifyUrl = frontendUrl + "/verify-signature/" + submissionId + "?type=NDA";
+                byte[] qrBytes = QrCodeGenerator.generateQRCodeImage(verifyUrl, 150, 150);
+                Image qrImage = Image.getInstance(qrBytes);
+                qrImage.setAlignment(Element.ALIGN_CENTER);
+
+                doc.add(Chunk.NEWLINE);
+
+                Paragraph verifyText = new Paragraph("Scan to Verify Signatures & Authenticity", boldFont);
+                verifyText.setAlignment(Element.ALIGN_CENTER);
+                doc.add(verifyText);
+
+                doc.add(qrImage);
+
+                Paragraph urlText = new Paragraph(verifyUrl, normalFont);
+                urlText.setAlignment(Element.ALIGN_CENTER);
+                doc.add(urlText);
+            } catch (Exception e) {
+                log.warn("Could not generate QR code for NDA PDF", e);
+            }
 
             doc.close();
             return baos.toByteArray();

@@ -45,7 +45,6 @@ export const registerProjectManager = async (data: any) => {
     // implies we need the ID of the company ADMIN user.
     // We can get this from local storage or decode token if available. 
     // For now, let's assume the user ID is stored.
-    const userId = localStorage.getItem('user_id');
 
     const formData = new FormData();
     // formData.append('companyUserId', userId || '0'); // Backend now extracts from token

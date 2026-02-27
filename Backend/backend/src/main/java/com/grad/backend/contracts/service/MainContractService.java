@@ -25,6 +25,7 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.grad.backend.contracts.util.QrCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,70 +63,75 @@ public class MainContractService {
     @Value("${app.ai-model.url:http://localhost:5000}")
     private String aiModelUrl;
 
-   @SuppressWarnings("rawtypes")
-private String verifyActor(Long submissionId, Long userId) {
-    try {
-        String url = internalApiConfig.getBaseUrl()
-                + "/api/internal/submissions/" + submissionId
-                + "/verify-actor?userId=" + userId;
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Internal-Key", internalApiConfig.getInternalKey());
+    @SuppressWarnings("rawtypes")
+    private String verifyActor(Long submissionId, Long userId) {
+        try {
+            String url = internalApiConfig.getBaseUrl()
+                    + "/api/internal/submissions/" + submissionId
+                    + "/verify-actor?userId=" + userId;
 
-        ResponseEntity<Map> res = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                Map.class
-        );
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-Internal-Key", internalApiConfig.getInternalKey());
 
-        if (res.getStatusCode().is2xxSuccessful()
-                && res.getBody() != null
-                && res.getBody().containsKey("actor")) {
+            ResponseEntity<Map> res = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    Map.class);
 
-            String actor = (String) res.getBody().get("actor");
-            log.debug("verifyActor (internal) => actor={} submission={} user={}", actor, submissionId, userId);
-            return actor;
+            if (res.getStatusCode().is2xxSuccessful()
+                    && res.getBody() != null
+                    && res.getBody().containsKey("actor")) {
+
+                String actor = (String) res.getBody().get("actor");
+                log.debug("verifyActor (internal) => actor={} submission={} user={}", actor, submissionId, userId);
+                return actor;
+            }
+        } catch (Exception e) {
+            log.warn("verifyActor internal failed. Falling back. submission={}, user={}, reason={}",
+                    submissionId, userId, e.getMessage());
         }
-    } catch (Exception e) {
-        log.warn("verifyActor internal failed. Falling back. submission={}, user={}, reason={}",
-                submissionId, userId, e.getMessage());
+
+        /*
+         * =========================
+         * 🔁 FALLBACK (FIXED)
+         * =========================
+         */
+        try {
+            ProposalSubmission submission = submissionRepository.findById(submissionId).orElse(null);
+            if (submission == null)
+                return "none";
+
+            // CLIENT
+            if (submission.getClient() != null
+                    && submission.getClient().getId().equals(userId)) {
+                return "client";
+            }
+
+            // COMPANY (FIX ❗)
+            Company company = submission.getSoftwareCompany();
+            if (company != null
+                    && company.getUser() != null
+                    && company.getUser().getId().equals(userId)) {
+                return "company";
+            }
+
+        } catch (Exception ex) {
+            log.error("verifyActor fallback failed. submission={}, user={}, error={}",
+                    submissionId, userId, ex.getMessage());
+        }
+
+        return "none";
     }
-
-    /* =========================
-       🔁 FALLBACK (FIXED)
-       ========================= */
-    try {
-        ProposalSubmission submission = submissionRepository.findById(submissionId).orElse(null);
-        if (submission == null) return "none";
-
-        // CLIENT
-        if (submission.getClient() != null
-                && submission.getClient().getId().equals(userId)) {
-            return "client";
-        }
-
-        // COMPANY (FIX ❗)
-        Company company = submission.getSoftwareCompany();
-        if (company != null
-                && company.getUser() != null
-                && company.getUser().getId().equals(userId)) {
-            return "company";
-        }
-
-    } catch (Exception ex) {
-        log.error("verifyActor fallback failed. submission={}, user={}, error={}",
-                submissionId, userId, ex.getMessage());
-    }
-
-    return "none";
-}
-
 
     @Transactional(readOnly = true)
     public ContractPartiesResponse getContractParties(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
-        if ("none".equals(actor)) throw new RuntimeException("Not authorized");
+        if ("none".equals(actor))
+            throw new RuntimeException("Not authorized");
 
         ProposalSubmission s = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new RuntimeException("Submission not found"));
@@ -178,7 +184,8 @@ private String verifyActor(Long submissionId, Long userId) {
     @Transactional
     public ContractDraftResponse saveDraft(Long submissionId, Long userId, String contractPayloadJson) {
         String actor = verifyActor(submissionId, userId);
-        if ("none".equals(actor)) throw new RuntimeException("Not authorized");
+        if ("none".equals(actor))
+            throw new RuntimeException("Not authorized");
 
         ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
                 .orElseGet(() -> {
@@ -194,7 +201,7 @@ private String verifyActor(Long submissionId, Long userId) {
         // Check if contract content has changed - if so, reset validations
         String oldPayload = draft.getContractPayloadJson();
         String newPayload = contractPayloadJson != null ? contractPayloadJson : "{}";
-        
+
         if (!oldPayload.equals(newPayload)) {
             // Contract was modified - reset validations
             draft.setAiValidated(false);
@@ -211,7 +218,8 @@ private String verifyActor(Long submissionId, Long userId) {
     @Transactional(readOnly = true)
     public ContractDraftResponse getDraft(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
-        if ("none".equals(actor)) throw new RuntimeException("Not authorized");
+        if ("none".equals(actor))
+            throw new RuntimeException("Not authorized");
 
         return draftRepository.findBySubmissionId(submissionId)
                 .map(this::toDraftResponse)
@@ -224,10 +232,11 @@ private String verifyActor(Long submissionId, Long userId) {
                         .build());
     }
 
-   @Transactional
+    @Transactional
     public ContractValidationResponse validateWithAI(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
-        if (!"company".equals(actor)) throw new RuntimeException("Only the assigned company can validate");
+        if (!"company".equals(actor))
+            throw new RuntimeException("Only the assigned company can validate");
 
         try {
             ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
@@ -241,7 +250,7 @@ private String verifyActor(Long submissionId, Long userId) {
                 for (JsonNode section : root.get("sections")) {
                     int sectionNum = section.path("num").asInt();
                     JsonNode clauses = section.get("clauses");
-                    
+
                     if (clauses != null && clauses.isArray()) {
                         int clauseIdx = 1;
                         for (JsonNode clause : clauses) {
@@ -255,9 +264,9 @@ private String verifyActor(Long submissionId, Long userId) {
 
                             // FIX: Prepend numbering so AI Regex matches it: "1.1 text"
                             String formattedText = String.format("%d.%d %s", sectionNum, clauseIdx, rawText);
-                            
+
                             Map<String, String> requestBody = Map.of("contract", formattedText);
-                            
+
                             log.info("Validating Clause ID {}: {}", cId, formattedText);
 
                             try {
@@ -266,9 +275,10 @@ private String verifyActor(Long submissionId, Long userId) {
 
                                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                                     Map<String, Object> body = response.getBody();
-                                    
+
                                     // Extract violations
-                                    List<Map<String, Object>> vList = (List<Map<String, Object>>) body.get("violations");
+                                    List<Map<String, Object>> vList = (List<Map<String, Object>>) body
+                                            .get("violations");
                                     if (vList != null && !vList.isEmpty()) {
                                         for (Map<String, Object> vMap : vList) {
                                             allViolations.add(ViolationDTO.builder()
@@ -281,8 +291,9 @@ private String verifyActor(Long submissionId, Long userId) {
                                         }
                                     }
 
-                                    double score = body.get("compliance_score") != null ? 
-                                            ((Number) body.get("compliance_score")).doubleValue() : 100.0;
+                                    double score = body.get("compliance_score") != null
+                                            ? ((Number) body.get("compliance_score")).doubleValue()
+                                            : 100.0;
                                     minCompliance = Math.min(minCompliance, score);
                                 }
                             } catch (Exception e) {
@@ -316,7 +327,8 @@ private String verifyActor(Long submissionId, Long userId) {
     @Transactional
     public ContractValidationResponse validateWithOCL(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
-        if (!"company".equals(actor)) throw new RuntimeException("Only company can validate contract");
+        if (!"company".equals(actor))
+            throw new RuntimeException("Only company can validate contract");
 
         // For now, just approve (will be implemented later)
         ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
@@ -335,7 +347,8 @@ private String verifyActor(Long submissionId, Long userId) {
     @Transactional
     public ContractDraftResponse sendToClient(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
-        if (!"company".equals(actor)) throw new RuntimeException("Only company can send to client");
+        if (!"company".equals(actor))
+            throw new RuntimeException("Only company can send to client");
 
         ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
                 .orElseThrow(() -> new RuntimeException("Draft not found"));
@@ -347,13 +360,21 @@ private String verifyActor(Long submissionId, Long userId) {
         draft.setSentToClient(true);
         draft = draftRepository.save(draft);
 
+        // Update ProposalSubmission status to SIGNING
+        ProposalSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        submission.setStatus(com.grad.backend.project.enums.SubmissionStatus.SIGNING);
+        submissionRepository.save(submission);
+
         return toDraftResponse(draft);
     }
 
     @Transactional
-    public ContractDraftResponse signClient(Long submissionId, Long userId, String signatureBase64, String contractPayloadJson) {
+    public ContractDraftResponse signClient(Long submissionId, Long userId, String signatureBase64,
+            String contractPayloadJson) {
         String actor = verifyActor(submissionId, userId);
-        if (!"client".equals(actor)) throw new RuntimeException("Only client can sign");
+        if (!"client".equals(actor))
+            throw new RuntimeException("Only client can sign");
 
         ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
                 .orElseThrow(() -> new RuntimeException("Draft not found"));
@@ -377,9 +398,11 @@ private String verifyActor(Long submissionId, Long userId) {
     }
 
     @Transactional
-    public ContractDraftResponse signCompany(Long submissionId, Long userId, String signatureBase64, String contractPayloadJson) {
+    public ContractDraftResponse signCompany(Long submissionId, Long userId, String signatureBase64,
+            String contractPayloadJson) {
         String actor = verifyActor(submissionId, userId);
-        if (!"company".equals(actor)) throw new RuntimeException("Only company can sign");
+        if (!"company".equals(actor))
+            throw new RuntimeException("Only company can sign");
 
         ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
                 .orElseThrow(() -> new RuntimeException("Draft not found"));
@@ -400,7 +423,11 @@ private String verifyActor(Long submissionId, Long userId) {
         draft = draftRepository.save(draft);
 
         // Generate PDF and save to contract records
-        byte[] pdf = buildContractPdf(draft);
+        ContractPartiesResponse partiesRes = getContractParties(submissionId, userId);
+        String companyName = partiesRes.getPartyA() != null ? partiesRes.getPartyA().getSignatory() : "Company";
+        String clientName = partiesRes.getPartyB() != null ? partiesRes.getPartyB().getSignatory() : "Client";
+
+        byte[] pdf = buildContractPdf(draft, submissionId);
         String fileName = "Contract-Submission-" + submissionId + "-" + System.currentTimeMillis() + ".pdf";
         ContractRecord record = ContractRecord.builder()
                 .submissionId(submissionId)
@@ -409,9 +436,20 @@ private String verifyActor(Long submissionId, Long userId) {
                 .pdfBytes(pdf)
                 .fileName(fileName)
                 .signedAt(LocalDateTime.now())
+                .clientSignedAt(draft.getClientSignedAt())
+                .clientSignatureBase64(draft.getClientSignatureBase64())
+                .companySignatureBase64(signatureBase64)
+                .clientSignatoryName(clientName)
+                .companySignatoryName(companyName)
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);
+
+        // Update ProposalSubmission status to COMPLETED
+        ProposalSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        submission.setStatus(com.grad.backend.project.enums.SubmissionStatus.COMPLETED);
+        submissionRepository.save(submission);
 
         return toDraftResponse(draft);
     }
@@ -419,7 +457,8 @@ private String verifyActor(Long submissionId, Long userId) {
     @Transactional
     public ContractChatMessageDTO sendChatMessage(Long submissionId, Long userId, String message) {
         String actor = verifyActor(submissionId, userId);
-        if ("none".equals(actor)) throw new RuntimeException("Not authorized");
+        if ("none".equals(actor))
+            throw new RuntimeException("Not authorized");
 
         ContractChatMessage chatMessage = ContractChatMessage.builder()
                 .submissionId(submissionId)
@@ -444,7 +483,8 @@ private String verifyActor(Long submissionId, Long userId) {
     @Transactional(readOnly = true)
     public List<ContractChatMessageDTO> getChatMessages(Long submissionId, Long userId) {
         String actor = verifyActor(submissionId, userId);
-        if ("none".equals(actor)) throw new RuntimeException("Not authorized");
+        if ("none".equals(actor))
+            throw new RuntimeException("Not authorized");
 
         List<ContractChatMessage> messages = chatMessageRepository.findBySubmissionIdOrderByCreatedAtAsc(submissionId);
         return messages.stream().map(msg -> {
@@ -463,7 +503,8 @@ private String verifyActor(Long submissionId, Long userId) {
     private String getSenderName(Long userId, Long submissionId) {
         ProposalSubmission submission = submissionRepository.findById(submissionId)
                 .orElse(null);
-        if (submission == null) return "Unknown";
+        if (submission == null)
+            return "Unknown";
 
         if (userId.equals(submission.getClient().getId())) {
             if (submission.getClientType() == ClientType.COMPANY) {
@@ -496,7 +537,7 @@ private String verifyActor(Long submissionId, Long userId) {
                 .build();
     }
 
-    private byte[] buildContractPdf(ContractDraft draft) {
+    private byte[] buildContractPdf(ContractDraft draft, Long submissionId) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document doc = new Document(PageSize.A4);
@@ -540,6 +581,28 @@ private String verifyActor(Long submissionId, Long userId) {
                 }
             }
 
+            // Add QR Code for verification
+            try {
+                String verifyUrl = frontendUrl + "/verify-signature/" + submissionId + "?type=MAIN_CONTRACT";
+                byte[] qrBytes = QrCodeGenerator.generateQRCodeImage(verifyUrl, 150, 150);
+                Image qrImage = Image.getInstance(qrBytes);
+                qrImage.setAlignment(Element.ALIGN_CENTER);
+
+                doc.add(Chunk.NEWLINE);
+
+                Paragraph verifyText = new Paragraph("Scan to Verify Signatures & Authenticity", boldFont);
+                verifyText.setAlignment(Element.ALIGN_CENTER);
+                doc.add(verifyText);
+
+                doc.add(qrImage);
+
+                Paragraph urlText = new Paragraph(verifyUrl, normalFont);
+                urlText.setAlignment(Element.ALIGN_CENTER);
+                doc.add(urlText);
+            } catch (Exception e) {
+                log.warn("Could not generate QR code for PDF", e);
+            }
+
             doc.close();
             return baos.toByteArray();
         } catch (Exception e) {
@@ -552,12 +615,17 @@ private String verifyActor(Long submissionId, Long userId) {
         PdfPCell c = new PdfPCell();
         c.setPadding(8);
         if (party != null) {
-            c.addElement(new Paragraph("Entity details: " + (party.has("details") ? party.get("details").asText("") : ""), normal));
-            c.addElement(new Paragraph("Name: " + (party.has("signatory") ? party.get("signatory").asText("") : ""), normal));
+            c.addElement(new Paragraph(
+                    "Entity details: " + (party.has("details") ? party.get("details").asText("") : ""), normal));
+            c.addElement(new Paragraph("Name: " + (party.has("signatory") ? party.get("signatory").asText("") : ""),
+                    normal));
             c.addElement(new Paragraph("Title: " + (party.has("title") ? party.get("title").asText("") : ""), normal));
             c.addElement(new Paragraph("Email: " + (party.has("email") ? party.get("email").asText("") : ""), normal));
         }
-        c.addElement(new Paragraph("Signature: " + (sigBase64 != null && !sigBase64.isEmpty() ? "[Digitally Signed]" : "_________________"), normal));
+        c.addElement(new Paragraph(
+                "Signature: "
+                        + (sigBase64 != null && !sigBase64.isEmpty() ? "[Digitally Signed]" : "_________________"),
+                normal));
         return c;
     }
 }

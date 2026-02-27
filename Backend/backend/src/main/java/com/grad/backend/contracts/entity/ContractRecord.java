@@ -41,4 +41,19 @@ public class ContractRecord {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "client_signed_at")
+    private LocalDateTime clientSignedAt;
+
+    @Column(name = "client_signature_base64", columnDefinition = "LONGTEXT")
+    private String clientSignatureBase64;
+
+    @Column(name = "company_signature_base64", columnDefinition = "LONGTEXT")
+    private String companySignatureBase64;
+
+    @Column(name = "client_signatory_name")
+    private String clientSignatoryName;
+
+    @Column(name = "company_signatory_name")
+    private String companySignatoryName;
 }

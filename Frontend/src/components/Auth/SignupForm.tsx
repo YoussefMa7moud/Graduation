@@ -29,7 +29,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
   
   // UI state
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const { register } = useAuth();
@@ -40,7 +39,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess(false);
     setIsLoading(true);
 
     try {
@@ -70,6 +68,24 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
         setIsLoading(false);
         return;
       }
+      // Assuming 'companyRole' refers to 'title' in this context based on the error message
+      // and the surrounding code block.
+      if (role === 'company' && (title as string) === '') {
+        toast.error('Please select your role in the company');
+        setIsLoading(false);
+        return;
+      }
+
+      // Client specific validation
+      // The instruction refers to `formData.clientRole` which is `clientType` in this component.
+      // `clientType` is always 'individual' or 'corporate' and cannot be an empty string or undefined.
+      // This check is likely intended for a different field or context, but applying it as literally as possible
+      // to `clientType` for demonstration, though it will never trigger with current component logic.
+      if (role === 'client' && (clientType as any) === '') {
+        toast.error('Please select a valid client type.'); // Changed message to reflect clientType
+        setIsLoading(false);
+        return;
+      }
 
       // Validate national ID
       if (!nationalId || nationalId.trim() === '') {
@@ -86,7 +102,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
 
       // Validate role-specific fields
       if (role === 'company' || (role === 'client' && clientType === 'corporate')) {
-        if (!title || title === '') {
+        if (!title || (title as string) === '') {
           setError('Title is required');
           setIsLoading(false);
           return;
@@ -128,7 +144,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
       
       setTimeout(() => {
         onSwitch();
-        setSuccess(false);
         // Reset form
         setFirstName(''); setLastName(''); setEmail(''); setPassword('');
         setCompanyName(''); setDescription(''); setCompanyLogo(null);

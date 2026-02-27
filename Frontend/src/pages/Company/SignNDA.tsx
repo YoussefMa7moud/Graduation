@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Scale, X, PenTool, Eraser, Code, Coins, Lock
+  X, PenTool, Eraser
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PMLayout from '../../components/ProjectManager/PMLayout';
-import './PMStyles.css';
+
 
 const TechnicalDocWorkspace: React.FC = () => {
     const { projectId } = useParams();

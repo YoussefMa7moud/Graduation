@@ -3,8 +3,8 @@ import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveUser } from '../../utils/auth.utils';
-import { normalizeRole } from '../../utils/role.utils';
 import { API_BASE_URL } from '../../config/api.config';
+
 
 const CompanySettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('editProfile');
@@ -28,7 +28,7 @@ const CompanySettings: React.FC = () => {
     e.preventDefault();
     try {
       // 1. Update Profile (Name)
-      const response = await api.put('/api/users/profile', {
+      await api.put('/api/users/profile', {
         firstName,
         lastName
       });
@@ -49,9 +49,10 @@ const CompanySettings: React.FC = () => {
         lastName,
         // Ensure required fields are present if user was null (shouldn't be)
         userId: user?.userId || 0,
-        email: user?.email || '',
-        role: user?.role || 'company'
-      };
+        email: user?.email,
+        role: user?.role,
+        companyName: user?.companyName
+      } as any;
       
       saveUser(updatedUser);
       refreshUser();

@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import PMLayout from '../../components/ProjectManager/PMLayout';
 import { PMService } from '../../services/ProjectManager/PMService';
 import { toast } from 'react-toastify';
 import './IncomingProposals.css';
 
 const IncomingProposals: React.FC = () => {
     const [proposals, setProposals] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadProposals();
@@ -19,7 +17,7 @@ const IncomingProposals: React.FC = () => {
         } catch (err) {
             toast.error("Failed to fetch proposals");
         } finally {
-            setLoading(false);
+            // setLoading(false); // Removed as per instruction
         }
     };
 

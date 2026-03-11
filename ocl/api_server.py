@@ -25,7 +25,8 @@ from OCL import (
     generate_policy_test_file,
     get_or_create_company_id,
     insert_policy,
-    setup_database
+    setup_database,
+    validate_clauses_against_policies
 )
 
 # Load environment variables
@@ -85,6 +86,30 @@ class PolicyConvertResponse(BaseModel):
     validation: List[ValidationResult]
     category: str
     keywords: List[str]
+
+class ClauseData(BaseModel):
+    id: str
+    sectionTitle: str
+    text: str
+
+class PolicyData(BaseModel):
+    id: str
+    text: str
+    oclCode: str
+    keywords: str
+
+class ValidationRequest(BaseModel):
+    clauses: List[ClauseData]
+    policies: List[PolicyData]
+
+class Violation(BaseModel):
+    clauseId: str
+    reason: str
+    suggestion: str
+
+class ValidationResponse(BaseModel):
+    violations: List[Violation]
+    isValid: bool
 
 @app.get("/")
 def root():
@@ -196,6 +221,44 @@ async def generate_file(
         raise HTTPException(
             status_code=500,
             detail=f"Error generating file: {str(e)}"
+        )
+
+@app.post("/validate-clauses", response_model=ValidationResponse)
+async def validate_clauses(request: ValidationRequest):
+    """
+    Validate contract clauses against company policies
+    """
+    try:
+        client = get_groq_client()
+        
+        # Convert Pydantic models to dicts for the OCL function
+        clauses_dicts = [{"id": c.id, "sectionTitle": c.sectionTitle, "text": c.text} for c in request.clauses]
+        policies_dicts = [{"id": p.id, "text": p.text, "oclCode": p.oclCode, "keywords": p.keywords} for p in request.policies]
+        
+        # Call the validation function
+        validation_result = validate_clauses_against_policies(clauses_dicts, policies_dicts, client)
+        
+        # Parse the result
+        violations = []
+        for v in validation_result.get("violations", []):
+            violations.append(Violation(
+                clauseId=v.get("clauseId", ""),
+                reason=v.get("reason", ""),
+                suggestion=v.get("suggestion", "")
+            ))
+            
+        is_valid = len(violations) == 0
+        
+        return ValidationResponse(
+            violations=violations,
+            isValid=is_valid
+        )
+        
+    except Exception as e:
+        logger.error(f"Error validating clauses: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error validating clauses: {str(e)}"
         )
 
 if __name__ == "__main__":

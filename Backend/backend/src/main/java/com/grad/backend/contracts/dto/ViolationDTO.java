@@ -18,4 +18,5 @@ public class ViolationDTO {
     private Double confidence;
     private String reason;
     private String suggestion;
+    private String type; // "LAW" or "POLICY"
 }

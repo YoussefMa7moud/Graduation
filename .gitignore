@@ -2,3 +2,5 @@
 ocl/venv/pyvenv.cfg
 Frontend/package-lock.json
 Frontend/package-lock.json
+ocl/.env
+ocl/.env

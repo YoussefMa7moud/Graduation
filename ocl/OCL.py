@@ -940,6 +940,78 @@ print(f"Set {prop} = {{value}} (from test description)")
 
 # === MAIN SCRIPT ===
 # Only run this code when the script is executed directly, not when imported
+def validate_clauses_against_policies(clauses: List[Dict], policies: List[Dict], client: Groq) -> Dict:
+    """
+    Validates a list of clauses against a list of company policies.
+    Matches relevant policies to clauses and checks for violations.
+    
+    Args:
+        clauses: List of dicts with 'id', 'text', 'sectionTitle'
+        policies: List of dicts with 'id', 'text', 'oclCode', 'keywords'
+        client: Groq client
+        
+    Returns:
+        Dict with 'violations' list
+    """
+    if not clauses or not policies:
+        return {"violations": []}
+        
+    # We will ask the LLM to process this in somewhat batch fashion, or clause by clause.
+    # To avoid huge prompts, let's just make one call if lists aren't massive.
+    
+    prompt = f"""
+    You are an expert legal contract analyzer.
+    You have a set of Company Policies (rules) and a set of Contract Clauses.
+    Your task is to identify IF any of the Contract Clauses violate any of the Company Policies.
+    
+    COMPANYS POLICIES:
+    """
+    for p in policies:
+        prompt += f"- Policy ID: {p['id']}\n  Rule: {p['text']}\n  OCL Constraint mapping: {p['oclCode']}\n\n"
+        
+    prompt += "CONTRACT CLAUSES:\n"
+    for c in clauses:
+        prompt += f"- Clause ID: {c['id']}\n  Section: {c['sectionTitle']}\n  Text: {c['text']}\n\n"
+        
+    prompt += """
+    Look carefully for any explicit contradiction between the clause text and the policy rules.
+    If a clause breaches a policy rule, report it as a violation.
+    
+    Return ONLY a JSON object exactly like this, and no other text:
+    {
+      "violations": [
+        {
+          "clauseId": "id of the violating clause",
+          "reason": "Detailed explanation of why it violates the policy and which policy",
+          "suggestion": "How to rewrite the clause to comply"
+        }
+      ]
+    }
+    If there are no violations, return { "violations": [] }
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0
+        )
+        
+        result_text = response.choices[0].message.content.strip()
+        
+        # Extract json safely
+        json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))
+        else:
+            logger.error("Could not parse JSON from LLM response for validation")
+            return {"violations": []}
+            
+    except Exception as e:
+        logger.error(f"Error in validate_clauses_against_policies: {e}")
+        print(f"Error in validation: {e}")
+        return {"violations": []}
+
 if __name__ == "__main__":
     setup_database()
 

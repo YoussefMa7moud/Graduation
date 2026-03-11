@@ -69,10 +69,11 @@ export const saveContractDraft = async (request: SaveContractDraftRequest): Prom
 export interface ViolationDTO {
   clauseId: string;
   clauseText: string;
-  violatedLaw: Record<string, string>;
-  confidence: number;
+  violatedLaw?: Record<string, string>;
+  confidence?: number;
   reason: string;
-  suggestion: string;
+  suggestion?: string;
+  type?: string;
 }
 
 export interface ContractValidationResponse {

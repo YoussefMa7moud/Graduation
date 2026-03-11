@@ -39,6 +39,8 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import com.grad.backend.policy.entity.Policy;
+import com.grad.backend.policy.repository.PolicyRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,9 +58,13 @@ public class MainContractService {
     private final CompanyRepository companyRepository;
     private final ClientCompanyRepository clientCompanyRepo;
     private final ClientPersonRepository clientPersonRepo;
+    private final PolicyRepository policyRepository;
     private final RestTemplate restTemplate;
     private final InternalApiConfig internalApiConfig;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${app.ocl.api.url:http://localhost:5001}")
+    private String oclApiUrl;
 
     @Value("${app.ai-model.url:http://localhost:5000}")
     private String aiModelUrl;
@@ -286,6 +292,7 @@ public class MainContractService {
                                                     .clauseText(rawText)
                                                     .reason((String) vMap.get("reason"))
                                                     .suggestion((String) vMap.get("suggestion"))
+                                                    .type("LAW")
                                                     .confidence(1.0)
                                                     .build());
                                         }
@@ -305,16 +312,30 @@ public class MainContractService {
                 }
             }
 
+            // Merge with existing POLICY violations
+            List<ViolationDTO> combinedViolations = new ArrayList<>(allViolations);
+            if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
+                try {
+                    JsonNode jsonNode = objectMapper.readTree(draft.getValidationResultsJson());
+                    if (jsonNode.has("violations") && jsonNode.get("violations").isArray()) {
+                        for (JsonNode vNode : jsonNode.get("violations")) {
+                            ViolationDTO v = objectMapper.treeToValue(vNode, ViolationDTO.class);
+                            if ("POLICY".equals(v.getType())) combinedViolations.add(v);
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+
             // Save results to DB
             draft.setAiValidated(allViolations.isEmpty());
-            Map<String, Object> results = Map.of("violations", allViolations, "complianceScore", minCompliance);
+            Map<String, Object> results = Map.of("violations", combinedViolations, "complianceScore", minCompliance);
             draft.setValidationResultsJson(objectMapper.writeValueAsString(results));
             draftRepository.save(draft);
 
             return ContractValidationResponse.builder()
                     .isValid(allViolations.isEmpty())
                     .complianceScore(minCompliance)
-                    .violations(allViolations)
+                    .violations(combinedViolations)
                     .message(allViolations.isEmpty() ? "No violations detected" : "Violations found")
                     .build();
 
@@ -330,18 +351,110 @@ public class MainContractService {
         if (!"company".equals(actor))
             throw new RuntimeException("Only company can validate contract");
 
-        // For now, just approve (will be implemented later)
         ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
                 .orElseThrow(() -> new RuntimeException("Draft not found"));
-        draft.setOclValidated(true);
-        draftRepository.save(draft);
 
-        return ContractValidationResponse.builder()
-                .isValid(true)
-                .complianceScore(100.0)
-                .violations(new ArrayList<>())
-                .message("OCL validation approved")
+        List<Policy> companyPolicies = policyRepository.findByCompanyIdOrderByCreatedAtDesc(userId);
+
+        if (companyPolicies.isEmpty()) {
+            draft.setOclValidated(true);
+            draftRepository.save(draft);
+            return ContractValidationResponse.builder()
+                    .isValid(true)
+                    .complianceScore(100.0)
+                    .violations(new ArrayList<>())
+                    .message("No company policies defined. Proceeding with contract natively.")
+                    .build();
+        }
+
+        List<OclValidationRequest.ClauseData> clauseDataList = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
+            if (root.has("sections")) {
+                for (JsonNode section : root.get("sections")) {
+                    String sectionTitle = section.path("title").asText();
+                    JsonNode clauses = section.get("clauses");
+                    if (clauses != null && clauses.isArray()) {
+                        for (JsonNode clause : clauses) {
+                            String cId = clause.path("id").asText();
+                            String text = clause.path("text").asText().trim();
+                            if (text.length() >= 10) {
+                                clauseDataList.add(OclValidationRequest.ClauseData.builder()
+                                        .id(cId)
+                                        .sectionTitle(sectionTitle)
+                                        .text(text)
+                                        .build());
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse draft payload: ", e);
+            throw new RuntimeException("Draft payload parsing failed.");
+        }
+
+        List<OclValidationRequest.PolicyData> policyDataList = companyPolicies.stream()
+                .map(p -> OclValidationRequest.PolicyData.builder()
+                        .id(p.getId().toString())
+                        .text(p.getPolicyText())
+                        .oclCode(p.getOclCode())
+                        .keywords(p.getKeywords())
+                        .build())
+                .collect(Collectors.toList());
+
+        OclValidationRequest request = OclValidationRequest.builder()
+                .clauses(clauseDataList)
+                .policies(policyDataList)
                 .build();
+
+        try {
+            ResponseEntity<OclValidationResponse> response = restTemplate.postForEntity(
+                    oclApiUrl + "/validate-clauses", request, OclValidationResponse.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                OclValidationResponse oclRes = response.getBody();
+                
+                boolean isValid = oclRes.isValid();
+                draft.setOclValidated(isValid);
+                
+                List<ViolationDTO> oclViolations = oclRes.getViolations() != null ? oclRes.getViolations() : new ArrayList<>();
+                for (ViolationDTO v : oclViolations) { v.setType("POLICY"); }
+
+                // Merge with existing LAW violations
+                List<ViolationDTO> combinedViolations = new ArrayList<>(oclViolations);
+                if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
+                    try {
+                        JsonNode jsonNode = objectMapper.readTree(draft.getValidationResultsJson());
+                        if (jsonNode.has("violations") && jsonNode.get("violations").isArray()) {
+                            for (JsonNode vNode : jsonNode.get("violations")) {
+                                ViolationDTO v = objectMapper.treeToValue(vNode, ViolationDTO.class);
+                                if ("LAW".equals(v.getType())) combinedViolations.add(v);
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+                
+                Map<String, Object> results = new HashMap<>();
+                results.put("violations", combinedViolations);
+                results.put("complianceScore", isValid ? 100.0 : 0.0);
+                draft.setValidationResultsJson(objectMapper.writeValueAsString(results));
+                
+                draftRepository.save(draft);
+
+                return ContractValidationResponse.builder()
+                        .isValid(isValid)
+                        .complianceScore(isValid ? 100.0 : 0.0)
+                        .violations(combinedViolations)
+                        .message(isValid ? "OCL validation approved" : "OCL validation found violations")
+                        .build();
+            } else {
+                throw new RuntimeException("Validation failed via Python API");
+            }
+        } catch (Exception e) {
+            log.error("OCL API Call Failed: ", e);
+            throw new RuntimeException("OCL Validation error: " + e.getMessage());
+        }
     }
 
     @Transactional

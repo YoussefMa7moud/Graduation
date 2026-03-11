@@ -58,8 +58,7 @@ const CompanyWorkspace: React.FC = () => {
   const [violations, setViolations] = useState<ViolationDTO[]>([]);
   const [isValidated, setIsValidated] = useState(false);
   const [isValidatingAI, setIsValidatingAI] = useState(false);
-  const [isValidatingOCL, setIsValidatingOCL] = useState(false);
-  const [activeTab, setActiveTab] = useState<'intel' | 'chat'>('intel');
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ContractChatMessageDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -156,7 +155,19 @@ const CompanyWorkspace: React.FC = () => {
     return () => { cancelled = true; };
   }, [submissionId, navigate, applyViolationsToClauses]);
 
-  useEffect(() => { scrollToBottom(); }, [chatMessages]);
+  useEffect(() => { scrollToBottom(); }, [chatMessages, isChatOpen]);
+
+  // --- Auto-refresh Chat ---
+  useEffect(() => {
+    if (!submissionId) return;
+    const interval = setInterval(async () => {
+      try {
+        const msgs = await getChatMessages(submissionId);
+        setChatMessages(msgs);
+      } catch (e) { }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [submissionId]);
 
   // --- Auto-save ---
   const saveDraft = useCallback(async () => {
@@ -185,13 +196,8 @@ const CompanyWorkspace: React.FC = () => {
     target.style.height = `${target.scrollHeight}px`;
 
     setSections(prev => prev.map(s => s.id === sId ? {
-      ...s, clauses: s.clauses.map(c => c.id === cId ? { ...c, text: val, violation: undefined } : c)
+      ...s, clauses: s.clauses.map(c => c.id === cId ? { ...c, text: val } : c)
     } : s));
-    
-    if (isValidated) {
-      setIsValidated(false);
-      setViolations([]);
-    }
   };
 
   const handleKeys = (e: React.KeyboardEvent, sIdx: number, cIdx: number) => {
@@ -215,40 +221,42 @@ const CompanyWorkspace: React.FC = () => {
     }
   };
 
-  const handleValidateAI = async () => {
+  const handleValidateContract = async () => {
     if (!submissionId) return;
     setIsValidatingAI(true);
     try {
       await saveDraft();
-      const result = await validateWithAI(submissionId);
-      const uniqueViolations = getUniqueViolations(result.violations);
       
-      setViolations(uniqueViolations);
-      applyViolationsToClauses(uniqueViolations);
-      setIsValidated(true);
-
-      if (result.isValid) {
-        toast.success('AI validation passed!');
+      // Call sequentially to merge validation objects properly in backend
+      await validateWithAI(submissionId);
+      const result = await validateWithOCL(submissionId);
+      
+      if (result.violations && result.violations.length > 0) {
+        const uniqueViolations = getUniqueViolations(result.violations);
+        setViolations(uniqueViolations);
+        applyViolationsToClauses(uniqueViolations);
+        setIsValidated(true);
       } else {
-        toast.warning(`AI found ${uniqueViolations.length} issues.`);
+        setViolations([]);
+        applyViolationsToClauses([]);
+        setIsValidated(true);
       }
+
+      const hasIssues = result.violations && result.violations.length > 0;
+      if (!hasIssues) {
+        toast.success('Contract validated successfully! No issues found.');
+      } else {
+        toast.warning(`Validation found ${result.violations.length} issues.`);
+      }
+
+      // Fetch fresh draft so UI unlocks
+      const updatedDraft = await getContractDraft(submissionId);
+      setDraft(updatedDraft);
+
     } catch (e: any) {
-      toast.error('AI validation failed.');
+      toast.error('Validation failed.');
     } finally {
       setIsValidatingAI(false);
-    }
-  };
-
-  const handleValidateOCL = async () => {
-    if (!submissionId) return;
-    setIsValidatingOCL(true);
-    try {
-      const result = await validateWithOCL(submissionId);
-      if (result.isValid) toast.success('OCL validation approved!');
-    } catch (e: any) {
-      toast.error('OCL validation failed.');
-    } finally {
-      setIsValidatingOCL(false);
     }
   };
 
@@ -338,17 +346,25 @@ const CompanyWorkspace: React.FC = () => {
           <div className="compliance-tag">This Contract is governed exclusively by the laws of Egypt.</div>
         </div>
         <div className="nav-btns">
-          <button className="btn-sec" onClick={handleValidateAI} disabled={isValidatingAI}>
-            {isValidatingAI ? 'Analyzing...' : 'AI Legal Check'}
+          <button className="btn-navy" onClick={handleValidateContract} disabled={isValidatingAI}>
+            {isValidatingAI ? 'Validating...' : 'Validate Contract (AI + Policy)'}
           </button>
-          <button className="btn-navy" onClick={handleValidateOCL} disabled={isValidatingOCL}>
-            {isValidatingOCL ? 'Verifying...' : 'OCL Validation'}
+
+          <button 
+            className="btn-success" 
+            onClick={handleSendToClient} 
+            disabled={!draft?.aiValidated || !draft?.oclValidated}
+            title={(!draft?.aiValidated || !draft?.oclValidated) ? "You must pass the validation first" : ""}
+            style={{ 
+              marginLeft: '10px', 
+              opacity: (!draft?.aiValidated || !draft?.oclValidated) ? 0.6 : 1, 
+              cursor: (!draft?.aiValidated || !draft?.oclValidated) ? 'not-allowed' : 'pointer', 
+              display: (draft?.sentToClient ? 'none' : 'inline-block') 
+            }}
+          >
+            Finalize & Send
           </button>
-          {draft?.aiValidated && draft?.oclValidated && !draft?.sentToClient && (
-            <button className="btn-success" onClick={handleSendToClient} style={{ marginLeft: '10px' }}>
-              Finalize & Send
-            </button>
-          )}
+
           {draft?.sentToClient && draft?.clientSignedAt && !draft?.companySignedAt && (
             <button className="btn-success" onClick={() => setIsSignModalOpen(true)} style={{ marginLeft: '10px' }}>
               Sign Final Agreement
@@ -445,17 +461,7 @@ const CompanyWorkspace: React.FC = () => {
         </main>
 
         <aside className="ws-sidebar">
-          <div className="tabs">
-            <button className={activeTab === 'intel' ? 'active' : ''} onClick={() => setActiveTab('intel')}>
-              <i className="bi bi-cpu-fill me-2"></i> Intelligence
-            </button>
-            <button className={activeTab === 'chat' ? 'active' : ''} onClick={() => setActiveTab('chat')}>
-              <i className="bi bi-chat-dots-fill me-2"></i> Collaboration
-            </button>
-          </div>
-
           <div className="side-body">
-            {activeTab === 'intel' && (
               <div className="intel-container">
                 {/* 1. Initial State: Waiting for validation */}
                 {!isValidated && !isValidatingAI && (
@@ -468,10 +474,13 @@ const CompanyWorkspace: React.FC = () => {
 
                 {/* 2. Loading State */}
                 {isValidatingAI && (
-                  <div className="intel-placeholder">
-                    <div className="spinner-border text-primary mb-3"></div>
-                    <h4>Analyzing...</h4>
-                    <p>Reviewing clauses against legal frameworks.</p>
+                  <div className="intel-placeholder validation-active">
+                    <div className="radar-spinner"></div>
+                    <h4 className="pulse-text">Scanning Document...</h4>
+                    <p>Cross-referencing with Egyptian Law and Company Policies</p>
+                    <div className="scan-progress-bar">
+                      <div className="scan-progress-fill"></div>
+                    </div>
                   </div>
                 )}
 
@@ -493,10 +502,12 @@ const CompanyWorkspace: React.FC = () => {
                       {violations.length} points to review
                     </div>
                     {violations.map((v, i) => (
-                      <div key={i} className="violation-card">
+                      <div key={i} className={`violation-card ${v.type === 'LAW' ? 'law-issue' : 'policy-issue'}`}>
                         <div className="v-header">
                           <span className="v-id">Clause {resolveClauseNumber(v.clauseId)}</span>
-                          <span className="v-severity">High Risk</span>
+                          <span className={`v-severity ${v.type === 'LAW' ? 'law' : 'policy'}`}>
+                            {v.type === 'LAW' ? 'Egyptian Law' : 'Policy'}
+                          </span>
                         </div>
                         <p className="v-reason">{v.reason}</p>
                         {v.suggestion && (
@@ -510,32 +521,43 @@ const CompanyWorkspace: React.FC = () => {
                   </div>
                 )}
               </div>
-            )}
 
-            {activeTab === 'chat' && (
-              <div className="chat-pane">
-                <div className="chat-msgs">
-                  {chatMessages.map(m => (
-                    <div key={m.id} className={`chat-bubble-wrap ${m.senderName.includes('Company') ? 'sent' : 'received'}`}>
-                      <div className="bubble-meta">{m.senderName}</div>
-                      <div className="bubble">{m.message}</div>
-                    </div>
-                  ))}
-                  <div ref={chatEndRef} />
-                </div>
-                <div className="chat-input-area">
-                  <input
-                    value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
-                    placeholder="Type a message…"
-                    onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
-                  />
-                  <button onClick={handleSendChatMessage}>➤</button>
-                </div>
-              </div>
-            )}
           </div>
         </aside>
+      </div>
+
+      {/* LinkedIn-style Sticky Footer Chat */}
+      <div className={`sticky-chat-widget ${isChatOpen ? 'open' : 'closed'}`}>
+        <div className="chat-header" onClick={() => setIsChatOpen(!isChatOpen)}>
+          <div className="chat-title">
+            <i className="bi bi-chat-dots-fill me-2" style={{ color: "#fff" }}></i> Collaboration
+            {chatMessages.length > 0 && <span className="chat-badge">{chatMessages.length}</span>}
+          </div>
+          <i className={`bi bi-chevron-${isChatOpen ? 'down' : 'up'}`} style={{ color: "#fff" }}></i>
+        </div>
+        
+        {isChatOpen && (
+          <div className="chat-body-content">
+            <div className="chat-msgs">
+              {chatMessages.map(m => (
+                <div key={m.id} className={`chat-bubble-wrap ${m.senderName.includes('Company') ? 'sent' : 'received'}`}>
+                  <div className="bubble-meta">{m.senderName}</div>
+                  <div className="bubble">{m.message}</div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="chat-input-area">
+              <input
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                placeholder="Type a message…"
+                onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
+              />
+              <button onClick={handleSendChatMessage}>➤</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Signature Modal */}

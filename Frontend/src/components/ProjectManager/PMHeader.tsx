@@ -93,7 +93,7 @@ const PMHeader: React.FC = () => {
         {/* Navigation */}
         <nav style={{ display: "flex", gap: "30px" }}>
           {[
-            { name: "Dashboard", path: "/PMDashboard" },
+            { name: "Dashboard", path: "/ProjectManagerHome"},
             { name: "Incoming Proposals", path: "/ProposalRequests" },
             { name: "Active Projects", path: "/TechnicalDocWorkSpaces" },
           ].map((item) => (
@@ -179,7 +179,18 @@ const PMHeader: React.FC = () => {
                   border: "1px solid #e2e8f0",
                   zIndex: 1001,
                 }}
-              >
+              > <div
+  onClick={() => navigate("/PMsettings")}
+  style={{
+    padding: "12px 16px",
+    color: "#1e293b",
+    fontSize: "14px",
+    cursor: "pointer",
+  }}
+>
+  <i className="bi bi-gear me-2"></i> Settings
+</div>
+<div style={{ height: "1px", background: "#f1f5f9" }} /> 
                 <div
                   onClick={handleSignOut}
                   style={{
@@ -189,6 +200,7 @@ const PMHeader: React.FC = () => {
                     cursor: "pointer",
                   }}
                 >
+                  
                   <i className="bi bi-box-arrow-right me-2"></i> Sign Out
                 </div>
               </div>

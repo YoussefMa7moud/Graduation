@@ -36,7 +36,12 @@ import ProposalFeedback from "./pages/Client/MangeProject/ProposalFeedback";
 import NDASigning from "./pages/Client/MangeProject/NDASigning";
 import SignNDA from "./pages/Company/SignNDA";
 import VerifySignature from "./pages/VerifySignature";
-
+import PMDashboard from "./pages/ProjectManager/PMDashboard";
+import IncomingProposals from "./pages/ProjectManager/IncomingProposals";
+import PMLayout from "./components/ProjectManager/PMLayout";
+import TechnicalDocWorkspace from "./pages/ProjectManager/TechDocWorkspace";
+import TechnicalDocEditor from "./pages/ProjectManager/TechnicalDocEditor";
+import PMAccountSettings from "./pages/ProjectManager/PMSettings";
 /**
  * Component that redirects authenticated users away from auth pages
  */
@@ -352,12 +357,63 @@ const AppRoutes: React.FC = () => {
       {/* Project Manager Routes - Only accessible by PROJECT_MANAGER role */}
  
 
-  
+            <Route
+        path="/ProjectManagerHome"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <PMDashboard />
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
+ 
 
+       <Route
+        path="/ProposalRequests"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <IncomingProposals/>
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
+    
 
-
-
+   <Route
+        path="/TechnicalDocWorkSpaces"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <TechnicalDocWorkspace/>
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
+    
       
+   <Route
+        path="/TechDocEditor"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <TechnicalDocEditor/>
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
+
+  <Route
+        path="/PMsettings"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <PMAccountSettings/>
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
 
     </Routes>
 

@@ -16,6 +16,13 @@ import { normalizeRole } from '../utils/role.utils';
 /**
  * User information type. The role is a normalized, type-safe FrontendRole.
  */
+export interface UserPermissions {
+  canViewContracts: boolean;
+  canAddPolicy: boolean;
+  canSignContract: boolean;
+  canAcceptProposals: boolean;
+}
+
 export interface User {
   userId: number;
   email: string;
@@ -23,6 +30,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   companyName?: string;
+  permissions?: UserPermissions;
 }
 
 
@@ -86,6 +94,12 @@ const login = async (credentials: LoginRequest): Promise<void> => {
       role: normalizedRole,
       firstName: firstName,
       lastName: lastName,
+      permissions: response.canViewContracts !== undefined ? {
+        canViewContracts: response.canViewContracts ?? false,
+        canAddPolicy: response.canAddPolicy ?? false,
+        canSignContract: response.canSignContract ?? false,
+        canAcceptProposals: response.canAcceptProposals ?? false
+      } : undefined
     };
 
     console.log('Storing user data:', userToStore);

@@ -57,6 +57,10 @@ export interface LoginResponse {
   role: string;
   firstName?: string;
   lastName?: string;
+  canViewContracts?: boolean;
+  canAddPolicy?: boolean;
+  canSignContract?: boolean;
+  canAcceptProposals?: boolean;
 }
 
 
@@ -137,7 +141,11 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
       email: loginData.email,
       role: loginData.role,
       firstName: loginData.firstName,
-      lastName: loginData.lastName
+      lastName: loginData.lastName,
+      canViewContracts: loginData.canViewContracts,
+      canAddPolicy: loginData.canAddPolicy,
+      canSignContract: loginData.canSignContract,
+      canAcceptProposals: loginData.canAcceptProposals
     };
 
     console.log('=== LOGIN DEBUG ===');

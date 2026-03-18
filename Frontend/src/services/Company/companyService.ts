@@ -87,3 +87,43 @@ export const deleteProjectManager = async (pmId: number) => {
         headers: { 'Authorization': `Bearer ${token}` }
     });
 };
+
+export const registerEmployee = async (data: any) => {
+    const token = localStorage.getItem('auth_token');
+    return axios.post('/api/company/employees', data, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+};
+
+export const getEmployees = async () => {
+    try {
+        const token = localStorage.getItem('auth_token');
+        const response = await axios.get('/api/company/employees', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Get Employees Error:", error);
+        return [];
+    }
+};
+
+export const updateEmployee = async (empId: number, data: any) => {
+    const token = localStorage.getItem('auth_token');
+    return axios.put(`/api/company/employees/${empId}`, data, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+};
+
+export const deleteEmployee = async (empId: number) => {
+    const token = localStorage.getItem('auth_token');
+    return axios.delete(`/api/company/employees/${empId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+};

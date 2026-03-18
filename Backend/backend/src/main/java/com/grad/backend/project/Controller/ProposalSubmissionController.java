@@ -12,11 +12,15 @@ import com.grad.backend.project.service.ProposalSubmissionService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.grad.backend.Auth.enums.UserRole;
+import com.grad.backend.Auth.entity.CompanyEmployee;
+import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 
 @RestController
 @RequestMapping("/api/submissions")
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProposalSubmissionController {
 
     private final ProposalSubmissionService submissionService;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
 
    @PostMapping("/send-to-company")
 public ResponseEntity<SubmissionResponseDTO> submitToCompany(
@@ -86,7 +91,17 @@ public ResponseEntity<List<SubmissionResponseDTO>> getMySubmissions(@Authenticat
 public ResponseEntity<List<SubmissionResponseDTO>> getCompanyQueue(@AuthenticationPrincipal User currentUser) {
     if (currentUser == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-    List<ProposalSubmission> submissions = submissionService.getSubmissionsForCompany(currentUser.getId());
+    Long targetCompanyId = currentUser.getId();
+    if (currentUser.getRole() == UserRole.COMPANY_EMPLOYEE) {
+        Optional<CompanyEmployee> empOpt = companyEmployeeRepository.findByUserId(currentUser.getId());
+        if (empOpt.isPresent()) {
+            targetCompanyId = empOpt.get().getCompany().getId();
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
+
+    List<ProposalSubmission> submissions = submissionService.getSubmissionsForCompany(targetCompanyId);
     
     List<SubmissionResponseDTO> dtos = submissions.stream().map(s -> {
         ProjectProposal p = s.getProposal();

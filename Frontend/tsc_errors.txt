@@ -1,0 +1,9 @@
+src/components/Company/Sidebar.tsx(2,32): error TS6133: 'useLocation' is declared but its value is never read.
+src/pages/Company/Owner/CompanySettings.tsx(3,17): error TS2307: Cannot find module '../../services/api' or its corresponding type declarations.
+src/pages/Company/Owner/CompanySettings.tsx(4,25): error TS2307: Cannot find module '../../contexts/AuthContext' or its corresponding type declarations.
+src/pages/Company/Owner/CompanySettings.tsx(5,26): error TS2307: Cannot find module '../../utils/auth.utils' or its corresponding type declarations.
+src/pages/Company/Owner/CompanySettings.tsx(6,30): error TS2307: Cannot find module '../../config/api.config' or its corresponding type declarations.
+src/pages/Company/Owner/CompanySettings.tsx(27,19): error TS7006: Parameter 'res' implicitly has an 'any' type.
+src/pages/Company/Owner/CompanySettings.tsx(36,20): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/pages/Company/Owner/CompanySettings.tsx(45,19): error TS7006: Parameter 'res' implicitly has an 'any' type.
+src/pages/Company/Owner/CompanySettings.tsx(54,20): error TS7006: Parameter 'err' implicitly has an 'any' type.

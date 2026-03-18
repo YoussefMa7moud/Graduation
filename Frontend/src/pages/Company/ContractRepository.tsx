@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { getContractRecords } from '../../services/Contract/ContractRepo'; 
 import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
 import './ContractRepository.css';
 
 export interface ContractRecordResponse {
@@ -14,6 +15,7 @@ export interface ContractRecordResponse {
 }
 
 const ContractRepository: React.FC = () => {
+  const { user } = useAuth();
   const [records, setRecords] = useState<ContractRecordResponse[]>([]);
   const [selected, setSelected] = useState<ContractRecordResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +65,18 @@ const ContractRepository: React.FC = () => {
       <p>Loading Repository...</p>
     </div>
   );
+
+  if (user?.role === 'company_employee' && !user?.permissions?.canViewContracts) {
+    return (
+      <div className="d-flex flex-column align-items-center justify-content-center w-100" style={{ minHeight: '80vh' }}>
+        <div className="text-center p-5 bg-white rounded-4 shadow-sm border" style={{ maxWidth: '500px' }}>
+          <i className="bi bi-shield-lock-fill text-danger mb-3" style={{ fontSize: '4rem' }}></i>
+          <h2 className="fw-bold text-dark mb-3">Access Denied</h2>
+          <p className="text-muted mb-4">You do not have permission to access the contract repository.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="repo-container page-fade-in">

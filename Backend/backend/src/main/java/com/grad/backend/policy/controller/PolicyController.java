@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.grad.backend.Auth.enums.UserRole;
+import com.grad.backend.Auth.entity.CompanyEmployee;
+import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +24,7 @@ public class PolicyController {
 
     private final PolicyService policyService;
     private final CompanyRepository companyRepository;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
 
     @PostMapping("/convert")
     public ResponseEntity<PolicyConvertResponse> convertPolicy(
@@ -49,14 +53,26 @@ public class PolicyController {
         }
 
         try {
-            // Get company name
-            String companyName = "Company_" + currentUser.getId();
-            Optional<Company> companyOpt = companyRepository.findById(currentUser.getId());
-            if (companyOpt.isPresent() && companyOpt.get().getName() != null) {
-                companyName = companyOpt.get().getName();
+            Long companyId = currentUser.getId();
+            String companyName = "Company_" + companyId;
+
+            if (currentUser.getRole() == UserRole.COMPANY_EMPLOYEE) {
+                Optional<CompanyEmployee> empOpt = companyEmployeeRepository.findByUserId(currentUser.getId());
+                if (empOpt.isPresent()) {
+                    Company company = empOpt.get().getCompany();
+                    companyId = company.getId();
+                    if (company.getName() != null) companyName = company.getName();
+                } else {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            } else {
+                Optional<Company> companyOpt = companyRepository.findById(companyId);
+                if (companyOpt.isPresent() && companyOpt.get().getName() != null) {
+                    companyName = companyOpt.get().getName();
+                }
             }
 
-            PolicyResponse response = policyService.savePolicy(request, currentUser.getId(), companyName);
+            PolicyResponse response = policyService.savePolicy(request, companyId, companyName);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -72,7 +88,17 @@ public class PolicyController {
         }
 
         try {
-            List<PolicyResponse> policies = policyService.getPoliciesByCompany(currentUser.getId());
+            Long companyId = currentUser.getId();
+            if (currentUser.getRole() == UserRole.COMPANY_EMPLOYEE) {
+                Optional<CompanyEmployee> empOpt = companyEmployeeRepository.findByUserId(currentUser.getId());
+                if (empOpt.isPresent()) {
+                    companyId = empOpt.get().getCompany().getId();
+                } else {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            }
+
+            List<PolicyResponse> policies = policyService.getPoliciesByCompany(companyId);
             return ResponseEntity.ok(policies);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -88,7 +114,17 @@ public class PolicyController {
         }
 
         try {
-            policyService.deletePolicy(id, currentUser.getId());
+            Long companyId = currentUser.getId();
+            if (currentUser.getRole() == UserRole.COMPANY_EMPLOYEE) {
+                Optional<CompanyEmployee> empOpt = companyEmployeeRepository.findByUserId(currentUser.getId());
+                if (empOpt.isPresent()) {
+                    companyId = empOpt.get().getCompany().getId();
+                } else {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            }
+
+            policyService.deletePolicy(id, companyId);
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());

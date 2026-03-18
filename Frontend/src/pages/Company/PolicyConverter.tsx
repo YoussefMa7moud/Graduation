@@ -7,8 +7,10 @@ import LogicOutputPanel from '../../components/Company/PolicyConverter/LogicOutp
 import { type OCLGenerationResponse, LegalFramework, type PolicyInput, type HistoryItem } from '../../components/Company/PolicyConverter/Data/types';
 import { toast } from 'react-toastify';
 import { convertPolicy } from '../../services/Policy/policyService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const PolicyConverter: React.FC = () => {
+  const { user } = useAuth();
   const [inputs, setInputs] = useState<PolicyInput[]>([
     { id: '1', name: '', framework: LegalFramework.DEVELOPERS_DUTIES, text: '' }
   ]);
@@ -95,6 +97,18 @@ const PolicyConverter: React.FC = () => {
   const selectHistoryItem = (item: HistoryItem) => {
     setGeneratedResult(item.result);
   };
+
+  if (user?.role === 'company_employee' && !user?.permissions?.canAddPolicy) {
+    return (
+      <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900/50 justify-center items-center">
+        <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-slate-700" style={{ maxWidth: '500px', width: '100%' }}>
+          <i className="bi bi-shield-lock-fill text-red-500 mb-4" style={{ fontSize: '4rem' }}></i>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Access Denied</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">You do not have permission to use the policy converter generator.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     

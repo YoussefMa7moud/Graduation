@@ -4,6 +4,7 @@ import './MyPolicyRepository.css';
 import StatCard from '../../components/Company/MyPolicyRepository/StatCard';
 import api from '../../services/api';
 import { LegalFramework } from '../../components/Company/PolicyConverter/Data/types';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Policy {
   id: number;
@@ -15,6 +16,7 @@ interface Policy {
 }
 
 const MyPolicyRepository: React.FC = () => {
+  const { user } = useAuth();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -59,6 +61,18 @@ const MyPolicyRepository: React.FC = () => {
   });
 
   const totalRules = policies.length;
+
+  if (user?.role === 'company_employee' && !user?.permissions?.canAddPolicy) {
+    return (
+      <div className="d-flex flex-column align-items-center justify-content-center w-100" style={{ minHeight: '80vh' }}>
+        <div className="text-center p-5 bg-white rounded-4 shadow-sm border" style={{ maxWidth: '500px' }}>
+          <i className="bi bi-shield-lock-fill text-danger mb-3" style={{ fontSize: '4rem' }}></i>
+          <h2 className="fw-bold text-dark mb-3">Access Denied</h2>
+          <p className="text-muted mb-4">You do not have permission to view or manage policies.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-100 p-0 m-0">

@@ -6,10 +6,12 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useAuth } from '../../contexts/AuthContext';
 import './ClientRequests.css';
 
 const ClientRequests: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [selectedSub, setSelectedSub] = useState<any>(null);
   const pdfExportRef = useRef<HTMLDivElement>(null);
@@ -90,6 +92,18 @@ const ClientRequests: React.FC = () => {
     }
   };
 
+  if (user?.role === 'company_employee' && !user?.permissions?.canAcceptProposals) {
+    return (
+      <div className="d-flex flex-column align-items-center justify-content-center w-100" style={{ minHeight: '80vh' }}>
+        <div className="text-center p-5 bg-white rounded-4 shadow-sm border" style={{ maxWidth: '500px' }}>
+          <i className="bi bi-shield-lock-fill text-danger mb-3" style={{ fontSize: '4rem' }}></i>
+          <h2 className="fw-bold text-dark mb-3">Access Denied</h2>
+          <p className="text-muted mb-4">You do not have permission to view or manage client requests.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mt-4 pb-5">
       <ToastContainer position="top-right" theme="colored" />
@@ -113,6 +127,8 @@ const ClientRequests: React.FC = () => {
           <tbody>
             {submissions.map((sub) => {
               const actionsDisabled = ['WAITING_FOR_NDA', 'REJECTED_WITH_NOTE'].includes(sub.status);
+              const canAccept = user?.role !== 'company_employee' || user?.permissions?.canAcceptProposals === true;
+              
               return (
                 <tr key={sub.id} className="border-bottom">
                   <td className="ps-4 py-4">
@@ -139,7 +155,12 @@ const ClientRequests: React.FC = () => {
                       <button className={`btn-action btn-decline ${actionsDisabled ? 'disabled-btn' : ''}`} disabled={actionsDisabled} onClick={() => { if (!actionsDisabled) { setSelectedSub(sub); setShowDeclineModal(true); } }}>
                         <i className="bi bi-x-lg"></i>
                       </button>
-                      <button className={`btn-action btn-accept ${actionsDisabled ? 'disabled-btn' : ''}`} disabled={actionsDisabled} onClick={() => { if (!actionsDisabled) handleAccept(sub); }}>
+                      <button 
+                        className={`btn-action btn-accept ${actionsDisabled || !canAccept ? 'disabled-btn' : ''}`} 
+                        disabled={actionsDisabled || !canAccept} 
+                        title={!canAccept ? "Missing 'Accept Proposals' permission" : ""}
+                        onClick={() => { if (!actionsDisabled && canAccept) handleAccept(sub); }}
+                      >
                         <i className="bi bi-check2"></i>
                       </button>
                     </div>

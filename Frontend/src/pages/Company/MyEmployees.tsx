@@ -244,9 +244,9 @@ const MyEmployees: React.FC = () => {
                   </td>
                   <td>
                     <div className="d-flex flex-wrap gap-2">
-                       {e.canViewContracts && <span className="badge bg-secondary">View Contracts</span>}
+                       {e.canViewContracts && <span className="badge bg-secondary">View Contracts Repository</span>}
                        {e.canAddPolicy && <span className="badge bg-info text-dark">Add Policy</span>}
-                       {e.canSignContract && <span className="badge bg-success">Sign Contract</span>}
+                       {e.canSignContract && <span className="badge bg-success">View Ongoing Contract</span>}
                        {e.canAcceptProposals && <span className="badge bg-warning text-dark">Accept Proposals</span>}
                        {!e.canViewContracts && !e.canAddPolicy && !e.canSignContract && !e.canAcceptProposals && <span className="text-muted small">No special permissions</span>}
                     </div>

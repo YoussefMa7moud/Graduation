@@ -8,22 +8,23 @@ import re
 
 
 # --- Policy Info ---
-# Policy ID: 1
-# Description: Confidentiality remains in effect for 5 years post-termination.
+# Policy ID: 2
+# Description: Customer records must be deleted after 24 months of inactivity.
 
 # --- Context Class ---
 basemodel_class = Class(name="BaseModel")
 
 # --- Add dynamic properties ---
-terminationDate_prop = Property(name="terminationDate", type=DateType)
-basemodel_class.attributes = {terminationDate_prop}
+deletionDate_prop = Property(name="deletionDate", type=DateType)
+lastActivityDate_prop = Property(name="lastActivityDate", type=DateType)
+basemodel_class.attributes = {deletionDate_prop, lastActivityDate_prop}
 
 
 # --- Constraint from policy ---
 POLICY_CONSTRAINT = Constraint(
     name="policyConstraint",
     context=basemodel_class,
-    expression='context BaseModel inv: self.terminationDate %2B 1825 %3C%3D Date.now%28%29',
+    expression='context BaseModel inv: self.deletionDate %3C%3D self.lastActivityDate %2B 24',
     language="OCL"
 )
 
@@ -149,14 +150,18 @@ def parse_value(value, dtype):
 dynamic_obj = basemodel_class("obj1").build()
 
 value = extract_value_from_text(test_description, "DateType")
-dynamic_obj.terminationDate = value
-print(f"Set terminationDate = {value} (from test description)")
+dynamic_obj.deletionDate = value
+print(f"Set deletionDate = {value} (from test description)")
+
+value = extract_value_from_text(test_description, "DateType")
+dynamic_obj.lastActivityDate = value
+print(f"Set lastActivityDate = {value} (from test description)")
 
 context_om = ObjectModel(name="BaseModelModel", objects={dynamic_obj})
 
 
 # --- Evaluate Policy Constraint ---
-print(f"\nTesting Policy #1: 'Confidentiality remains in effect for 5 years post-termination.'")
+print(f"\nTesting Policy #2: 'Customer records must be deleted after 24 months of inactivity.'")
 
 EVAL_MODE = "OCL"  # "OCL" or "PYTHON_STRING"
 
@@ -167,7 +172,7 @@ if EVAL_MODE == "OCL":
 else:
     # Python-based evaluation for string policies (engine limitation)
     # Expect expression like: self.country = "egypt"
-    expr = "self.terminationDate %2B 1825 %3C%3D Date.now%28%29".strip()
+    expr = "self.deletionDate %3C%3D self.lastActivityDate %2B 24".strip()
 
     # Convert self.<prop> to dynamic_obj.<prop>
     expr_py = expr.replace("self.", "dynamic_obj.")

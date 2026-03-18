@@ -8,7 +8,7 @@ import re
 
 
 # --- Policy Info ---
-# Policy ID: 1
+# Policy ID: 3
 # Description: Confidentiality remains in effect for 5 years post-termination.
 
 # --- Context Class ---
@@ -156,7 +156,7 @@ context_om = ObjectModel(name="BaseModelModel", objects={dynamic_obj})
 
 
 # --- Evaluate Policy Constraint ---
-print(f"\nTesting Policy #1: 'Confidentiality remains in effect for 5 years post-termination.'")
+print(f"\nTesting Policy #3: 'Confidentiality remains in effect for 5 years post-termination.'")
 
 EVAL_MODE = "OCL"  # "OCL" or "PYTHON_STRING"
 

@@ -9,6 +9,7 @@ import com.grad.backend.Auth.entity.User;
 import com.grad.backend.Auth.repository.ClientCompanyRepository;
 import com.grad.backend.Auth.repository.ClientPersonRepository;
 import com.grad.backend.Auth.repository.CompanyRepository;
+import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.contracts.dto.*;
 import com.grad.backend.contracts.entity.ContractChatMessage;
 import com.grad.backend.contracts.entity.ContractDraft;
@@ -56,6 +57,7 @@ public class MainContractService {
     private final ContractChatMessageRepository chatMessageRepository;
     private final ProposalSubmissionRepository submissionRepository;
     private final CompanyRepository companyRepository;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
     private final ClientCompanyRepository clientCompanyRepo;
     private final ClientPersonRepository clientPersonRepo;
     private final PolicyRepository policyRepository;
@@ -119,10 +121,16 @@ public class MainContractService {
 
             // COMPANY (FIX ❗)
             Company company = submission.getSoftwareCompany();
-            if (company != null
-                    && company.getUser() != null
-                    && company.getUser().getId().equals(userId)) {
-                return "company";
+            if (company != null) {
+                // Check if user is the company owner
+                if (company.getUser() != null && company.getUser().getId().equals(userId)) {
+                    return "company";
+                }
+                // Check if user is an employee of this company
+                return companyEmployeeRepository.findByUserId(userId)
+                    .filter(emp -> emp.getCompany().getId().equals(company.getId()))
+                    .map(emp -> "company")
+                    .orElse("none");
             }
 
         } catch (Exception ex) {

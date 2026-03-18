@@ -3,11 +3,13 @@ package com.grad.backend.project.service;
 import com.grad.backend.Auth.entity.ClientCompany;
 import com.grad.backend.Auth.entity.ClientPerson;
 import com.grad.backend.Auth.entity.Company;
+import com.grad.backend.Auth.entity.CompanyEmployee;
 import com.grad.backend.Auth.entity.User;
 import com.grad.backend.Auth.enums.UserRole;
 import com.grad.backend.Auth.repository.ClientCompanyRepository;
 import com.grad.backend.Auth.repository.ClientPersonRepository;
 import com.grad.backend.Auth.repository.CompanyRepository;
+import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.project.DTO.NdaPartiesDTO;
 import com.grad.backend.project.DTO.NdaPartiesResponse;
 import com.grad.backend.project.entity.ProjectProposal;
@@ -35,6 +37,7 @@ public class ProposalSubmissionService {
     private final ClientCompanyRepository clientCompanyRepo;
     private final ClientPersonRepository clientPersonRepo;
     private final ContractRecordRepository contractRepository;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
 
     @Transactional
     public ProposalSubmission sendProposalToCompany(Long proposalId, Long softwareCompanyId, User currentUser) {
@@ -218,6 +221,14 @@ public class ProposalSubmissionService {
             return "client";
         if (userId.equals(s.getSoftwareCompany().getId()))
             return "company";
-        return "none";
+        // Check if user is the company owner (via User ID)
+        Company company = s.getSoftwareCompany();
+        if (company != null && company.getUser() != null && company.getUser().getId().equals(userId))
+            return "company";
+        // Check if user is an employee of this company
+        return companyEmployeeRepository.findByUserId(userId)
+                .filter(emp -> emp.getCompany().getId().equals(company.getId()))
+                .map(emp -> "company")
+                .orElse("none");
     }
 }

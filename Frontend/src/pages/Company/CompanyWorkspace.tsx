@@ -71,7 +71,8 @@ const CompanyWorkspace: React.FC = () => {
   const [signing, setSigning] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const canSign = user?.role !== 'company_employee' || user?.permissions?.canSignContract === true;
+  const isEmployee = user?.role === 'company_employee';
+  const canSign = !isEmployee || user?.permissions?.canSignContract === true;
 
   
   // --- Helpers ---
@@ -185,13 +186,15 @@ const CompanyWorkspace: React.FC = () => {
   }, [submissionId, sections]);
 
   useEffect(() => {
+    if (isEmployee) return; // Employees should never auto-save
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
     autoSaveTimeoutRef.current = setTimeout(() => saveDraft(), 2000);
     return () => { if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current); };
-  }, [sections, saveDraft]);
+  }, [sections, saveDraft, isEmployee]);
 
   // --- Handlers ---
   const handleUpdate = (sId: string, cId: string, val: string, target: HTMLTextAreaElement) => {
+    if (isEmployee) return; // Employees cannot edit
     if (sId === 's10') return;
 
     target.style.height = 'inherit';
@@ -348,41 +351,48 @@ const CompanyWorkspace: React.FC = () => {
           <div className="compliance-tag">This Contract is governed exclusively by the laws of Egypt.</div>
         </div>
         <div className="nav-btns">
-          <button className="btn-navy" onClick={handleValidateContract} disabled={isValidatingAI}>
-            {isValidatingAI ? 'Validating...' : 'Validate Contract (AI + Policy)'}
-          </button>
+          {!isEmployee && (
+            <>
+              <button className="btn-navy" onClick={handleValidateContract} disabled={isValidatingAI}>
+                {isValidatingAI ? 'Validating...' : 'Validate Contract (AI + Policy)'}
+              </button>
 
-          <button 
-            className="btn-success" 
-            onClick={handleSendToClient} 
-            disabled={!draft?.aiValidated || !draft?.oclValidated}
-            title={(!draft?.aiValidated || !draft?.oclValidated) ? "You must pass the validation first" : ""}
-            style={{ 
-              marginLeft: '10px', 
-              opacity: (!draft?.aiValidated || !draft?.oclValidated) ? 0.6 : 1, 
-              cursor: (!draft?.aiValidated || !draft?.oclValidated) ? 'not-allowed' : 'pointer', 
-              display: (draft?.sentToClient ? 'none' : 'inline-block') 
-            }}
-          >
-            Finalize & Send
-          </button>
+              <button 
+                className="btn-success" 
+                onClick={handleSendToClient} 
+                disabled={!draft?.aiValidated || !draft?.oclValidated}
+                title={(!draft?.aiValidated || !draft?.oclValidated) ? "You must pass the validation first" : ""}
+                style={{ 
+                  marginLeft: '10px', 
+                  opacity: (!draft?.aiValidated || !draft?.oclValidated) ? 0.6 : 1, 
+                  cursor: (!draft?.aiValidated || !draft?.oclValidated) ? 'not-allowed' : 'pointer', 
+                  display: (draft?.sentToClient ? 'none' : 'inline-block') 
+                }}
+              >
+                Finalize & Send
+              </button>
 
-          {draft?.sentToClient && draft?.clientSignedAt && !draft?.companySignedAt && (
-            <button 
-              className="btn-success" 
-              onClick={() => {
-                if (canSign) setIsSignModalOpen(true);
-                else toast.error("You do not have permission to sign contracts.");
-              }} 
-              style={{ 
-                marginLeft: '10px',
-                opacity: canSign ? 1 : 0.5, 
-                cursor: canSign ? 'pointer' : 'not-allowed'
-              }}
-              title={!canSign ? "Missing 'Sign Contracts' permission" : ""}
-            >
-              Sign Final Agreement
-            </button>
+              {draft?.sentToClient && draft?.clientSignedAt && !draft?.companySignedAt && (
+                <button 
+                  className="btn-success" 
+                  onClick={() => {
+                    if (canSign) setIsSignModalOpen(true);
+                    else toast.error("You do not have permission to sign contracts.");
+                  }} 
+                  style={{ 
+                    marginLeft: '10px',
+                    opacity: canSign ? 1 : 0.5, 
+                    cursor: canSign ? 'pointer' : 'not-allowed'
+                  }}
+                  title={!canSign ? "Missing 'Sign Contracts' permission" : ""}
+                >
+                  Sign Final Agreement
+                </button>
+              )}
+            </>
+          )}
+          {isEmployee && (
+            <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic' }}>Read-Only View</span>
           )}
         </div>
       </header>
@@ -423,7 +433,7 @@ const CompanyWorkspace: React.FC = () => {
                     <div key={clause.id} className={`clause-row ${clause.violation ? 'has-issue' : ''}`}>
                       <span className="c-num">{section.num}.{cIdx + 1}</span>
                       <div className="clause-input-wrapper">
-                        {section.id === 's10' ? (
+                        {section.id === 's10' || isEmployee ? (
                           <div className="c-input static-clause-display">{clause.text}</div>
                         ) : (
                           <textarea
@@ -561,15 +571,17 @@ const CompanyWorkspace: React.FC = () => {
               ))}
               <div ref={chatEndRef} />
             </div>
-            <div className="chat-input-area">
-              <input
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                placeholder="Type a message…"
-                onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
-              />
-              <button onClick={handleSendChatMessage}>➤</button>
-            </div>
+            {!isEmployee && (
+              <div className="chat-input-area">
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder="Type a message…"
+                  onKeyDown={e => e.key === 'Enter' && handleSendChatMessage()}
+                />
+                <button onClick={handleSendChatMessage}>➤</button>
+              </div>
+            )}
           </div>
         )}
       </div>

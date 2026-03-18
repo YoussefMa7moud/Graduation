@@ -180,12 +180,14 @@ const OngoingContracts: React.FC = () => {
                      p.rawStatus === 'WAITING_FOR_COMPANY' ? 'Pending Approval' : 'Open Workspace'}
                   </button>
 
-                  <button 
-                    className="btn btn-outline-danger"
-                    onClick={() => handleWithdraw(p.id)}
-                  >
-                    Withdraw
-                  </button>
+                  {user?.role !== 'company_employee' && (
+                    <button 
+                      className="btn btn-outline-danger"
+                      onClick={() => handleWithdraw(p.id)}
+                    >
+                      Withdraw
+                    </button>
+                  )}
                 </div>
               </div>
             );

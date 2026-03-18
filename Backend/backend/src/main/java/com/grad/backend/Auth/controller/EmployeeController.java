@@ -3,6 +3,7 @@ package com.grad.backend.Auth.controller;
 import com.grad.backend.Auth.dto.RegisterResponse;
 import com.grad.backend.Auth.entity.CompanyEmployee;
 import com.grad.backend.Auth.entity.User;
+import com.grad.backend.Auth.repository.UserRepository;
 import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.Auth.service.RegistrationService;
 import com.grad.backend.Auth.repository.CompanyRepository;
@@ -25,6 +26,7 @@ public class EmployeeController {
     private final RegistrationService registrationService;
     private final CompanyEmployeeRepository companyEmployeeRepository;
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<?> registerEmployee(
@@ -131,8 +133,15 @@ public class EmployeeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteEmployee(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
         try {
-            companyEmployeeRepository.deleteById(id);
-            // Additionally might want to delete the User entity
+            Optional<CompanyEmployee> empOpt = companyEmployeeRepository.findById(id);
+            if (empOpt.isPresent()) {
+                CompanyEmployee emp = empOpt.get();
+                User userToDelete = emp.getUser();
+                companyEmployeeRepository.delete(emp);
+                if (userToDelete != null) {
+                    userRepository.delete(userToDelete);
+                }
+            }
             return ResponseEntity.ok(Map.of("message", "Employee deleted successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Deletion failed"));

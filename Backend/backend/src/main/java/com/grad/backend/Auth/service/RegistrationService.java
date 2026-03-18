@@ -268,6 +268,8 @@ public class RegistrationService {
         pm.setUser(user);
         pm.setCompany(company);
 
+        projectManagerRepo.save(pm);
+
         return new RegisterResponse(user.getId(), user.getRole().name());
     }
 

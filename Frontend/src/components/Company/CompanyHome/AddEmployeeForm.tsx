@@ -149,7 +149,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onClose, onSubmit, in
             onChange={(e) => setFormData({...formData, canSignContract: e.target.checked})} 
             style={styles.checkbox}
           />
-          <span style={styles.checkboxLabel}>Can Sign Contracts (Ongoing Contracts Access)</span>
+          <span style={styles.checkboxLabel}>Ongoing Contracts Access</span>
         </label>
         
         <label style={styles.checkboxContainer}>

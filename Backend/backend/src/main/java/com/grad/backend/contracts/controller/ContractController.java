@@ -1,6 +1,9 @@
 package com.grad.backend.contracts.controller;
 
+import com.grad.backend.Auth.entity.CompanyEmployee;
 import com.grad.backend.Auth.entity.User;
+import com.grad.backend.Auth.enums.UserRole;
+import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.contracts.dto.ContractRecordResponse;
 import com.grad.backend.contracts.dto.NdaDraftResponse;
 import com.grad.backend.contracts.dto.NdaSignRequest;
@@ -13,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/contracts")
@@ -20,6 +24,7 @@ import java.util.List;
 public class ContractController {
 
     private final ContractService contractService;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
 
     @GetMapping("/nda/draft")
     public ResponseEntity<NdaDraftResponse> getNdaDraft(
@@ -75,7 +80,8 @@ public class ContractController {
     public ResponseEntity<List<ContractRecordResponse>> listRecords(@AuthenticationPrincipal User user) {
         if (user == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        List<ContractRecordResponse> list = contractService.listRecordsByCompany(user.getId());
+        Long targetId = resolveCompanyUserId(user);
+        List<ContractRecordResponse> list = contractService.listRecordsByCompany(targetId);
         return ResponseEntity.ok(list);
     }
 
@@ -83,7 +89,8 @@ public class ContractController {
     public ResponseEntity<byte[]> getRecordPdf(@PathVariable Long id, @AuthenticationPrincipal User user) {
         if (user == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        byte[] pdf = contractService.getPdfByIdAndCompany(id, user.getId());
+        Long targetId = resolveCompanyUserId(user);
+        byte[] pdf = contractService.getPdfByIdAndCompany(id, targetId);
         if (pdf == null)
             return ResponseEntity.notFound().build();
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
@@ -94,7 +101,16 @@ public class ContractController {
             @AuthenticationPrincipal User user) {
         if (user == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        // user.getId() matches the client_id in ProposalSubmission
         return ResponseEntity.ok(contractService.getSignedProjectsForClient(user.getId()));
+    }
+
+    private Long resolveCompanyUserId(User user) {
+        if (user.getRole() == UserRole.COMPANY_EMPLOYEE) {
+            Optional<CompanyEmployee> empOpt = companyEmployeeRepository.findByUserId(user.getId());
+            if (empOpt.isPresent()) {
+                return empOpt.get().getCompany().getUser().getId();
+            }
+        }
+        return user.getId();
     }
 }

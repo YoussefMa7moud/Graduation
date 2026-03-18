@@ -107,7 +107,7 @@ const OngoingContracts: React.FC = () => {
       }
   };
 
-  if (user?.role === 'company_employee' && !user?.permissions?.canViewContracts) {
+  if (user?.role === 'company_employee' && !user?.permissions?.canSignContract) {
     return (
       <div className="d-flex flex-column align-items-center justify-content-center w-100" style={{ minHeight: '80vh' }}>
         <div className="text-center p-5 bg-white rounded-4 shadow-sm border" style={{ maxWidth: '500px' }}>

@@ -13,4 +13,10 @@ public class LoginResponse {
     private String role;
     private String firstName;
     private String lastName;
+    
+    // Permissions (null for roles that don't use them)
+    private Boolean canViewContracts;
+    private Boolean canAddPolicy;
+    private Boolean canSignContract;
+    private Boolean canAcceptProposals;
 }

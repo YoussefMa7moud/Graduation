@@ -1,0 +1,73 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------------< com.grad:backend >--------------------------
+[INFO] Building backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ backend ---
+[INFO] Deleting C:\Users\Dark Energy\Desktop\GP\Graduation\Backend\backend\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ backend ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 103 source files with javac [debug release 21] to target\classes
+[INFO] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/MainContractService.java: C:\Users\Dark Energy\Desktop\GP\Graduation\Backend\backend\src\main\java\com\grad\backend\contracts\service\MainContractService.java uses unchecked or unsafe operations.
+[INFO] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/contracts/service/MainContractService.java: Recompile with -Xlint:unchecked for details.
+[INFO] -------------------------------------------------------------
+[WARNING] COMPILATION WARNING : 
+[INFO] -------------------------------------------------------------
+[WARNING] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/project/entity/ProposalSubmission.java:[48,30] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/project/entity/ProposalSubmission.java:[55,21] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/project/entity/ProjectProposal.java:[45,20] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/project/entity/ProjectProposal.java:[54,21] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/project/entity/ProjectProposal.java:[62,20] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[WARNING] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/project/entity/ProjectProposal.java:[73,21] @Builder will ignore the initializing expression entirely. If you want the initializing expression to serve as default, add @Builder.Default. If it is not supposed to be settable during building, make the field final.
+[INFO] 6 warnings 
+[INFO] -------------------------------------------------------------
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[59,14] cannot find symbol
+  symbol:   class MonthlyStatDTO
+  location: class com.grad.backend.Auth.service.DashboardService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[77,30] cannot find symbol
+  symbol:   method getCreatedAt()
+  location: variable s of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[78,50] cannot find symbol
+  symbol:   method getCreatedAt()
+  location: variable s of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[97,31] cannot find symbol
+  symbol:   class MonthlyStatDTO
+  location: class com.grad.backend.Auth.service.DashboardService
+[INFO] 4 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.332 s
+[INFO] Finished at: 2026-03-18T05:51:46+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project backend: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[59,14] cannot find symbol
+[ERROR]   symbol:   class MonthlyStatDTO
+[ERROR]   location: class com.grad.backend.Auth.service.DashboardService
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[77,30] cannot find symbol
+[ERROR]   symbol:   method getCreatedAt()
+[ERROR]   location: variable s of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[78,50] cannot find symbol
+[ERROR]   symbol:   method getCreatedAt()
+[ERROR]   location: variable s of type com.grad.backend.project.entity.ProposalSubmission
+[ERROR] /C:/Users/Dark Energy/Desktop/GP/Graduation/Backend/backend/src/main/java/com/grad/backend/Auth/service/DashboardService.java:[97,31] cannot find symbol
+[ERROR]   symbol:   class MonthlyStatDTO
+[ERROR]   location: class com.grad.backend.Auth.service.DashboardService
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

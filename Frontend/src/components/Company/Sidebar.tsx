@@ -48,6 +48,7 @@ const LogoutButton: React.FC = () => {
 };
 
 const Sidebar: React.FC = () => {
+  const { user } = useAuth();
   return (
     <div className="sidebar d-flex flex-column justify-content-between">
       <div className="top-section">
@@ -91,12 +92,13 @@ const Sidebar: React.FC = () => {
           <NavLink to="/MyPolicyRepository" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
             <i className="bi bi-database me-3"></i> My Policy Repository
           </NavLink>
-        
-          <div className="mt-5 pt-4">
-            <NavLink to="/CompanySettings" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
-              <i className="bi bi-gear-fill me-3"></i> System Settings
-            </NavLink>
-          </div>
+          {user?.role !== 'company_employee' && (
+            <div className="mt-5 pt-4">
+              <NavLink to="/CompanySettings" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
+                <i className="bi bi-building-fill-gear me-3"></i> My Company
+              </NavLink>
+            </div>
+          )}
         </nav>
       </div>
 

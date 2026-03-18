@@ -17,6 +17,7 @@ import {
   signCompany,
 } from '../../services/Contract/mainContract';
 import { X, Eraser } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import './CompanyWorkspace.css';
 import '../Client/ActiveProjectsModal.css'; // Reusing the same modal CSS
 
@@ -36,6 +37,7 @@ interface Section {
 const CompanyWorkspace: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const submissionId = (location.state as { submissionId?: number })?.submissionId;
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -69,7 +71,7 @@ const CompanyWorkspace: React.FC = () => {
   const [signing, setSigning] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-
+  const canSign = user?.role !== 'company_employee' || user?.permissions?.canSignContract === true;
 
   
   // --- Helpers ---
@@ -366,7 +368,19 @@ const CompanyWorkspace: React.FC = () => {
           </button>
 
           {draft?.sentToClient && draft?.clientSignedAt && !draft?.companySignedAt && (
-            <button className="btn-success" onClick={() => setIsSignModalOpen(true)} style={{ marginLeft: '10px' }}>
+            <button 
+              className="btn-success" 
+              onClick={() => {
+                if (canSign) setIsSignModalOpen(true);
+                else toast.error("You do not have permission to sign contracts.");
+              }} 
+              style={{ 
+                marginLeft: '10px',
+                opacity: canSign ? 1 : 0.5, 
+                cursor: canSign ? 'pointer' : 'not-allowed'
+              }}
+              title={!canSign ? "Missing 'Sign Contracts' permission" : ""}
+            >
               Sign Final Agreement
             </button>
           )}

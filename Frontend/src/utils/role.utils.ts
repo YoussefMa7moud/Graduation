@@ -18,6 +18,7 @@ export type FrontendRole =
   | 'client_individual'
   | 'client_company'
   | 'software_company'
+  | 'company_employee'
   | 'admin'
   | 'project_manager'
   | 'unknown'; // Represents an unrecognized or missing role
@@ -31,6 +32,7 @@ export const frontendRoles = {
   CLIENT_INDIVIDUAL: 'client_individual',
   CLIENT_COMPANY: 'client_company',
   SOFTWARE_COMPANY: 'software_company',
+  COMPANY_EMPLOYEE: 'company_employee',
   ADMIN: 'admin',
   PROJECT_MANAGER: 'project_manager',
   UNKNOWN: 'unknown',
@@ -50,6 +52,7 @@ const backendToFrontendRoleMap: Record<string, FrontendRole> = {
   client_company: frontendRoles.CLIENT_COMPANY,
   company: frontendRoles.SOFTWARE_COMPANY, // Original role
   software_company: frontendRoles.SOFTWARE_COMPANY, // Backend role from user
+  company_employee: frontendRoles.COMPANY_EMPLOYEE,
   admin: frontendRoles.ADMIN,
   project_manager: frontendRoles.PROJECT_MANAGER,
 };
@@ -79,7 +82,7 @@ export const normalizeRole = (backendRole?: string | null): FrontendRole => {
  */
 export const RoleGroups = {
   CLIENT: [frontendRoles.CLIENT_INDIVIDUAL, frontendRoles.CLIENT_COMPANY],
-  COMPANY: [frontendRoles.SOFTWARE_COMPANY],
+  COMPANY: [frontendRoles.SOFTWARE_COMPANY, frontendRoles.COMPANY_EMPLOYEE],
   ADMIN: [frontendRoles.ADMIN],
   PROJECT_MANAGER: [frontendRoles.PROJECT_MANAGER],
 } as const;
@@ -110,6 +113,7 @@ export const hasAnyRole = (userRole: FrontendRole, allowedRoles: readonly Fronte
 export const getDefaultHomeRoute = (userRole: FrontendRole): string => {
   switch (userRole) {
     case frontendRoles.SOFTWARE_COMPANY:
+    case frontendRoles.COMPANY_EMPLOYEE:
       return '/CompanyHome';
     case frontendRoles.CLIENT_INDIVIDUAL:
     case frontendRoles.CLIENT_COMPANY:

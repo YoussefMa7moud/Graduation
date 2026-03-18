@@ -142,4 +142,27 @@ main::-webkit-scrollbar-thumb {
 .logout-button:hover i {
   transform: translateX(-3px);
   transition: transform 0.2s ease;
+}/* Admin Section Alignment */
+.sidebar-section .nav-item {
+  color: #94a3b8;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sidebar-section .nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.sidebar-section .nav-item.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.sidebar-section .nav-icon {
+  font-size: 1.1rem;
 }

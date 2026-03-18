@@ -22,6 +22,7 @@ public class RegistrationService {
     private final ClientPersonRepository personRepo;
     private final ClientCompanyRepository clientCompanyRepo;
     private final ProjectManagerRepository projectManagerRepo;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -267,7 +268,60 @@ public class RegistrationService {
         pm.setUser(user);
         pm.setCompany(company);
 
-        projectManagerRepo.save(pm);
+        return new RegisterResponse(user.getId(), user.getRole().name());
+    }
+
+    @Transactional
+    public RegisterResponse registerEmployee(
+            Long companyUserId,
+            String firstName,
+            String lastName,
+            String email,
+            String password,
+            String nationalId,
+            String title,
+            boolean canViewContracts,
+            boolean canAddPolicy,
+            boolean canSignContract,
+            boolean canAcceptProposals) {
+
+        if (email == null || email.trim().isEmpty())
+            throw new IllegalArgumentException("Email is required");
+        if (password == null || password.trim().isEmpty())
+            throw new IllegalArgumentException("Password is required");
+        if (firstName == null || firstName.trim().isEmpty())
+            throw new IllegalArgumentException("First name is required");
+        if (lastName == null || lastName.trim().isEmpty())
+            throw new IllegalArgumentException("Last name is required");
+
+        if (userRepo.existsByEmail(email.trim().toLowerCase())) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+
+        Company company = companyRepo.findByUser_Id(companyUserId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Company profile not found for the provided user ID: " + companyUserId));
+
+        User user = new User();
+        user.setEmail(email.trim().toLowerCase());
+        user.setPassword(passwordEncoder.encode(password));
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setRole(UserRole.COMPANY_EMPLOYEE);
+
+        user = userRepo.save(user);
+
+        CompanyEmployee emp = new CompanyEmployee();
+        emp.setUser(user);
+        emp.setCompany(company);
+        emp.setNationalId(nationalId);
+        emp.setTitle(title);
+        emp.setCanViewContracts(canViewContracts);
+        emp.setCanAddPolicy(canAddPolicy);
+        emp.setCanSignContract(canSignContract);
+        emp.setCanAcceptProposals(canAcceptProposals);
+
+        companyEmployeeRepository.save(emp);
 
         return new RegisterResponse(user.getId(), user.getRole().name());
     }

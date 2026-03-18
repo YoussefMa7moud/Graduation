@@ -11,6 +11,8 @@ import com.grad.backend.Auth.entity.ClientPerson;
 import com.grad.backend.Auth.enums.UserRole;
 import com.grad.backend.Auth.repository.UserRepository;
 import com.grad.backend.Auth.repository.ClientPersonRepository;
+import com.grad.backend.Auth.entity.CompanyEmployee;
+import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import java.util.Optional;
 
 @Service
@@ -19,6 +21,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final ClientPersonRepository clientPersonRepository;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -45,6 +48,27 @@ public class AuthService {
             }
         }
 
+        Boolean canViewContracts = null;
+        Boolean canAddPolicy = null;
+        Boolean canSignContract = null;
+        Boolean canAcceptProposals = null;
+
+        if (user.getRole() == UserRole.SOFTWARE_COMPANY) {
+            canViewContracts = true;
+            canAddPolicy = true;
+            canSignContract = true;
+            canAcceptProposals = true;
+        } else if (user.getRole() == UserRole.COMPANY_EMPLOYEE) {
+            Optional<CompanyEmployee> empOpt = companyEmployeeRepository.findByUserId(user.getId());
+            if (empOpt.isPresent()) {
+                CompanyEmployee emp = empOpt.get();
+                canViewContracts = emp.isCanViewContracts();
+                canAddPolicy = emp.isCanAddPolicy();
+                canSignContract = emp.isCanSignContract();
+                canAcceptProposals = emp.isCanAcceptProposals();
+            }
+        }
+
         return new LoginResponse(
                 token,
                 "Bearer",
@@ -52,7 +76,11 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole().name(),
                 firstName,
-                lastName
+                lastName,
+                canViewContracts,
+                canAddPolicy,
+                canSignContract,
+                canAcceptProposals
         );
     }
 }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 // Updated service import
 import { submissionService } from '../../services/Company/Proposlals'; 
 import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
 import './OngoingContracts.css';
 
 
@@ -21,6 +22,7 @@ interface Project {
 
 const OngoingContracts: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -104,6 +106,18 @@ const OngoingContracts: React.FC = () => {
           toast.error("Failed to withdraw project");
       }
   };
+
+  if (user?.role === 'company_employee' && !user?.permissions?.canViewContracts) {
+    return (
+      <div className="d-flex flex-column align-items-center justify-content-center w-100" style={{ minHeight: '80vh' }}>
+        <div className="text-center p-5 bg-white rounded-4 shadow-sm border" style={{ maxWidth: '500px' }}>
+          <i className="bi bi-shield-lock-fill text-danger mb-3" style={{ fontSize: '4rem' }}></i>
+          <h2 className="fw-bold text-dark mb-3">Access Denied</h2>
+          <p className="text-muted mb-4">You do not have permission to view ongoing contracts.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) return <div className="loading-screen"><div className="spinner"></div></div>;
 

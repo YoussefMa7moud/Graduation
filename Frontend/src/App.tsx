@@ -15,6 +15,7 @@ import DashboardLayout from "./components/Company/DashboardLayout";
 import PolicyConverter from "./pages/Company/PolicyConverter";
 import MyPolicyRepository from "./pages/Company/MyPolicyRepository";
 import CompanyWorkspace from "./pages/Company/CompanyWorkspace";
+import MyEmployees from "./pages/Company/MyEmployees";
 import ClientRequests from "./pages/Company/ClientRequests";
 import CompanySettings from "./pages/Company/CompanySettings";
 import ContractRepository from "./pages/Company/ContractRepository";
@@ -131,6 +132,17 @@ const AppRoutes: React.FC = () => {
           <RoleBasedRoute allowedRoles={RoleGroups.COMPANY}>
             <DashboardLayout>
               <PolicyConverter />
+            </DashboardLayout>
+          </RoleBasedRoute>
+        }
+      />
+
+      <Route
+        path="/MyEmployees"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.COMPANY}>
+            <DashboardLayout>
+              <MyEmployees />
             </DashboardLayout>
           </RoleBasedRoute>
         }

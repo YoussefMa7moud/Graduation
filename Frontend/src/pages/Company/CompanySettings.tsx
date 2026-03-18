@@ -303,9 +303,9 @@ const CompanySettings: React.FC = () => {
         gap: 8px;
       }
       .tab-pill.active {
-        background: #14b8a6;
+        background: #10b981;
         color: white;
-        box-shadow: 0 8px 16px rgba(20, 184, 166, 0.25);
+        box-shadow: 0 8px 16px rgba(16, 185, 129, 0.25);
         transform: translateY(-2px);
       }
       .tab-pill:hover:not(.active) {
@@ -324,26 +324,26 @@ const CompanySettings: React.FC = () => {
         outline: none;
       }
       .input-animated:focus {
-        border-color: #14b8a6;
+        border-color: #10b981;
         background-color: #ffffff;
-        box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
         transform: translateY(-2px);
       }
       .save-btn {
         padding: 16px 32px;
         border-radius: 50px;
         border: none;
-        background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
         color: white;
         font-weight: 700;
         font-size: 16px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 12px rgba(20, 184, 166, 0.2);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
       }
       .save-btn:hover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 24px rgba(20, 184, 166, 0.35);
+        box-shadow: 0 12px 24px rgba(16, 185, 129, 0.35);
       }
       .logo-wrapper {
         transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -397,7 +397,7 @@ const styles: { [key: string]: React.CSSProperties } = {
       width: '160px', 
       height: '160px', 
       borderRadius: '50%', 
-      backgroundColor: '#14b8a6', 
+      backgroundColor: '#10b981', 
       color: '#fff', 
       display: 'flex', 
       alignItems: 'center', 
@@ -405,7 +405,7 @@ const styles: { [key: string]: React.CSSProperties } = {
       fontWeight: 'bold', 
       fontSize: '60px', 
       overflow: 'hidden', 
-      boxShadow: '0 12px 32px rgba(20, 184, 166, 0.3)', 
+      boxShadow: '0 12px 32px rgba(16, 185, 129, 0.3)', 
       border: '6px solid #fff' 
   },
   editLogoBtn: {

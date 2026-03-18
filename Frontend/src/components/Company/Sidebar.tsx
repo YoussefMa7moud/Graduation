@@ -94,6 +94,9 @@ const Sidebar: React.FC = () => {
           </NavLink>
           {user?.role !== 'company_employee' && (
             <div className="mt-5 pt-4">
+              <NavLink to="/MyEmployees" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
+                <i className="bi bi-people-fill me-3"></i> My Employees
+              </NavLink>
               <NavLink to="/CompanySettings" className={({isActive}) => `nav-link d-flex align-items-center ${isActive ? 'active' : ''}`}>
                 <i className="bi bi-building-fill-gear me-3"></i> My Company
               </NavLink>

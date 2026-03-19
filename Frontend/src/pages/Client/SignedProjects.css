@@ -68,7 +68,7 @@
    =============================== */
 .signed-layout {
   display: grid;
-  grid-template-columns: 2.3fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
@@ -80,6 +80,7 @@
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+  width: 100%;
 }
 
 .signed-table table {

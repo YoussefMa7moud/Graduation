@@ -133,10 +133,9 @@ async def convert_policy(request: PolicyConvertRequest):
             )
         
         # Extract metadata for explanation, article reference, and DB fields
-        category, keywords = extract_metadata(request.policyText, client)
+        category, keywords, explanation = extract_metadata(request.policyText, client, request.legalFramework)
         
-        # Create explanation based on legal framework and policy
-        explanation = f"This policy maps to {request.legalFramework}. The constraint ensures compliance with the specified legal requirements."
+        # Article reference
         article_ref = f"{request.legalFramework} - {category}"
         
         # Create validation results

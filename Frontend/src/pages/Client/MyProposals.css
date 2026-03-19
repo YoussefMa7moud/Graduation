@@ -159,24 +159,57 @@
     border-radius: 8px;
     border: 1px solid #eee;
 }
-
-/* Status Colors */
-.status-pill {
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-.status-done { background-color: #e3fcef; color: #00b894; }
-.status-in-progress { background-color: #fff4e5; color: #ff9f43; }
-
-/* Stat Cards Styling */
+/* Base card — all three share this */
 .stat-card {
-    padding: 20px;
-    border-radius: 15px;
-    border: none;
-    transition: 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
 }
-.bg-mint-light { background-color: #e3fcef; }
-.bg-dark-blue-light { background-color: #e0e7ff; }
-.bg-orange-light { background-color: #fff4e5; }
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.08);
+}
+
+/* Icon badge */
+.stat-card__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+.stat-card__icon-wrap--mint   { background-color: #e3fcef; }
+.stat-card__icon-wrap--indigo { background-color: #e0e7ff; }
+.stat-card__icon-wrap--orange { background-color: #fff4e5; }
+
+.stat-card__icon { font-size: 1.35rem; }
+.stat-card--mint   .stat-card__icon { color: #00b894; }
+.stat-card--indigo .stat-card__icon { color: #4f6ef7; }
+.stat-card--orange .stat-card__icon { color: #ff9f43; }
+
+/* Typography */
+.stat-card__title {
+  font-size: 0.925rem;
+  font-weight: 700;
+  color: #1a1d2e;
+  margin: 0;
+}
+.stat-card__desc {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Accent strip */
+.stat-card--mint   { border-left: 3px solid #00b894; }
+.stat-card--indigo { border-left: 3px solid #4f6ef7; }
+.stat-card--orange { border-left: 3px solid #ff9f43; }

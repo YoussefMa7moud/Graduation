@@ -3,6 +3,7 @@ package com.grad.backend.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
@@ -16,7 +17,10 @@ public class InternalApiConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(30_000);  // 30 seconds for Modal cold starts
+        factory.setReadTimeout(120_000);    // 120 seconds for AI model inference
+        return new RestTemplate(factory);
     }
 
     public String getBaseUrl() { return baseUrl; }

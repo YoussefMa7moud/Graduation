@@ -200,26 +200,30 @@ def extract_entities_from_description(description):
     return data
 
 # === Metadata Extraction ===
-def extract_metadata(policy_text: str, client: Groq) -> Tuple[str, List[str]]:
+def extract_metadata(policy_text: str, client: Groq, legal_framework: str = "") -> Tuple[str, List[str], str]:
     """
-    Extract metadata (category and keywords) from policy text using LLM.
+    Extract metadata (category, keywords, and explanation) from policy text using LLM.
     
     Args:
         policy_text: The policy description text
         client: Groq client instance
+        legal_framework: The legal framework to mention in the explanation
         
     Returns:
-        Tuple of (category, keywords_list)
+        Tuple of (category, keywords_list, explanation)
     """
     prompt = f"""
-    You are a precise JSON extractor.
-    From this policy, output ONLY a valid JSON object with two fields:
-    "category" and "keywords".
+    You are a precise JSON extractor and policy explainer.
+    From this policy, output ONLY a valid JSON object with three fields:
+    "category" (string), "keywords" (list of strings), and "explanation" (string).
+
+    The explanation should be a clear, concise, 1-2 sentence explanation of the policy logic and how it relates to the {legal_framework} framework, meant to be shown to the user.
 
     Example:
     {{
         "category": "Return Policy",
-        "keywords": ["return", "date", "10 days"]
+        "keywords": ["return", "date", "10 days"],
+        "explanation": "This policy ensures that items can be returned within 10 days of purchase under the specified framework."
     }}
 
     Policy: "{policy_text}"
@@ -241,12 +245,14 @@ def extract_metadata(policy_text: str, client: Groq) -> Tuple[str, List[str]]:
         metadata = json.loads(metadata_text)
         category = metadata.get("category", "Uncategorized")
         keywords = metadata.get("keywords", [])
-        return category, keywords
+        explanation = metadata.get("explanation", f"This policy maps to {legal_framework or 'the specified framework'}. The constraint ensures compliance with the legal requirements.")
+        return category, keywords, explanation
 
     except Exception as e:
         print(f"⚠️ Could not parse metadata: {e}")
         print("🧠 Using fallback metadata...")
-        return "Uncategorized", []
+        fallback_explanation = f"This policy maps to {legal_framework or 'the specified framework'}. The constraint ensures compliance with the legal requirements."
+        return "Uncategorized", [], fallback_explanation
 
 # === Helper: Suggest Test Data (LLM-based) ===
 def suggest_test_values(policy_text: str, client: Groq) -> Dict[str, str]:

@@ -68,7 +68,7 @@ public class MainContractService {
     @Value("${app.ocl.api.url:http://localhost:5001}")
     private String oclApiUrl;
 
-    @Value("${app.ai-model.url:http://localhost:5000}")
+    @Value("${app.ai-model.url:https://yousmahmoud7--egyptian-legal-model-analyze-clause-api.modal.run}")
     private String aiModelUrl;
 
     @Value("${app.frontend.url:http://localhost:5173}")
@@ -279,37 +279,59 @@ public class MainContractService {
                             // FIX: Prepend numbering so AI Regex matches it: "1.1 text"
                             String formattedText = String.format("%d.%d %s", sectionNum, clauseIdx, rawText);
 
-                            Map<String, String> requestBody = Map.of("contract", formattedText);
+                            Map<String, String> requestBody = Map.of("clause", formattedText);
 
                             log.info("Validating Clause ID {}: {}", cId, formattedText);
 
                             try {
+                                HttpHeaders aiHeaders = new HttpHeaders();
+                                aiHeaders.setContentType(MediaType.APPLICATION_JSON);
+                                HttpEntity<Map<String, String>> aiRequest = new HttpEntity<>(requestBody, aiHeaders);
+
                                 ResponseEntity<Map> response = restTemplate.postForEntity(
-                                        aiModelUrl + "/analyze", requestBody, Map.class);
+                                        aiModelUrl, aiRequest, Map.class);
 
                                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                                     Map<String, Object> body = response.getBody();
 
-                                    // Extract violations
-                                    List<Map<String, Object>> vList = (List<Map<String, Object>>) body
-                                            .get("violations");
-                                    if (vList != null && !vList.isEmpty()) {
-                                        for (Map<String, Object> vMap : vList) {
+                                    // Modal API returns: {"result": "VERDICT: ...\nVIOLATION TYPE: ...\nLEGAL ANALYSIS: ...\nENHANCEMENT: ..."}
+                                    String resultText = (String) body.get("result");
+                                    log.info("AI response for clause {}: {}", cId, resultText);
+
+                                    if (resultText != null) {
+                                        // Clean up any EOS tokens from the model
+                                        resultText = resultText.replace("<|eos_id|>", "").trim();
+
+                                        // Parse the structured text response
+                                        String verdict = extractField(resultText, "VERDICT");
+                                        String violationType = extractField(resultText, "VIOLATION TYPE");
+                                        String legalAnalysis = extractField(resultText, "LEGAL ANALYSIS");
+                                        String enhancement = extractField(resultText, "ENHANCEMENT");
+
+                                        // Check if the clause is invalid (violation detected)
+                                        boolean isInvalid = verdict != null
+                                                && (verdict.toUpperCase().contains("INVALID")
+                                                    || !verdict.toUpperCase().trim().equals("VALID"));
+
+                                        if (isInvalid) {
+                                            String reason = (legalAnalysis != null && !legalAnalysis.isBlank())
+                                                    ? legalAnalysis
+                                                    : (violationType != null ? "Violation Type: " + violationType : "Violation detected by AI");
+                                            String suggestion = (enhancement != null && !enhancement.isBlank())
+                                                    ? enhancement
+                                                    : "Review this clause for compliance with Egyptian law";
+
                                             allViolations.add(ViolationDTO.builder()
-                                                    .clauseId(cId) // Map AI result back to Frontend ID "c1"
+                                                    .clauseId(cId)
                                                     .clauseText(rawText)
-                                                    .reason((String) vMap.get("reason"))
-                                                    .suggestion((String) vMap.get("suggestion"))
+                                                    .reason(reason)
+                                                    .suggestion(suggestion)
                                                     .type("LAW")
                                                     .confidence(1.0)
                                                     .build());
+                                            minCompliance = Math.min(minCompliance, 0.0);
                                         }
                                     }
-
-                                    double score = body.get("compliance_score") != null
-                                            ? ((Number) body.get("compliance_score")).doubleValue()
-                                            : 100.0;
-                                    minCompliance = Math.min(minCompliance, score);
                                 }
                             } catch (Exception e) {
                                 log.error("AI call failed for clause {}: {}", cId, e.getMessage());
@@ -748,5 +770,34 @@ public class MainContractService {
                         + (sigBase64 != null && !sigBase64.isEmpty() ? "[Digitally Signed]" : "_________________"),
                 normal));
         return c;
+    }
+
+    /**
+     * Extracts a field value from the AI model's raw text response.
+     * The text format is: "FIELD_NAME: value\n\nNEXT_FIELD: value..."
+     */
+    private String extractField(String text, String fieldName) {
+        if (text == null || fieldName == null) return null;
+
+        String[] knownFields = {"VERDICT", "VIOLATION TYPE", "LEGAL ANALYSIS", "ENHANCEMENT"};
+        String marker = fieldName + ":";
+
+        int start = text.toUpperCase().indexOf(marker.toUpperCase());
+        if (start < 0) return null;
+
+        int valueStart = start + marker.length();
+
+        // Find the next field marker to determine where this field's value ends
+        int end = text.length();
+        for (String field : knownFields) {
+            if (field.equalsIgnoreCase(fieldName)) continue;
+            String nextMarker = field + ":";
+            int nextIdx = text.toUpperCase().indexOf(nextMarker.toUpperCase(), valueStart);
+            if (nextIdx > 0 && nextIdx < end) {
+                end = nextIdx;
+            }
+        }
+
+        return text.substring(valueStart, end).trim();
     }
 }

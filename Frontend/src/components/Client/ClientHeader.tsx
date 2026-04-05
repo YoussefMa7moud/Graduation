@@ -62,7 +62,7 @@ const ClientHeader: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header style={{ position: "sticky", top: 0, zIndex: 1000, width: "100%", height: "72px", backgroundColor: mainColor, borderBottom: "1px solid rgba(255, 255, 255, 0.1)", display: "flex", alignItems: "center" }}>
+    <header style={{ position: "sticky", top: 0, zIndex: 1000, width: "100%",  minHeight: "72px", backgroundColor: mainColor, borderBottom: "1px solid rgba(255, 255, 255, 0.1)", display: "flex", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: "1280px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
         
         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "200px" }}>

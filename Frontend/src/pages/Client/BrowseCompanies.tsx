@@ -18,14 +18,10 @@ const BrowseCompanies: React.FC = () => {
   const [companies, setCompanies]       = useState<Company[]>([]);
   const [loading, setLoading]           = useState<boolean>(true);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [isModalOpen, setIsModalOpen]   = useState(false);
-
+  const [isModalOpen, setIsModalOpen]   = useState(false); 
   const [searchTerm, setSearchTerm]     = useState('');
-  // ── MODIFIED: filterSector now has a setter so the dropdown works ──────────
   const [filterSector, setFilterSector] = useState<string>('all');
-  // ── NEW: view toggle state (grid / list) ────────────────────────────────────
   const [viewMode, setViewMode]         = useState<'grid' | 'list'>('grid');
-  // ── NEW: sort state ─────────────────────────────────────────────────────────
   const [sortBy, setSortBy]             = useState<'name' | 'verified'>('name');
 
   useEffect(() => {
@@ -38,8 +34,7 @@ const BrowseCompanies: React.FC = () => {
     loadData();
   }, []);
 
-  // ── MODIFIED: added sort logic on top of existing filter ───────────────────
-  const filteredCompanies = companies
+ const filteredCompanies = companies
     .filter(c => {
       const matchesSearch  = c.name?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -59,8 +54,7 @@ const BrowseCompanies: React.FC = () => {
        
         
 
-      {/* ── MODIFIED: Search bar — added sector dropdown + sort + view toggle ── */}
-      <div className="toolbar mb-4">
+     <div className="toolbar mb-4">
         {/* Search */}
         <div className="toolbar-search">
           <i className="bi bi-search toolbar-search-icon" />
@@ -71,8 +65,7 @@ const BrowseCompanies: React.FC = () => {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
-          {/* ── NEW: clear button ─────────────────────────────────────────── */}
-          {searchTerm && (
+       {searchTerm && (
             <button className="toolbar-clear" onClick={() => setSearchTerm('')}>
               <i className="bi bi-x" />
             </button>
@@ -81,8 +74,7 @@ const BrowseCompanies: React.FC = () => {
 
        
 
-        {/* ── NEW: Sort ────────────────────────────────────────────────────── */}
-        <select
+       <select
           className="toolbar-select"
           value={sortBy}
           onChange={e => setSortBy(e.target.value as 'name' | 'verified')}
@@ -91,7 +83,6 @@ const BrowseCompanies: React.FC = () => {
           <option value="verified">Sort: Verified First</option>
         </select>
 
-        {/* ── NEW: View toggle ─────────────────────────────────────────────── */}
         <div className="toolbar-view-toggle">
           <button
             className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -110,15 +101,12 @@ const BrowseCompanies: React.FC = () => {
         </div>
       </div>
 
-      {/* ── NEW: results count ───────────────────────────────────────────────── */}
       <p className="results-count mb-3">
         Showing <strong>{filteredCompanies.length}</strong> of {companies.length} partners
       </p>
 
-      {/* ── MODIFIED: Grid — applies viewMode class ───────────────────────── */}
-      {filteredCompanies.length === 0 ? (
-        // ── NEW: empty state ───────────────────────────────────────────────
-        <div className="empty-state">
+    {filteredCompanies.length === 0 ? (
+       <div className="empty-state">
           <i className="bi bi-building-slash empty-state-icon" />
           <h5>No partners found</h5>
           <p>Try adjusting your search or sector filter.</p>

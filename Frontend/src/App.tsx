@@ -43,6 +43,13 @@ import PMLayout from "./components/ProjectManager/PMLayout";
 import TechnicalDocWorkspace from "./pages/ProjectManager/TechDocWorkspace";
 import TechnicalDocEditor from "./pages/ProjectManager/TechnicalDocEditor";
 import PMAccountSettings from "./pages/ProjectManager/PMSettings";
+import AdminLayout from "./components/Admin/AdminLayout";
+import AdminHome from "./pages/Admin/AdminHome";
+import ManageAdmins from "./pages/Admin/ManageAdmins";
+import ViewCompanies from "./pages/Admin/ViewCompanies";
+import ViewEmployees from "./pages/Admin/ViewEmployees";
+import ViewClients from "./pages/Admin/ViewClients";
+import ViewProjects from "./pages/Admin/ViewProjects";
 /**
  * Component that redirects authenticated users away from auth pages
  */
@@ -104,6 +111,68 @@ const AppRoutes: React.FC = () => {
 
 
 
+
+      {/* Admin Routes - Only accessible by ADMIN role */}
+      <Route
+        path="/AdminHome"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.ADMIN}>
+            <AdminLayout>
+              <AdminHome />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/Admin/ManageAdmins"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.ADMIN}>
+            <AdminLayout>
+              <ManageAdmins />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/Admin/Companies"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.ADMIN}>
+            <AdminLayout>
+              <ViewCompanies />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/Admin/Employees"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.ADMIN}>
+            <AdminLayout>
+              <ViewEmployees />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/Admin/Clients"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.ADMIN}>
+            <AdminLayout>
+              <ViewClients />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/Admin/Projects"
+        element={
+          <RoleBasedRoute allowedRoles={RoleGroups.ADMIN}>
+            <AdminLayout>
+              <ViewProjects />
+            </AdminLayout>
+          </RoleBasedRoute>
+        }
+      />
 
       {/* Company Routes - Only accessible by COMPANY role */}
 

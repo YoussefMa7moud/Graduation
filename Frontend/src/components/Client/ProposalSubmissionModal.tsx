@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GetAllProposals } from '../../services/Client/ProposalDocumnet';
-import { sendProposalToCompany } from '../../services/Client/SubmitProposal'; // Import the new service
+import { sendProposalToCompany } from '../../services/Client/SubmitProposal';
 import { toast } from 'react-toastify';
 import './ProposalSubmissionModal.css';
 
@@ -12,41 +12,49 @@ interface Props {
 
 const ProposalSubmissionModal: React.FC<Props> = ({ isOpen, onClose, company }) => {
   const [proposals, setProposals] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchMyProposals = async () => {
+    const fetchData = async () => {
       const storedUser = localStorage.getItem('auth_user');
-      if (storedUser) {
+      const token = localStorage.getItem('auth_token');
+      if (storedUser && token) {
         try {
           const { userId } = JSON.parse(storedUser);
-          const data = await GetAllProposals(userId);
-          setProposals(Array.isArray(data) ? data : data ? [data] : []);
+          
+          const proposalsData = await GetAllProposals(userId);
+          
+          const subsResponse = await fetch('/api/submissions/my-submissions', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const subsData = await subsResponse.json();
+
+          setProposals(Array.isArray(proposalsData) ? proposalsData : proposalsData ? [proposalsData] : []);
+          setSubmissions(Array.isArray(subsData) ? subsData : []);
         } catch (error) {
-          toast.error("Failed to load your proposals.");
+          toast.error("Failed to load your proposals data.");
         }
       }
     };
-    if (isOpen) fetchMyProposals();
+    if (isOpen) fetchData();
   }, [isOpen]);
 
-  // Updated handleConfirm to interact with the Backend
   const handleConfirm = async () => {
     if (!selectedId) return toast.warning("Please select a proposal first.");
 
     setIsSubmitting(true);
     try {
-      // Data matches our DTO: { proposalId, softwareCompanyId }
       await sendProposalToCompany({
         proposalId: selectedId,
         softwareCompanyId: company.id
       });
 
       toast.success(`Proposal successfully sent to ${company.name}`);
-      onClose(); // Close modal on success
+      onClose();
     } catch (error: any) {
-      toast.error("Failed to send proposal. Please try again.");
+      toast.error(error.response?.data || "Failed to send proposal. Please try again.");
       console.error("Submission Error:", error);
     } finally {
       setIsSubmitting(false);
@@ -83,16 +91,43 @@ const ProposalSubmissionModal: React.FC<Props> = ({ isOpen, onClose, company }) 
             
             <div className="proposal-grid">
               {proposals.length > 0 ? (
-                proposals.map(p => (
-                  <div 
-                    key={p.id} 
-                    className={`proposal-chip ${selectedId === p.id ? 'active' : ''}`}
-                    onClick={() => setSelectedId(p.id)}
-                  >
-                    <span className="title">{p.projectTitle}</span>
-                    <i className="bi bi-check-circle-fill"></i>
-                  </div>
-                ))
+                proposals.map(p => {
+                  const submission = submissions.find(s => s.proposalId === p.id);
+                  const isSubmitted = !!submission;
+                  const isSubmittedToOther = isSubmitted && submission.companyId !== company.id;
+                  const isSubmittedToThis = isSubmitted && submission.companyId === company.id;
+
+                  return (
+                    <div 
+                      key={p.id} 
+                      className={`proposal-chip ${selectedId === p.id ? 'active' : ''} ${isSubmittedToOther ? 'disabled' : ''}`}
+                      onClick={() => !isSubmittedToOther && setSelectedId(p.id)}
+                      style={{ 
+                        opacity: isSubmittedToOther ? 0.6 : 1, 
+                        cursor: isSubmittedToOther ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '4px'
+                      }}
+                    >
+                      <div className="d-flex justify-content-between w-100 align-items-center">
+                        <span className="title m-0">{p.projectTitle}</span>
+                        {!isSubmittedToOther && <i className="bi bi-check-circle-fill"></i>}
+                      </div>
+                      {isSubmittedToOther && (
+                        <span className="badge bg-secondary" style={{fontSize: '0.7em'}}>
+                          Submitted to {submission.companyName}
+                        </span>
+                      )}
+                      {isSubmittedToThis && (
+                        <span className="badge bg-primary" style={{fontSize: '0.7em'}}>
+                          Already sent here
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-muted small">No proposals found. Create one first.</p>
               )}

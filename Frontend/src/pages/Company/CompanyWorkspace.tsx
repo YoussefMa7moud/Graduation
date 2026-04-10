@@ -130,8 +130,19 @@ const CompanyWorkspace: React.FC = () => {
 
         if (draftRes?.contractPayloadJson) {
           try {
+            lastSavedPayloadRef.current = draftRes.contractPayloadJson; // Initialize it!
             const payload = JSON.parse(draftRes.contractPayloadJson);
-            if (payload.sections) setSections(payload.sections);
+            if (payload.sections) {
+              // Strip any leaked 'violation' properties from corrupted drafts
+              const sanitizedSections = payload.sections.map((s: any) => ({
+                ...s,
+                clauses: s.clauses.map((c: any) => {
+                  const { violation, ...rest } = c;
+                  return rest;
+                })
+              }));
+              setSections(sanitizedSections);
+            }
           } catch (e) { console.error('Payload parse error', e); }
         }
 
@@ -173,16 +184,40 @@ const CompanyWorkspace: React.FC = () => {
   }, [submissionId]);
 
   // --- Auto-save ---
+  const lastSavedPayloadRef = useRef<string | null>(null);
+
   const saveDraft = useCallback(async () => {
-    if (!submissionId) return;
-    const contractPayload = JSON.stringify({ sections });
+    if (!submissionId || !isDirty.current) return;
+    
+    // Strip UI-only state (like 'violation') before saving so it doesn't trigger backend validation resets
+    const cleanSections = sections.map(s => ({
+      ...s,
+      clauses: s.clauses.map(c => {
+        const { violation, ...rest } = c;
+        return rest;
+      })
+    }));
+    
+    const contractPayload = JSON.stringify({ sections: cleanSections });
+    
+    // Prevent redundant saves if identical
+    if (lastSavedPayloadRef.current === contractPayload) {
+      isDirty.current = false;
+      return;
+    }
+
     try {
+      lastSavedPayloadRef.current = contractPayload;
       const savedDraft = await saveContractDraft({
         submissionId,
         contractPayloadJson: contractPayload,
       });
       setDraft(savedDraft);
-    } catch (e) { console.error('Auto-save failed', e); }
+      isDirty.current = false;
+    } catch (e) { 
+      console.error('Auto-save failed', e);
+      lastSavedPayloadRef.current = null; // reset if failed
+    }
   }, [submissionId, sections]);
 
   useEffect(() => {
@@ -193,6 +228,8 @@ const CompanyWorkspace: React.FC = () => {
   }, [sections, saveDraft, isEmployee]);
 
   // --- Handlers ---
+  const isDirty = useRef(false);
+
   const handleUpdate = (sId: string, cId: string, val: string, target: HTMLTextAreaElement) => {
     if (isEmployee) return; // Employees cannot edit
     if (sId === 's10') return;
@@ -200,6 +237,7 @@ const CompanyWorkspace: React.FC = () => {
     target.style.height = 'inherit';
     target.style.height = `${target.scrollHeight}px`;
 
+    isDirty.current = true; // Mark as edited
     setSections(prev => prev.map(s => s.id === sId ? {
       ...s, clauses: s.clauses.map(c => c.id === cId ? { ...c, text: val } : c)
     } : s));
@@ -215,11 +253,13 @@ const CompanyWorkspace: React.FC = () => {
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      isDirty.current = true;
       const newSections = [...sections];
       newSections[sIdx].clauses.splice(cIdx + 1, 0, { id: `cl-${Date.now()}`, text: "" });
       setSections(newSections);
     } else if (e.key === 'Backspace' && sections[sIdx].clauses[cIdx].text === "" && sections[sIdx].clauses.length > 1) {
       e.preventDefault();
+      isDirty.current = true;
       const newSections = [...sections];
       newSections[sIdx].clauses.splice(cIdx, 1);
       setSections(newSections);

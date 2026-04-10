@@ -42,27 +42,29 @@ public class ProposalSubmissionService {
     @Transactional
     public ProposalSubmission sendProposalToCompany(Long proposalId, Long softwareCompanyId, User currentUser) {
 
-        // 1. Check for existing submission first
-        Optional<ProposalSubmission> existingSubmission = submissionRepository
-                .findByClient_IdAndSoftwareCompany_IdAndProposal_Id(
-                        currentUser.getId(),
-                        softwareCompanyId,
-                        proposalId);
+        // 1. Check if ANY submission exists for this proposal
+        List<ProposalSubmission> existingSubmissions = submissionRepository.findByProposal_Id(proposalId);
 
-        if (existingSubmission.isPresent()) {
-            // UPDATE LOGIC: Only change mutable state
-            ProposalSubmission submission = existingSubmission.get();
-            submission.setStatus(SubmissionStatus.RESUBMITTED);
-            submission.setRejectionNote(null);
-            submission.setRead(false);
+        if (!existingSubmissions.isEmpty()) {
+            ProposalSubmission existingSubmission = existingSubmissions.get(0);
+            
+            // If submitted to a different company, reject
+            if (!existingSubmission.getSoftwareCompany().getId().equals(softwareCompanyId)) {
+                throw new RuntimeException("This proposal has already been submitted to another company.");
+            }
+
+            // UPDATE LOGIC: Only change mutable state for the same company
+            existingSubmission.setStatus(SubmissionStatus.RESUBMITTED);
+            existingSubmission.setRejectionNote(null);
+            existingSubmission.setRead(false);
 
             // Sync Proposal Status
-            ProjectProposal proposal = submission.getProposal();
+            ProjectProposal proposal = existingSubmission.getProposal();
             proposal.setStatus("Enrolled");
             proposalRepository.save(proposal);
 
             // saveAndFlush ensures the transaction updates the DB immediately
-            return submissionRepository.saveAndFlush(submission);
+            return submissionRepository.saveAndFlush(existingSubmission);
         } else {
             // CREATE LOGIC
             ProjectProposal proposal = proposalRepository.findById(proposalId)

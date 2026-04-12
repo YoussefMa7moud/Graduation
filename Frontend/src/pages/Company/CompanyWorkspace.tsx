@@ -16,7 +16,7 @@ import {
   type ViolationDTO,
   signCompany,
 } from '../../services/Contract/mainContract';
-import { X, Eraser } from 'lucide-react';
+import { X, Eraser, Plus, Trash2, Edit2, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import './CompanyWorkspace.css';
 import '../Client/ActiveProjectsModal.css'; // Reusing the same modal CSS
@@ -64,6 +64,8 @@ const CompanyWorkspace: React.FC = () => {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ContractChatMessageDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [sectionTitleInput, setSectionTitleInput] = useState("");
 
   // --- Signature State ---
   const [isSignModalOpen, setIsSignModalOpen] = useState(false);
@@ -73,7 +75,8 @@ const CompanyWorkspace: React.FC = () => {
 
   const isEmployee = user?.role === 'company_employee';
   const canSign = !isEmployee || user?.permissions?.canSignContract === true;
-
+  const isLocked = Boolean(draft?.sentToClient);
+  
   
   // --- Helpers ---
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -231,7 +234,7 @@ const CompanyWorkspace: React.FC = () => {
   const isDirty = useRef(false);
 
   const handleUpdate = (sId: string, cId: string, val: string, target: HTMLTextAreaElement) => {
-    if (isEmployee) return; // Employees cannot edit
+    if (isEmployee || isLocked) return; // Employees or locked contracts cannot edit
     if (sId === 's10') return;
 
     target.style.height = 'inherit';
@@ -265,6 +268,63 @@ const CompanyWorkspace: React.FC = () => {
       setSections(newSections);
     }
   };
+
+  const handleAddSection = () => {
+    if (isEmployee || isLocked) return;
+    isDirty.current = true;
+    setSections(prev => {
+      const newSection: Section = {
+        id: `s-custom-${Date.now()}`,
+        num: 0,
+        title: "NEW SECTION",
+        clauses: [{ id: `c-custom-${Date.now()}`, text: "" }]
+      };
+      const newSections = [...prev];
+      const s10Idx = newSections.findIndex(s => s.id === 's10');
+      if (s10Idx !== -1) {
+        newSections.splice(s10Idx, 0, newSection);
+      } else {
+        newSections.push(newSection);
+      }
+      
+      let currentNum = 1;
+      return newSections.map((s) => {
+        if (s.id === 's10') return { ...s, num: 10 };
+        const updated = { ...s, num: currentNum };
+        currentNum++;
+        return updated;
+      });
+    });
+  };
+
+  const handleRemoveSection = (sId: string) => {
+    if (isEmployee || isLocked || sId === 's10') return;
+    isDirty.current = true;
+    setSections(prev => {
+      const filtered = prev.filter(s => s.id !== sId);
+      let currentNum = 1;
+      return filtered.map(s => {
+        if (s.id === 's10') return { ...s, num: 10 };
+        const updated = { ...s, num: currentNum };
+        currentNum++;
+        return updated;
+      });
+    });
+  };
+
+  const handleStartRename = (sId: string, currentTitle: string) => {
+    if (isEmployee || isLocked || sId === 's10') return;
+    setEditingSectionId(sId);
+    setSectionTitleInput(currentTitle);
+  };
+
+  const handleSaveRename = (sId: string) => {
+    if (isEmployee || isLocked || sId === 's10') return;
+    isDirty.current = true;
+    setSections(prev => prev.map(s => s.id === sId ? { ...s, title: sectionTitleInput } : s));
+    setEditingSectionId(null);
+  };
+
 
   const handleValidateContract = async () => {
     if (!submissionId) return;
@@ -392,27 +452,36 @@ const CompanyWorkspace: React.FC = () => {
         </div>
         <div className="nav-btns">
           {!isEmployee && (
-            <>
-              <button className="btn-navy" onClick={handleValidateContract} disabled={isValidatingAI}>
-                {isValidatingAI ? 'Validating...' : 'Validate Contract (AI + Policy)'}
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {!isLocked && (
+                <>
+                  <button className="btn-navy" onClick={handleValidateContract} disabled={isValidatingAI}>
+                    {isValidatingAI ? 'Validating...' : 'Validate Contract (AI + Policy)'}
+                  </button>
 
-              <button 
-                className="btn-success" 
-                onClick={handleSendToClient} 
-                disabled={!draft?.aiValidated || !draft?.oclValidated}
-                title={(!draft?.aiValidated || !draft?.oclValidated) ? "You must pass the validation first" : ""}
-                style={{ 
-                  marginLeft: '10px', 
-                  opacity: (!draft?.aiValidated || !draft?.oclValidated) ? 0.6 : 1, 
-                  cursor: (!draft?.aiValidated || !draft?.oclValidated) ? 'not-allowed' : 'pointer', 
-                  display: (draft?.sentToClient ? 'none' : 'inline-block') 
-                }}
-              >
-                Finalize & Send
-              </button>
+                  <button 
+                    className="btn-success" 
+                    onClick={handleSendToClient} 
+                    disabled={!draft?.aiValidated || !draft?.oclValidated}
+                    title={(!draft?.aiValidated || !draft?.oclValidated) ? "You must pass the validation first" : ""}
+                    style={{ 
+                      marginLeft: '10px', 
+                      opacity: (!draft?.aiValidated || !draft?.oclValidated) ? 0.6 : 1, 
+                      cursor: (!draft?.aiValidated || !draft?.oclValidated) ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    Finalize & Send
+                  </button>
+                </>
+              )}
 
-              {draft?.sentToClient && draft?.clientSignedAt && !draft?.companySignedAt && (
+              {isLocked && !draft?.clientSignedAt && (
+                <div style={{ marginLeft: '10px', color: '#d97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#fef3c7', padding: '6px 12px', borderRadius: '6px', border: '1px solid #fde68a' }}>
+                  <i className="bi bi-clock-fill"></i> Waiting for Client to Sign
+                </div>
+              )}
+
+              {isLocked && draft?.clientSignedAt && !draft?.companySignedAt && (
                 <button 
                   className="btn-success" 
                   onClick={() => {
@@ -429,7 +498,13 @@ const CompanyWorkspace: React.FC = () => {
                   Sign Final Agreement
                 </button>
               )}
-            </>
+              
+              {isLocked && draft?.companySignedAt && (
+                <div style={{ marginLeft: '10px', color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#d1fae5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                  <i className="bi bi-check-circle-fill"></i> Fully Executed
+                </div>
+              )}
+            </div>
           )}
           {isEmployee && (
             <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic' }}>Read-Only View</span>
@@ -456,6 +531,21 @@ const CompanyWorkspace: React.FC = () => {
               </div>
             </div>
 
+            <div className="doc-page recitals-page">
+              <h2 className="formal-heading">RECITALS</h2>
+              <div className="formal-text">
+                <p>This Software Development Agreement (this <strong>"Agreement"</strong>) is made and entered into as of the date of final electronic signature (the <strong>"Effective Date"</strong>), by and between:</p>
+                <div className="party-details">
+                  <p><strong>DEVELOPER:</strong> {parties?.partyA?.name || '[Developer Company]'}, represented by {parties?.partyA?.signatory || '[Signatory]'}</p>
+                  <p><strong>CLIENT:</strong> {parties?.partyB?.name || '[Client Company]'}, represented by {parties?.partyB?.signatory || '[Signatory]'}</p>
+                </div>
+                <p><strong>WHEREAS</strong>, the Client desires to engage the Developer to provide custom software development services in accordance with the specifications set forth herein;</p>
+                <p><strong>WHEREAS</strong>, the Developer possesses the necessary technical expertise, resources, and qualifications to perform such services; and</p>
+                <p><strong>WHEREAS</strong>, the Parties mutually agree to be legally bound by all terms, conditions, and stipulations contained within this Agreement.</p>
+                <p><strong>NOW, THEREFORE</strong>, in consideration of the mutual covenants and promises hereinafter set forth, the Parties agree as follows:</p>
+              </div>
+            </div>
+
             <div className="doc-page body">
               <div className="locked-legal-text">
                 <p>This Agreement is governed exclusively by the laws of the Arab Republic of Egypt, is not subject to international arbitration, and any dispute shall be resolved solely by Egyptian courts.</p>
@@ -466,14 +556,52 @@ const CompanyWorkspace: React.FC = () => {
                 </div>
               </div>
 
+              <h2 className="formal-heading center mt-4 mb-5">OPERATIVE PROVISIONS</h2>
+
               {sections.map((section, sIdx) => (
                 <div key={section.id} className="section-container">
-                  <h3 className="section-h3">{section.num}. {section.title}</h3>
+                  <div className="section-header-row">
+                    {editingSectionId === section.id ? (
+                      <div className="section-rename-wrapper">
+                        <span className="section-num-static">{section.num}.</span>
+                        <input 
+                          type="text" 
+                          value={sectionTitleInput} 
+                          onChange={(e) => setSectionTitleInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveRename(section.id);
+                          }}
+                          className="section-title-input"
+                          autoFocus
+                        />
+                        <button className="icon-btn success" onClick={() => handleSaveRename(section.id)}>
+                          <Check size={16} />
+                        </button>
+                        <button className="icon-btn danger" onClick={() => setEditingSectionId(null)}>
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <h3 className="section-h3">
+                        {section.num}. {section.title}
+                        {!isEmployee && !isLocked && section.id !== 's10' && (
+                          <div className="section-actions">
+                            <button className="icon-btn edit" onClick={() => handleStartRename(section.id, section.title)} title="Rename Section">
+                              <Edit2 size={14} />
+                            </button>
+                            <button className="icon-btn danger" onClick={() => handleRemoveSection(section.id)} title="Delete Section">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </h3>
+                    )}
+                  </div>
                   {section.clauses.map((clause, cIdx) => (
                     <div key={clause.id} className={`clause-row ${clause.violation ? 'has-issue' : ''}`}>
                       <span className="c-num">{section.num}.{cIdx + 1}</span>
                       <div className="clause-input-wrapper">
-                        {section.id === 's10' || isEmployee ? (
+                        {section.id === 's10' || isEmployee || isLocked ? (
                           <div className="c-input static-clause-display">{clause.text}</div>
                         ) : (
                           <textarea
@@ -495,6 +623,14 @@ const CompanyWorkspace: React.FC = () => {
                   ))}
                 </div>
               ))}
+
+              {!isEmployee && !isLocked && (
+                <div className="add-section-wrapper">
+                  <button className="btn-add-section" onClick={handleAddSection}>
+                    <Plus size={18} className="me-2" /> Add New Section
+                  </button>
+                </div>
+              )}
 
               <div className="signature-area">
                 <div className="sig-row">

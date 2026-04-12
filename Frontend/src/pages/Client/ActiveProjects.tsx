@@ -14,6 +14,7 @@ import {
 import { X, Eraser } from 'lucide-react';
 import './ActiveProjects.css';
 import './ActiveProjectsModal.css';
+import '../Company/CompanyWorkspace.css';
 
 const ActiveProjectWorkspace: React.FC = () => {
   const navigate = useNavigate();
@@ -204,64 +205,89 @@ const ActiveProjectWorkspace: React.FC = () => {
               </div>
 
               <div className="scrollable-viewer">
-                <div className="contract-paper-stack">
-                  <div className="contract-page">
-                    
-                    {/* Cover Page */}
-                    <div className="template-cover">
-                      <h1 className="template-title">Software Development Agreement</h1>
-                      <div className="template-parties-grid">
-                        <div className="party-block">
-                          <label>Prepared for:</label>
-                          <strong>{parties?.partyB?.signatory || 'Authorized Representative'}</strong>
-                          <span>{parties?.partyB?.name || project?.company}</span>
-                        </div>
-                        <div className="party-block">
-                          <label>Prepared by:</label>
-                          <strong>{parties?.partyA?.signatory || 'Legal Counsel'}</strong>
-                          <span>{parties?.partyA?.name || 'LegalReview AI'}</span>
-                        </div>
+                <div className="document-container">
+                  <div className="doc-page cover">
+                    <h1 className="cover-title">Software Development Agreement</h1>
+                    <div className="cover-grid">
+                      <div className="cover-block">
+                        <span className="cover-label">Prepared for:</span>
+                        <p className="party-name">{parties?.partyB?.signatory || 'Authorized Representative'}</p>
+                        <p className="party-company">{parties?.partyB?.name || project?.company}</p>
+                      </div>
+                      <div className="cover-block">
+                        <span className="cover-label">Prepared by:</span>
+                        <p className="party-name">{parties?.partyA?.signatory || 'Legal Counsel'}</p>
+                        <p className="party-company">{parties?.partyA?.name || 'LegalReview AI'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="doc-page recitals-page">
+                    <h2 className="formal-heading">RECITALS</h2>
+                    <div className="formal-text">
+                      <p>This Software Development Agreement (this <strong>"Agreement"</strong>) is made and entered into as of the date of final electronic signature (the <strong>"Effective Date"</strong>), by and between:</p>
+                      <div className="party-details">
+                        <p><strong>DEVELOPER:</strong> {parties?.partyA?.name || 'Developer Firm'}, represented by {parties?.partyA?.signatory || 'Representative'}</p>
+                        <p><strong>CLIENT:</strong> {parties?.partyB?.name || project?.company}, represented by {parties?.partyB?.signatory || 'Representative'}</p>
+                      </div>
+                      <p><strong>WHEREAS</strong>, the Client desires to engage the Developer to provide custom software development services in accordance with the specifications set forth herein;</p>
+                      <p><strong>WHEREAS</strong>, the Developer possesses the necessary technical expertise, resources, and qualifications to perform such services; and</p>
+                      <p><strong>WHEREAS</strong>, the Parties mutually agree to be legally bound by all terms, conditions, and stipulations contained within this Agreement.</p>
+                      <p><strong>NOW, THEREFORE</strong>, in consideration of the mutual covenants and promises hereinafter set forth, the Parties agree as follows:</p>
+                    </div>
+                  </div>
+
+                  <div className="doc-page body">
+                    <div className="locked-legal-text">
+                      <p>This Agreement is governed exclusively by the laws of the Arab Republic of Egypt, is not subject to international arbitration, and any dispute shall be resolved solely by Egyptian courts.</p>
+                      <p className="arabic-text">يخضع هذا الاتفاق للقانون المصري وحده، ولا يخضع لأي تحكيم دولي.</p>
+                      <div className="egypt-notice">
+                        <i className="bi bi-shield-check-fill me-2"></i> 
+                        ELECTRONIC SIGNATURES SUBJECT TO EGYPTIAN ITIDA REGULATIONS.
                       </div>
                     </div>
 
-                    {/* Legal Box */}
-                    <div className="legal-governance-box">
-                      <p>This Agreement is governed exclusively by the laws of the Arab Republic of Egypt, is not subject to international arbitration, and any dispute shall be resolved solely by Egyptian courts.</p>
-                      <p className="arabic-text">يخضع هذا الاتفاق للقانون المصري وحده، ولا يخضع لأي تحكيم دولي.</p>
-                    </div>
+                    <h2 className="formal-heading center mt-4 mb-5">OPERATIVE PROVISIONS</h2>
 
                     {/* Sections and Clauses */}
                     {sections.map((section) => (
-                      <div key={section.id} className="template-section">
-                        <h3 className="section-title">{section.num}. {section.title}</h3>
+                      <div key={section.id} className="section-container">
+                        <div className="section-header-row">
+                          <h3 className="section-h3">{section.num}. {section.title}</h3>
+                        </div>
                         {section.clauses.map((clause: any, cIdx: number) => (
                           <div key={clause.id} className="clause-row">
-                            <span className="clause-number">{section.num}.{cIdx + 1}</span>
-                            <div className="clause-content">{clause.text}</div>
+                            <span className="c-num">{section.num}.{cIdx + 1}</span>
+                            <div className="clause-input-wrapper">
+                              <div className="c-input static-clause-display">{clause.text}</div>
+                            </div>
                           </div>
                         ))}
                       </div>
                     ))}
 
-                    {/* Signature Block */}
-                    <div className="template-signatures">
-                      <div className="sig-line">
-                        <div className="line"></div>
-                        <label>Client (Authorized Signatory)</label>
-                        {draft?.clientSignedAt ? (
-                          <div className="text-success fw-bold">[Digitally Signed]</div>
-                        ) : (
-                          <div className="sig-date">Date: _________</div>
-                        )}
+                    <div className="signature-area mt-5 pt-4" style={{borderTop: '2px solid #f1f5f9'}}>
+                      <div className="d-flex justify-content-between">
+                        <div style={{width: '40%', borderBottom: '1px solid #0f172a', paddingBottom: '8px', display: 'flex', alignItems: 'flex-end', height: '80px'}}>
+                          <div className="w-100">
+                            <span style={{fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '8px'}}>Client (Authorized Signatory)</span>
+                            {draft?.clientSignedAt && (
+                              <div className="text-success fw-bold">[Digitally Signed]</div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{width: '40%', borderBottom: '1px solid #0f172a', paddingBottom: '8px', display: 'flex', alignItems: 'flex-end', height: '80px'}}>
+                          <div className="w-100">
+                            <span style={{fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '8px'}}>Developer (Authorized Signatory)</span>
+                            {draft?.companySignedAt && (
+                              <div className="text-success fw-bold">[Digitally Signed]</div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="sig-line">
-                        <div className="line"></div>
-                        <label>Developer (Authorized Signatory)</label>
-                        {draft?.companySignedAt ? (
-                          <div className="text-success fw-bold">[Digitally Signed]</div>
-                        ) : (
-                          <div className="sig-date">Date: _________</div>
-                        )}
+                      <div className="d-flex justify-content-between mt-3">
+                        <div style={{fontWeight: 700, fontSize: '14px'}}>Dated: {draft?.clientSignedAt ? new Date(draft.clientSignedAt).toLocaleDateString('en-GB') : '_________'}</div>
+                        <div style={{fontWeight: 700, fontSize: '14px'}}>Dated: {draft?.companySignedAt ? new Date(draft.companySignedAt).toLocaleDateString('en-GB') : '_________'}</div>
                       </div>
                     </div>
 

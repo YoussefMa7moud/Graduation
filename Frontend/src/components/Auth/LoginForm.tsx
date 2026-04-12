@@ -46,7 +46,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch }) => {
   };
 
   return (
-    <div className="form-inner-container d-flex flex-column justify-content-center align-items-center h-100 p-5">
+    <div className="form-inner-container page-fade-in">
       <div style={{ maxWidth: '400px', width: '100%' }}>
         <h2 className="fw-bold mb-2 text-start">Welcome back</h2>
         <p className="text-muted mb-5 text-start">Enter your credentials to access your legal workspace.</p>
@@ -61,7 +61,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4 text-start">
-            <label className="form-label fw-bold small">Work Email Address</label>
+            <label className="form-label">Work Email Address</label>
             <div className="input-group">
               <span className="input-group-text bg-white border-end-0">
                 <i className="bi bi-envelope text-muted"></i>
@@ -80,7 +80,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch }) => {
 
           <div className="mb-4 text-start">
             <div className="d-flex justify-content-between">
-              <label className="form-label fw-bold small">Security Password</label>
+              <label className="form-label">Security Password</label>
               <span className="text-muted small cursor-pointer" style={{ cursor: 'pointer' }}>
                 Forgot password?
               </span>

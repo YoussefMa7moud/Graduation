@@ -159,7 +159,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
   };
 
   return (
-    <div className="form-inner-container d-flex flex-column justify-content-center align-items-center h-100 p-5 page-fade-in">
+    <div className="form-inner-container page-fade-in">
       <div style={{ maxWidth: '480px', width: '100%' }}>
         <h2 className="fw-bold mb-1">Create account</h2>
         <p className="text-muted mb-4 small">Join the legal workspace as a provider or a client.</p>
@@ -186,33 +186,33 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
 
         <form className="row g-3" onSubmit={handleSubmit}>
           <div className="col-md-6 text-start">
-            <label className="form-label fw-bold x-small-label">FIRST NAME</label>
+            <label className="form-label">FIRST NAME</label>
             <input type="text" className="form-control custom-input" placeholder="Alex" value={firstName} onChange={(e) => setFirstName(e.target.value)} required disabled={isLoading} />
           </div>
           <div className="col-md-6 text-start">
-            <label className="form-label fw-bold x-small-label">LAST NAME</label>
+            <label className="form-label">LAST NAME</label>
             <input type="text" className="form-control custom-input" placeholder="Smith" value={lastName} onChange={(e) => setLastName(e.target.value)} required disabled={isLoading} />
           </div>
 
           <div className="col-12 text-start">
-            <label className="form-label fw-bold x-small-label">EMAIL ADDRESS</label>
+            <label className="form-label">EMAIL ADDRESS</label>
             <input type="email" className="form-control custom-input" placeholder="name@domain.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
           </div>
 
           <div className="col-12 text-start">
-            <label className="form-label fw-bold x-small-label">PHONE NUMBER</label>
+            <label className="form-label">PHONE NUMBER</label>
             <input type="tel" className="form-control custom-input" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required disabled={isLoading} />
           </div>
 
           <div className="col-12 text-start">
-            <label className="form-label fw-bold x-small-label">NATIONAL ID</label>
+            <label className="form-label">NATIONAL ID</label>
             <input type="text" className="form-control custom-input" value={nationalId} onChange={(e) => setNationalId(e.target.value.replace(/\D/g, ''))} required minLength={8} maxLength={20} disabled={isLoading} />
           </div>
 
           {(role === 'company' || (role === 'client' && clientType === 'corporate')) && (
             <div className="animate-fade-in row g-3 m-0 p-0">
               <div className="col-12 text-start">
-                <label className="form-label fw-bold x-small-label">COMPANY NAME</label>
+                <label className="form-label">COMPANY NAME</label>
                 <input type="text" className="form-control custom-input" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={isLoading} />
               </div>
 
@@ -236,12 +236,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
               </div>
 
               <div className="col-12 text-start">
-                <label className="form-label fw-bold x-small-label">COMPANY REGISTRATION NUMBER</label>
+                <label className="form-label">COMPANY REGISTRATION NUMBER</label>
                 <input type="text" className="form-control custom-input" value={companyRegNo} onChange={(e) => setCompanyRegNo(e.target.value)} required disabled={isLoading} />
               </div>
 
               <div className="col-12 text-start">
-                <label className="form-label fw-bold x-small-label">COMPANY LOGO</label>
+                <label className="form-label">COMPANY LOGO</label>
                 <input type="file" className="form-control custom-input" accept="image/*" onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file && file.size > 1024 * 1024) {
@@ -265,7 +265,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
               </div>
 
               <div className="col-12 text-start animate-fade-in">
-                <label className="form-label fw-bold x-small-label">TITLE</label>
+                <label className="form-label">TITLE</label>
                 <select className="form-control custom-input" value={title} onChange={(e) => setTitle(e.target.value as any)} required disabled={isLoading}>
                   <option value="">Select Title</option>
                   <option value="CEO">CEO</option>
@@ -277,7 +277,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitch }) => {
           )}
 
           <div className="col-12 text-start">
-            <label className="form-label fw-bold x-small-label">PASSWORD</label>
+            <label className="form-label">PASSWORD</label>
             <input type="password" className="form-control custom-input" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={isLoading} />
           </div>
 

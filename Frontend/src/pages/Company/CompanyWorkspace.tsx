@@ -59,6 +59,8 @@ const CompanyWorkspace: React.FC = () => {
   const [draft, setDraft] = useState<ContractDraftResponse | null>(null);
   const [violations, setViolations] = useState<ViolationDTO[]>([]);
   const [isValidated, setIsValidated] = useState(false);
+  const [isModifiedAfterValidation, setIsModifiedAfterValidation] = useState(false);
+  const validatedPayloadRef = useRef<string | null>(null); // Snapshot of content at validation time
   const [isValidatingAI, setIsValidatingAI] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
@@ -241,9 +243,28 @@ const CompanyWorkspace: React.FC = () => {
     target.style.height = `${target.scrollHeight}px`;
 
     isDirty.current = true; // Mark as edited
-    setSections(prev => prev.map(s => s.id === sId ? {
-      ...s, clauses: s.clauses.map(c => c.id === cId ? { ...c, text: val } : c)
-    } : s));
+    setSections(prev => {
+      const next = prev.map(s => s.id === sId ? {
+        ...s, clauses: s.clauses.map(c => c.id === cId ? { ...c, text: val } : c)
+      } : s);
+      // Check if content changed from the validated snapshot
+      if (validatedPayloadRef.current !== null) {
+        const cleanNext = JSON.stringify({ sections: next.map(s => ({ ...s, clauses: s.clauses.map(c => { const { violation, ...r } = c; return r; }) })) });
+        if (cleanNext !== validatedPayloadRef.current) {
+          setIsModifiedAfterValidation(true);
+        }
+      }
+      return next;
+    });
+  };
+
+  const markModifiedIfNeeded = (nextSections: Section[]) => {
+    if (validatedPayloadRef.current !== null) {
+      const cleanNext = JSON.stringify({ sections: nextSections.map(s => ({ ...s, clauses: s.clauses.map(c => { const { violation, ...r } = c; return r; }) })) });
+      if (cleanNext !== validatedPayloadRef.current) {
+        setIsModifiedAfterValidation(true);
+      }
+    }
   };
 
   const handleKeys = (e: React.KeyboardEvent, sIdx: number, cIdx: number) => {
@@ -260,12 +281,14 @@ const CompanyWorkspace: React.FC = () => {
       const newSections = [...sections];
       newSections[sIdx].clauses.splice(cIdx + 1, 0, { id: `cl-${Date.now()}`, text: "" });
       setSections(newSections);
+      markModifiedIfNeeded(newSections);
     } else if (e.key === 'Backspace' && sections[sIdx].clauses[cIdx].text === "" && sections[sIdx].clauses.length > 1) {
       e.preventDefault();
       isDirty.current = true;
       const newSections = [...sections];
       newSections[sIdx].clauses.splice(cIdx, 1);
       setSections(newSections);
+      markModifiedIfNeeded(newSections);
     }
   };
 
@@ -288,12 +311,14 @@ const CompanyWorkspace: React.FC = () => {
       }
       
       let currentNum = 1;
-      return newSections.map((s) => {
+      const result = newSections.map((s) => {
         if (s.id === 's10') return { ...s, num: 10 };
         const updated = { ...s, num: currentNum };
         currentNum++;
         return updated;
       });
+      markModifiedIfNeeded(result);
+      return result;
     });
   };
 
@@ -303,12 +328,14 @@ const CompanyWorkspace: React.FC = () => {
     setSections(prev => {
       const filtered = prev.filter(s => s.id !== sId);
       let currentNum = 1;
-      return filtered.map(s => {
+      const result = filtered.map(s => {
         if (s.id === 's10') return { ...s, num: 10 };
         const updated = { ...s, num: currentNum };
         currentNum++;
         return updated;
       });
+      markModifiedIfNeeded(result);
+      return result;
     });
   };
 
@@ -321,7 +348,11 @@ const CompanyWorkspace: React.FC = () => {
   const handleSaveRename = (sId: string) => {
     if (isEmployee || isLocked || sId === 's10') return;
     isDirty.current = true;
-    setSections(prev => prev.map(s => s.id === sId ? { ...s, title: sectionTitleInput } : s));
+    setSections(prev => {
+      const next = prev.map(s => s.id === sId ? { ...s, title: sectionTitleInput } : s);
+      markModifiedIfNeeded(next);
+      return next;
+    });
     setEditingSectionId(null);
   };
 
@@ -346,6 +377,14 @@ const CompanyWorkspace: React.FC = () => {
         applyViolationsToClauses([]);
         setIsValidated(true);
       }
+
+      // Snapshot the validated payload so we can detect post-validation edits
+      const cleanSectionsSnapshot = sections.map(s => ({
+        ...s,
+        clauses: s.clauses.map(c => { const { violation, ...r } = c; return r; })
+      }));
+      validatedPayloadRef.current = JSON.stringify({ sections: cleanSectionsSnapshot });
+      setIsModifiedAfterValidation(false);
 
       const hasIssues = result.violations && result.violations.length > 0;
       if (!hasIssues) {
@@ -462,16 +501,41 @@ const CompanyWorkspace: React.FC = () => {
                   <button 
                     className="btn-success" 
                     onClick={handleSendToClient} 
-                    disabled={!draft?.aiValidated || !draft?.oclValidated}
-                    title={(!draft?.aiValidated || !draft?.oclValidated) ? "You must pass the validation first" : ""}
+                    disabled={!draft?.aiValidated || !draft?.oclValidated || isModifiedAfterValidation}
+                    title={
+                      isModifiedAfterValidation
+                        ? "Contract was modified after validation — please re-validate first"
+                        : (!draft?.aiValidated || !draft?.oclValidated)
+                        ? "You must pass the validation first"
+                        : ""
+                    }
                     style={{ 
                       marginLeft: '10px', 
-                      opacity: (!draft?.aiValidated || !draft?.oclValidated) ? 0.6 : 1, 
-                      cursor: (!draft?.aiValidated || !draft?.oclValidated) ? 'not-allowed' : 'pointer'
+                      opacity: (!draft?.aiValidated || !draft?.oclValidated || isModifiedAfterValidation) ? 0.6 : 1, 
+                      cursor: (!draft?.aiValidated || !draft?.oclValidated || isModifiedAfterValidation) ? 'not-allowed' : 'pointer'
                     }}
                   >
                     Finalize & Send
                   </button>
+                  {isModifiedAfterValidation && (
+                    <span style={{
+                      marginLeft: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      color: '#d97706',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      backgroundColor: '#fef3c7',
+                      border: '1px solid #fde68a',
+                      borderRadius: '6px',
+                      padding: '4px 8px',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      <i className="bi bi-exclamation-triangle-fill"></i>
+                      Re-validate required
+                    </span>
+                  )}
                 </>
               )}
 

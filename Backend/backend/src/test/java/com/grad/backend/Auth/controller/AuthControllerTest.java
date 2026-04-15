@@ -229,21 +229,54 @@ void testRegister_InvalidData() throws Exception {
     //   • Status in the test plan: N/A at unit-test level; covered by E2E tests.
     // ─────────────────────────────────────────────────────────────────────────
 
-    @Test
+@Test
     @WithMockUser
     void testLogout_StatelessJwt_NoServerSideEndpointRequired() {
         /*
-         * JWT logout is client-side only:
-         *   1. Client deletes the token from localStorage / cookie.
-         *   2. All subsequent requests lack a valid Bearer header and receive 401.
-         *
-         * Because AuthController contains no /logout mapping, there is nothing
-         * to invoke here at the unit-test level. This test exists as a documented
-         * placeholder so the test plan entry (TC04) has a corresponding test
-         * method, and to prevent accidental introduction of a /logout endpoint
-         * without accompanying tests.
-         *
-         * End-to-end coverage:  verify that a request sent without a token
-         * (or with a discarded/expired token) is rejected with HTTP 401.
+         * JWT logout is client-side only.
+         * No server endpoint needed.
          */
+    }
+
+
+    // TC07: /register-pm server error
+    @Test
+    void testRegisterProjectManager_ServerError() throws Exception {
+        doThrow(new RuntimeException("DB error"))
+                .when(registrationService).registerProjectManager(any(Long.class), anyString(), anyString(), anyString(), anyString());
+
+        mockMvc.perform(multipart("/api/auth/register-pm")
+                        .param("firstName", "PM")
+                        .param("lastName", "Test")
+                        .param("email", "pm@test.com")
+                        .param("password", "pass123")
+                        .with(csrf()))
+                .andExpect(status().isInternalServerError());
+    }
+
+    // Additional register cases for completeness
+    @Test
+    void testRegister_MissingRequiredParams() throws Exception {
+        MockMultipartFile logo = new MockMultipartFile("logo", "logo.png", "image/png", new byte[0]);
+
+        mockMvc.perform(multipart("/api/auth/register")
+                        .file(logo)
+                        .param("role", "CLIENT")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest()); // Missing email/password etc.
+    }
+
+    @Test
+    void testLogin_ServerError() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("test@example.com");
+        request.setPassword("password123");
+
+        when(authService.login(any())).thenThrow(new RuntimeException("Login failed"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf()))
+                .andExpect(status().isInternalServerError());
     } }

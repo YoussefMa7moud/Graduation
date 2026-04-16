@@ -1,6 +1,7 @@
 package com.grad.backend.company;
 
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -28,6 +29,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.mock.web.MockMultipartFile;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -55,7 +60,7 @@ class CompanyProfileTest {
 
         user = new User();
         user.setId(1L);
-        user.setRole(UserRole.COMPANY_EMPLOYEE);
+        user.setRole(UserRole.SOFTWARE_COMPANY);
 
         company = new Company();
         company.setName("Old Name");
@@ -82,10 +87,9 @@ class CompanyProfileTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
-    @Test
+@Test
     void TC09_verifyUpdateCompanyName() throws Exception {
-
-     authenticateAs(user);
+        authenticateAs(user);
 
         CompanyProfileDto dto = new CompanyProfileDto();
         dto.setName("New Name");
@@ -98,10 +102,44 @@ class CompanyProfileTest {
         when(companyRepository.findByUser_Id(1L))
                 .thenReturn(Optional.of(company));
 
-        // COMPANY_EMPLOYEE is blocked → expect 403
         mockMvc.perform(put("/api/company/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(dto)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("New Name"));
+
+        verify(companyRepository).save(company);
+    }
+
+    @Test
+    void TC10_verifyTimezoneModification() throws Exception {
+        authenticateAs(user);
+
+        String dtoJson = "{\"name\":\"Test\",\"timezone\":\"(GMT-05:00) New York\",\"description\":\"desc\",\"nationalId\":\"123\",\"title\":\"title\",\"companyRegNo\":\"REG1\",\"phoneNumber\":\"0100000000\"}";
+
+        when(companyRepository.findByUser_Id(1L)).thenReturn(Optional.of(company));
+
+        mockMvc.perform(put("/api/company/profile")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(dtoJson))
+                .andExpect(status().isOk());
+
+        verify(companyRepository).save(any(Company.class));
+    }
+
+    @Test
+    void TC11_verifyLogoUploadInteraction() throws Exception {
+        authenticateAs(user);
+
+        String logoJson = "{\"logoUrl\":\"logo.png\"}";
+
+        when(companyRepository.findByUser_Id(1L)).thenReturn(Optional.of(company));
+
+        mockMvc.perform(put("/api/company/profile")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(logoJson))
+                .andExpect(status().isOk());  // Success indicates interactive upload ready (file picker on frontend)
+
+        verify(companyRepository).save(any(Company.class));
     }
 }

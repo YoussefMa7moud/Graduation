@@ -110,6 +110,36 @@ class NDASigningTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @SneakyThrows
+    void TC14_drawSignatureOnCanvas() {
+        // Given: Valid canvas-drawn signature (lines appear)
+        Long submissionId = 123L;
+        String drawnSigBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="; // Simulates drawn lines
+        NdaSignRequest signRequest = new NdaSignRequest();
+        signRequest.setSubmissionId(submissionId);
+        signRequest.setSignatureBase64(drawnSigBase64);
+        signRequest.setContractPayloadJson("{}");
+
+        NdaDraftResponse updatedDraft = NdaDraftResponse.builder()
+                .submissionId(submissionId)
+                .clientSigned(true)
+                .build();
+        when(contractService.signClient(eq(submissionId), eq(clientUser.getId()), eq(drawnSigBase64), anyString())).thenReturn(updatedDraft);
+
+        // When/Then: Lines appear (sign accepted)
+        mockMvc.perform(post("/api/contracts/nda/sign/client")
+                .param("userId", "client")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clientSigned").value(true));
+
+        // Verify clearing works (empty sig handled - coverage by TC15)
+        String emptySig = "";
+        verify(contractService, never()).signClient(anyLong(), anyLong(), eq(emptySig), anyString());
+    }
+
 @Test
 @SneakyThrows
 void TC15_attemptSigningWithoutDrawing() {

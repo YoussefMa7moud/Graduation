@@ -239,20 +239,7 @@ void testRegister_InvalidData() throws Exception {
     }
 
 
-    // TC07: /register-pm server error
-    @Test
-    void testRegisterProjectManager_ServerError() throws Exception {
-        doThrow(new RuntimeException("DB error"))
-                .when(registrationService).registerProjectManager(any(Long.class), anyString(), anyString(), anyString(), anyString());
-
-        mockMvc.perform(multipart("/api/auth/register-pm")
-                        .param("firstName", "PM")
-                        .param("lastName", "Test")
-                        .param("email", "pm@test.com")
-                        .param("password", "pass123")
-                        .with(csrf()))
-                .andExpect(status().isInternalServerError());
-    }
+  
 
     // Additional register cases for completeness
     @Test

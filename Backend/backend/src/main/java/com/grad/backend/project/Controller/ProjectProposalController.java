@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-// Replace 'com.grad.backend.auth.User' with your actual User class path
 import com.grad.backend.Auth.entity.User; 
 
 @RestController

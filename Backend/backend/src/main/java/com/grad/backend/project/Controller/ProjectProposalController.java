@@ -18,7 +18,6 @@ public class ProjectProposalController {
 
     private final ProjectProposalService proposalService;
 
-    // ✅ CREATE
     @PostMapping("/create")
     public ResponseEntity<ProjectProposal> submitProposal(
             @RequestBody ProjectProposalRequest request,

@@ -33,7 +33,6 @@ public class ProjectProposalController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // ✅ GET ALL MY PROPOSALS (FIXED)
     @GetMapping("/MyProposals/{clientId}")
     public ResponseEntity<?> getMyProposals(
             @AuthenticationPrincipal User currentUser

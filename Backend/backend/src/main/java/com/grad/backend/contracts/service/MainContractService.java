@@ -22,6 +22,7 @@ import com.grad.backend.project.DTO.NdaPartiesDTO;
 import com.grad.backend.project.entity.ProposalSubmission;
 import com.grad.backend.project.enums.ClientType;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
+import com.grad.backend.service.TranslationService;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
@@ -30,6 +31,7 @@ import com.grad.backend.contracts.util.QrCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -73,6 +75,9 @@ public class MainContractService {
 
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
+    
+    @Autowired
+    private TranslationService translationService;
 
     @SuppressWarnings("rawtypes")
     private String verifyActor(Long submissionId, Long userId) {
@@ -800,4 +805,100 @@ public class MainContractService {
 
         return text.substring(valueStart, end).trim();
     }
+
+
+    @Transactional
+public ContractValidationResponse validateWithAIForLanguage(Long submissionId, Long userId) {
+    // Step 1 — Check language from draft payload
+    ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
+            .orElseThrow(() -> new RuntimeException("Draft not found. Please save first."));
+
+    boolean isArabic = false;
+    String originalPayloadJson = draft.getContractPayloadJson();
+
+    try {
+        JsonNode root = objectMapper.readTree(originalPayloadJson);
+        outer:
+        if (root.has("sections")) {
+            for (JsonNode section : root.get("sections")) {
+                JsonNode clauses = section.get("clauses");
+                if (clauses != null && clauses.isArray()) {
+                    for (JsonNode clause : clauses) {
+                        String text = clause.path("text").asText().trim();
+                        if (text.length() >= 10) {
+                            isArabic = translationService.isArabic(text);
+                            break outer;
+                        }
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        log.error("Language detection failed: {}", e.getMessage());
+    }
+
+    // Step 2 — If English, skip translation entirely
+    if (!isArabic) {
+        log.info("English input detected — skipping translation layer");
+        return validateWithAI(submissionId, userId);
+    }
+
+    // Step 3 — Arabic path: translate clauses to English in payload temporarily
+    log.info("Arabic input detected — translating clauses to English for AI model");
+    try {
+        com.fasterxml.jackson.databind.node.ObjectNode root =
+                (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(originalPayloadJson);
+
+        if (root.has("sections")) {
+            for (JsonNode section : root.get("sections")) {
+                JsonNode clauses = section.get("clauses");
+                if (clauses != null && clauses.isArray()) {
+                    for (JsonNode clause : clauses) {
+                        com.fasterxml.jackson.databind.node.ObjectNode clauseNode =
+                                (com.fasterxml.jackson.databind.node.ObjectNode) clause;
+                        String arabicText = clauseNode.path("text").asText().trim();
+                        if (arabicText.length() >= 10) {
+                            String englishText = translationService.translateToEnglish(arabicText);
+                            clauseNode.put("text", englishText);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Step 4 — Save English payload temporarily so validateWithAI() reads it
+        draft.setContractPayloadJson(objectMapper.writeValueAsString(root));
+        draftRepository.save(draft);
+
+    } catch (Exception e) {
+        log.error("Failed to translate payload to English: {}", e.getMessage());
+        throw new RuntimeException("Translation pre-processing failed: " + e.getMessage());
+    }
+
+    // Step 5 — Call validateWithAI() untouched
+    ContractValidationResponse response = validateWithAI(submissionId, userId);
+
+    // Step 6 — Restore original Arabic payload in the draft
+    try {
+        ContractDraft draftToRestore = draftRepository.findBySubmissionId(submissionId)
+                .orElseThrow(() -> new RuntimeException("Draft not found after validation"));
+        draftToRestore.setContractPayloadJson(originalPayloadJson);
+        draftRepository.save(draftToRestore);
+        log.info("Original Arabic payload restored for submission {}", submissionId);
+    } catch (Exception e) {
+        log.error("Failed to restore Arabic payload: {}", e.getMessage());
+    }
+
+    // Step 7 — Translate all violation fields back to Arabic
+   // Step 7 — Translate all violation fields back to Arabic
+if (response.getViolations() != null && !response.getViolations().isEmpty()) {
+    log.info("Translating {} violations back to Arabic", response.getViolations().size());
+    List<ViolationDTO> arabicViolations =
+            translationService.translateViolationsToArabic(response.getViolations());
+    response.setViolations(arabicViolations);
+    log.info("Violations successfully translated to Arabic");
+}
+
+    return response;
+}
 }

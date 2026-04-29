@@ -72,7 +72,7 @@ public ResponseEntity<?> validateWithAI(
 ) {
     if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     try {
-        ContractValidationResponse response = mainContractService.validateWithAI(submissionId, user.getId());
+        ContractValidationResponse response = mainContractService.validateWithAIForLanguage(submissionId, user.getId());
         return ResponseEntity.ok(response);
     } catch (RuntimeException e) {
         // Return the actual error message so React knows what's up

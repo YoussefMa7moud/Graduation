@@ -46,45 +46,44 @@ public class TranslationService {
     // ─── Translation Methods ──────────────────────────────────────────────────
 
     public String translateToEnglish(String arabicText) {
-        String prompt = "You are a legal translator specializing in Egyptian law and contracts. " +
-                "Translate the following Arabic legal contract clause to English. " +
-                "Preserve all legal terminology accurately. " +
-                "Return only the translated text, nothing else, no explanations:\n\n" + arabicText;
-        return callGroq(prompt);
-    }
+    if (arabicText == null || arabicText.isBlank()) return arabicText;
+    
+    String prompt = "Translate the following Arabic legal contract clause to English. " +
+            "Preserve all legal terminology accurately. " +
+            "Return only the translated text, nothing else, no explanations:\n\n" + arabicText;
+    return callGroq(prompt);    
+}
 
     public String translateToArabic(String englishText) {
-        String prompt = "You are a legal translator specializing in Egyptian law and contracts. " +
-                "Translate the following English legal text to Arabic. " +
-                "Preserve all legal terminology accurately. " +
-                "Return only the translated text, nothing else, no explanations:\n\n" + englishText;
-        return callGroq(prompt);
-    }
+    if (englishText == null || englishText.isBlank()) return englishText;
+    
+    String prompt = "Translate the following legal text to Arabic. " +
+            "The text may contain legal article references, law terms, or mixed content. " +
+            "Translate everything to Arabic accurately. " +
+            "If any part is already in Arabic, keep it as is. " +
+            "Return only the translated Arabic text, nothing else:\n\n" + englishText;
+    return callGroq(prompt);
+}
 
     // ─── Batch Violation Translation ─────────────────────────────────────────
 
-    public List<ViolationDTO> translateViolationsToArabic(List<ViolationDTO> violations) {
-        for (ViolationDTO v : violations) {
-            try {
-                if (v.getClauseText() != null && !v.getClauseText().isBlank()) {
-                    v.setClauseText(translateToArabic(v.getClauseText()));
-                }
-                if (v.getReason() != null && !v.getReason().isBlank()) {
-                    v.setReason(translateToArabic(v.getReason()));
-                }
-                if (v.getSuggestion() != null && !v.getSuggestion().isBlank()) {
-                    v.setSuggestion(translateToArabic(v.getSuggestion()));
-                }
-                if (v.getType() != null && !v.getType().isBlank()) {
-                    v.setType(translateToArabic(v.getType()));
-                }
-            } catch (Exception e) {
-                log.error("Failed to translate violation for clause {}: {}", v.getClauseId(), e.getMessage());
+   public List<ViolationDTO> translateViolationsToArabic(List<ViolationDTO> violations) {
+    for (ViolationDTO v : violations) {
+        try {
+            // clauseText is already Arabic — skip translation
+            if (v.getReason() != null && !v.getReason().isBlank()) {
+                v.setReason(translateToArabic(v.getReason()));
             }
+            if (v.getSuggestion() != null && !v.getSuggestion().isBlank()) {
+                v.setSuggestion(translateToArabic(v.getSuggestion()));
+            }
+            // type stays as "LAW" — never translate
+        } catch (Exception e) {
+            log.error("Failed to translate violation for clause {}: {}", v.getClauseId(), e.getMessage());
         }
-        return violations;
     }
-
+    return violations;
+}
     // ─── Groq API Call ────────────────────────────────────────────────────────
 
     private String callGroq(String prompt) {

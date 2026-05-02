@@ -88,13 +88,13 @@ public ResponseEntity<?> validateWithAI(
 }
 
     @PostMapping("/validate/ocl")
-    public ResponseEntity<ContractValidationResponse> validateWithOCL(
+    public ResponseEntity<?> validateWithOCL(
             @RequestParam Long submissionId,
             @AuthenticationPrincipal User user
     ) {
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         try {
-            ContractValidationResponse response = mainContractService.validateWithOCL(submissionId, user.getId());
+            ContractValidationResponse response = mainContractService.validateWithOCLForLanguage(submissionId, user.getId());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

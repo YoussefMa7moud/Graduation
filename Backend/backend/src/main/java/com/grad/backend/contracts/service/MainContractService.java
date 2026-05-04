@@ -22,14 +22,20 @@ import com.grad.backend.project.DTO.NdaPartiesDTO;
 import com.grad.backend.project.entity.ProposalSubmission;
 import com.grad.backend.project.enums.ClientType;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
+import com.grad.backend.service.TranslationService;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import com.grad.backend.contracts.util.QrCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -73,6 +79,11 @@ public class MainContractService {
 
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
+    @Autowired
+    private TranslationService translationService;
 
     @SuppressWarnings("rawtypes")
     private String verifyActor(Long submissionId, Long userId) {
@@ -246,134 +257,149 @@ public class MainContractService {
                         .build());
     }
 
-    @Transactional
-    public ContractValidationResponse validateWithAI(Long submissionId, Long userId) {
-        String actor = verifyActor(submissionId, userId);
-        if (!"company".equals(actor))
-            throw new RuntimeException("Only the assigned company can validate");
+   @Transactional
+public ContractValidationResponse validateWithAI(Long submissionId, Long userId) {
+    String actor = verifyActor(submissionId, userId);
+    if (!"company".equals(actor))
+        throw new RuntimeException("Only the assigned company can validate");
 
-        try {
-            ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
-                    .orElseThrow(() -> new RuntimeException("Draft not found. Please save first."));
+    try {
+        ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
+                .orElseThrow(() -> new RuntimeException("Draft not found. Please save first."));
 
-            List<ViolationDTO> allViolations = new ArrayList<>();
-            double minCompliance = 100.0;
+        List<ViolationDTO> allViolations = new ArrayList<>();
+        double minCompliance = 100.0;
 
-            JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
-            if (root.has("sections")) {
-                for (JsonNode section : root.get("sections")) {
-                    int sectionNum = section.path("num").asInt();
-                    JsonNode clauses = section.get("clauses");
+        JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
+        if (root.has("sections")) {
+            for (JsonNode section : root.get("sections")) {
+                int sectionNum = section.path("num").asInt();
+                JsonNode clauses = section.get("clauses");
 
-                    if (clauses != null && clauses.isArray()) {
-                        int clauseIdx = 1;
-                        for (JsonNode clause : clauses) {
-                            String cId = clause.path("id").asText();
-                            String rawText = clause.path("text").asText().trim();
+                if (clauses != null && clauses.isArray()) {
+                    int clauseIdx = 1;
+                    for (JsonNode clause : clauses) {
+                        String cId = clause.path("id").asText();
+                        String rawText = clause.path("text").asText().trim();
 
-                            if (rawText.length() < 10) {
-                                clauseIdx++;
-                                continue;
-                            }
+                        if (rawText.length() < 10) {
+                            clauseIdx++;
+                            continue;
+                        }
 
-                            // FIX: Prepend numbering so AI Regex matches it: "1.1 text"
-                            String formattedText = String.format("%d.%d %s", sectionNum, clauseIdx, rawText);
+                        // Prepend numbering so AI Regex matches it: "1.1 text"
+                        String formattedText = String.format("%d.%d %s", sectionNum, clauseIdx, rawText);
 
-                            Map<String, String> requestBody = Map.of("clause", formattedText);
+                        // Detect if Arabic and translate to English before sending to AI
+                        boolean isArabic = translationService.isArabic(formattedText);
+                        String textToSend = isArabic ? translationService.translateToEnglish(formattedText) : formattedText;
 
-                            log.info("Validating Clause ID {}: {}", cId, formattedText);
+                        log.info("Validating Clause ID {} (Arabic: {}): {}", cId, isArabic, textToSend);
 
-                            try {
-                                HttpHeaders aiHeaders = new HttpHeaders();
-                                aiHeaders.setContentType(MediaType.APPLICATION_JSON);
-                                HttpEntity<Map<String, String>> aiRequest = new HttpEntity<>(requestBody, aiHeaders);
+                        Map<String, String> requestBody = Map.of("clause", textToSend);
 
-                                ResponseEntity<Map> response = restTemplate.postForEntity(
-                                        aiModelUrl, aiRequest, Map.class);
+                        try {
+                            HttpHeaders aiHeaders = new HttpHeaders();
+                            aiHeaders.setContentType(MediaType.APPLICATION_JSON);
+                            HttpEntity<Map<String, String>> aiRequest = new HttpEntity<>(requestBody, aiHeaders);
 
-                                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                                    Map<String, Object> body = response.getBody();
+                            ResponseEntity<Map> response = restTemplate.postForEntity(
+                                    aiModelUrl, aiRequest, Map.class);
 
-                                    // Modal API returns: {"result": "VERDICT: ...\nVIOLATION TYPE: ...\nLEGAL ANALYSIS: ...\nENHANCEMENT: ..."}
-                                    String resultText = (String) body.get("result");
-                                    log.info("AI response for clause {}: {}", cId, resultText);
+                            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                                Map<String, Object> body = response.getBody();
 
-                                    if (resultText != null) {
-                                        // Clean up any EOS tokens from the model
-                                        resultText = resultText.replace("<|eos_id|>", "").trim();
+                                String resultText = (String) body.get("result");
+                                log.info("AI response for clause {}: {}", cId, resultText);
 
-                                        // Parse the structured text response
-                                        String verdict = extractField(resultText, "VERDICT");
-                                        String violationType = extractField(resultText, "VIOLATION TYPE");
-                                        String legalAnalysis = extractField(resultText, "LEGAL ANALYSIS");
-                                        String enhancement = extractField(resultText, "ENHANCEMENT");
+                                if (resultText != null) {
+                                    // Clean up any EOS tokens from the model
+                                    resultText = resultText.replace("<|eos_id|>", "").trim();
 
-                                        // Check if the clause is invalid (violation detected)
-                                        boolean isInvalid = verdict != null
-                                                && (verdict.toUpperCase().contains("INVALID")
-                                                    || !verdict.toUpperCase().trim().equals("VALID"));
+                                    // Parse the structured text response
+                                    String verdict = extractField(resultText, "VERDICT");
+                                    String violationType = extractField(resultText, "VIOLATION TYPE");
+                                    String legalAnalysis = extractField(resultText, "LEGAL ANALYSIS");
+                                    String enhancement = extractField(resultText, "ENHANCEMENT");
 
-                                        if (isInvalid) {
-                                            String reason = (legalAnalysis != null && !legalAnalysis.isBlank())
-                                                    ? legalAnalysis
-                                                    : (violationType != null ? "Violation Type: " + violationType : "Violation detected by AI");
-                                            String suggestion = (enhancement != null && !enhancement.isBlank())
-                                                    ? enhancement
-                                                    : "Review this clause for compliance with Egyptian law";
+                                    // If original clause was Arabic, translate response fields back to Arabic
+                                    if (isArabic) {
+                                        violationType = translationService.translateToArabic(violationType);
+                                        legalAnalysis = translationService.translateToArabic(legalAnalysis);
+                                        enhancement = translationService.translateToArabic(enhancement);
+                                        log.info("Translated response back to Arabic for clause {}", cId);
+                                    }
 
-                                            allViolations.add(ViolationDTO.builder()
-                                                    .clauseId(cId)
-                                                    .clauseText(rawText)
-                                                    .reason(reason)
-                                                    .suggestion(suggestion)
-                                                    .type("LAW")
-                                                    .confidence(1.0)
-                                                    .build());
-                                            minCompliance = Math.min(minCompliance, 0.0);
-                                        }
+                                    // Check if the clause is invalid (violation detected)
+                                    boolean isInvalid = verdict != null
+                                            && (verdict.toUpperCase().contains("INVALID")
+                                                || !verdict.toUpperCase().trim().equals("VALID"));
+
+                                    if (isInvalid) {
+                                        String reason = (legalAnalysis != null && !legalAnalysis.isBlank())
+                                                ? legalAnalysis
+                                                : (violationType != null ? "Violation Type: " + violationType : "Violation detected by AI");
+                                        String suggestion = (enhancement != null && !enhancement.isBlank())
+                                                ? enhancement
+                                                : "Review this clause for compliance with Egyptian law";
+
+                                        allViolations.add(ViolationDTO.builder()
+                                                .clauseId(cId)
+                                                .clauseText(rawText)
+                                                .reason(reason)
+                                                .suggestion(suggestion)
+                                                .type("LAW")
+                                                .confidence(1.0)
+                                                .build());
+                                        minCompliance = Math.min(minCompliance, 0.0);
                                     }
                                 }
-                            } catch (Exception e) {
-                                log.error("AI call failed for clause {}: {}", cId, e.getMessage());
                             }
-                            clauseIdx++;
+                        } catch (Exception e) {
+                            log.error("AI call failed for clause {}: {}", cId, e.getMessage());
                         }
+                        clauseIdx++;
                     }
                 }
             }
-
-            // Merge with existing POLICY violations
-            List<ViolationDTO> combinedViolations = new ArrayList<>(allViolations);
-            if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
-                try {
-                    JsonNode jsonNode = objectMapper.readTree(draft.getValidationResultsJson());
-                    if (jsonNode.has("violations") && jsonNode.get("violations").isArray()) {
-                        for (JsonNode vNode : jsonNode.get("violations")) {
-                            ViolationDTO v = objectMapper.treeToValue(vNode, ViolationDTO.class);
-                            if ("POLICY".equals(v.getType())) combinedViolations.add(v);
-                        }
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            // Save results to DB
-            draft.setAiValidated(allViolations.isEmpty());
-            Map<String, Object> results = Map.of("violations", combinedViolations, "complianceScore", minCompliance);
-            draft.setValidationResultsJson(objectMapper.writeValueAsString(results));
-            draftRepository.save(draft);
-
-            return ContractValidationResponse.builder()
-                    .isValid(allViolations.isEmpty())
-                    .complianceScore(minCompliance)
-                    .violations(combinedViolations)
-                    .message(allViolations.isEmpty() ? "No violations detected" : "Violations found")
-                    .build();
-
-        } catch (Exception e) {
-            log.error("Global Validation Error: ", e);
-            throw new RuntimeException("AI Validation error: " + e.getMessage());
         }
+
+        // Merge with existing POLICY violations
+        List<ViolationDTO> combinedViolations = new ArrayList<>(allViolations);
+        if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
+            try {
+                JsonNode jsonNode = objectMapper.readTree(draft.getValidationResultsJson());
+                if (jsonNode.has("violations") && jsonNode.get("violations").isArray()) {
+                    for (JsonNode vNode : jsonNode.get("violations")) {
+                        ViolationDTO v = objectMapper.treeToValue(vNode, ViolationDTO.class);
+                        if ("POLICY".equals(v.getType())) combinedViolations.add(v);
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Save results to DB
+        draft.setAiValidated(allViolations.isEmpty());
+        Map<String, Object> results = Map.of("violations", combinedViolations, "complianceScore", minCompliance);
+ObjectMapper arabicMapper = new ObjectMapper();
+arabicMapper.configure(
+    com.fasterxml.jackson.core.JsonGenerator.Feature.ESCAPE_NON_ASCII, false
+);
+draft.setValidationResultsJson(arabicMapper.writeValueAsString(results));
+        draftRepository.save(draft);
+
+        return ContractValidationResponse.builder()
+                .isValid(allViolations.isEmpty())
+                .complianceScore(minCompliance)
+                .violations(combinedViolations)
+                .message(allViolations.isEmpty() ? "No violations detected" : "Violations found")
+                .build();
+
+    } catch (Exception e) {
+        log.error("Global Validation Error: ", e);
+        throw new RuntimeException("AI Validation error: " + e.getMessage());
     }
+}
 
     @Transactional
     public ContractValidationResponse validateWithOCL(Long submissionId, Long userId) {
@@ -801,4 +827,243 @@ public class MainContractService {
 
         return text.substring(valueStart, end).trim();
     }
+
+@Transactional
+public ContractValidationResponse validateWithAIForLanguage(Long submissionId, Long userId) {
+
+    ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
+            .orElseThrow(() -> new RuntimeException("Draft not found. Please save first."));
+
+    // Step 1 — Detect language from first valid clause
+    boolean isArabic = false;
+    String originalPayloadJson = draft.getContractPayloadJson();
+
+    try {
+        JsonNode root = objectMapper.readTree(originalPayloadJson);
+        outer:
+        if (root.has("sections")) {
+            for (JsonNode section : root.get("sections")) {
+                JsonNode clauses = section.get("clauses");
+                if (clauses != null && clauses.isArray()) {
+                    for (JsonNode clause : clauses) {
+                        String text = clause.path("text").asText().trim();
+                        if (text.length() >= 10) {
+                            isArabic = translationService.isArabic(text);
+                            break outer;
+                        }
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        log.error("Language detection failed: {}", e.getMessage());
+    }
+
+    // Step 2 — If English, skip translation entirely
+    if (!isArabic) {
+        log.info("English input detected — skipping translation layer");
+        return validateWithAI(submissionId, userId);
+    }
+
+    // Step 3 — Arabic path: translate all clauses to English temporarily
+    log.info("Arabic input detected — translating clauses to English for AI model");
+    try {
+        com.fasterxml.jackson.databind.node.ObjectNode root =
+                (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(originalPayloadJson);
+
+        if (root.has("sections")) {
+            for (JsonNode section : root.get("sections")) {
+                JsonNode clauses = section.get("clauses");
+                if (clauses != null && clauses.isArray()) {
+                    for (JsonNode clause : clauses) {
+                        com.fasterxml.jackson.databind.node.ObjectNode clauseNode =
+                                (com.fasterxml.jackson.databind.node.ObjectNode) clause;
+                        String arabicText = clauseNode.path("text").asText().trim();
+                        if (arabicText.length() >= 10) {
+                            String englishText = translationService.translateToEnglish(arabicText);
+                            clauseNode.put("text", englishText);
+                        }
+                    }
+                }
+            }
+        }
+
+        draft.setContractPayloadJson(objectMapper.writeValueAsString(root));
+        draftRepository.save(draft);
+
+    } catch (Exception e) {
+        log.error("Failed to translate payload to English: {}", e.getMessage());
+        throw new RuntimeException("Translation pre-processing failed: " + e.getMessage());
+    }
+
+    // Step 4 — Run AI validation with English payload
+    ContractValidationResponse response = validateWithAI(submissionId, userId);
+
+    // Step 5 — Restore original Arabic payload
+    try {
+        ContractDraft draftToRestore = draftRepository.findBySubmissionId(submissionId)
+                .orElseThrow(() -> new RuntimeException("Draft not found after validation"));
+        draftToRestore.setContractPayloadJson(originalPayloadJson);
+        draftRepository.save(draftToRestore);
+        log.info("Original Arabic payload restored for submission {}", submissionId);
+    } catch (Exception e) {
+        log.error("Failed to restore Arabic payload: {}", e.getMessage());
+    }
+
+    // Step 6 — If violations found, translate to Arabic and return
+    if (response.getViolations() != null && !response.getViolations().isEmpty()) {
+        log.info("Translating {} violations back to Arabic", response.getViolations().size());
+
+        List<ViolationDTO> arabicViolations =
+                translationService.translateViolationsToArabic(response.getViolations());
+
+        log.info("Violations successfully translated to Arabic");
+
+        // Save Arabic violations to DB
+        try {
+            ContractDraft finalDraft = draftRepository.findBySubmissionId(submissionId)
+                    .orElseThrow(() -> new RuntimeException("Draft not found"));
+
+            Map<String, Object> arabicResults = new HashMap<>();
+            arabicResults.put("violations", arabicViolations);
+            arabicResults.put("complianceScore", response.getComplianceScore());
+
+            ObjectMapper arabicMapper = new ObjectMapper();
+            arabicMapper.configure(
+                com.fasterxml.jackson.core.JsonGenerator.Feature.ESCAPE_NON_ASCII, false
+            );
+            finalDraft.setValidationResultsJson(arabicMapper.writeValueAsString(arabicResults));
+            draftRepository.saveAndFlush(finalDraft);
+            log.info("Arabic violations saved to DB for submission {}", submissionId);
+
+        } catch (Exception e) {
+            log.error("Failed to save Arabic violations to DB: {}", e.getMessage());
+        }
+
+        // Return fresh response with Arabic violations to frontend
+        return ContractValidationResponse.builder()
+                .isValid(false)
+                .complianceScore(response.getComplianceScore())
+                .violations(arabicViolations)
+                .message("Violations found")
+                .build();
+    }
+
+    // Step 7 — No violations found
+    return ContractValidationResponse.builder()
+            .isValid(true)
+            .complianceScore(100.0)
+            .violations(new ArrayList<>())
+            .message("No violations detected")
+            .build();
+}
+
+@Transactional
+public ContractValidationResponse validateWithOCLForLanguage(Long submissionId, Long userId) {
+    // Check if contract is Arabic
+    ContractDraft draft = draftRepository.findBySubmissionId(submissionId)
+            .orElseThrow(() -> new RuntimeException("Draft not found"));
+
+    boolean isArabic = false;
+    try {
+        JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
+        outer:
+        if (root.has("sections")) {
+            for (JsonNode section : root.get("sections")) {
+                JsonNode clauses = section.get("clauses");
+                if (clauses != null && clauses.isArray()) {
+                    for (JsonNode clause : clauses) {
+                        String text = clause.path("text").asText().trim();
+                        if (text.length() >= 10) {
+                            isArabic = translationService.isArabic(text);
+                            break outer;
+                        }
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        log.error("Language detection failed in OCL: {}", e.getMessage());
+    }
+
+    if (!isArabic) {
+        log.info("English input — skipping OCL translation layer");
+        return validateWithOCL(submissionId, userId);
+    }
+
+    // Arabic path — translate payload to English temporarily
+    String originalPayloadJson = draft.getContractPayloadJson();
+    try {
+        com.fasterxml.jackson.databind.node.ObjectNode root =
+                (com.fasterxml.jackson.databind.node.ObjectNode) 
+                objectMapper.readTree(originalPayloadJson);
+
+        if (root.has("sections")) {
+            for (JsonNode section : root.get("sections")) {
+                JsonNode clauses = section.get("clauses");
+                if (clauses != null && clauses.isArray()) {
+                    for (JsonNode clause : clauses) {
+                        com.fasterxml.jackson.databind.node.ObjectNode clauseNode =
+                                (com.fasterxml.jackson.databind.node.ObjectNode) clause;
+                        String arabicText = clauseNode.path("text").asText().trim();
+                        if (arabicText.length() >= 10) {
+                            clauseNode.put("text", 
+                                translationService.translateToEnglish(arabicText));
+                        }
+                    }
+                }
+            }
+        }
+
+        draft.setContractPayloadJson(objectMapper.writeValueAsString(root));
+        draftRepository.save(draft);
+
+    } catch (Exception e) {
+        log.error("OCL pre-translation failed: {}", e.getMessage());
+        throw new RuntimeException("OCL translation pre-processing failed: " + e.getMessage());
+    }
+
+    // Run OCL validation with English payload
+    ContractValidationResponse response = validateWithOCL(submissionId, userId);
+
+    // Restore Arabic payload
+    try {
+        ContractDraft toRestore = draftRepository.findBySubmissionId(submissionId)
+                .orElseThrow(() -> new RuntimeException("Draft not found"));
+        toRestore.setContractPayloadJson(originalPayloadJson);
+        draftRepository.save(toRestore);
+        log.info("Arabic payload restored after OCL for submission {}", submissionId);
+    } catch (Exception e) {
+        log.error("Failed to restore Arabic payload after OCL: {}", e.getMessage());
+    }
+
+    // Translate OCL violations back to Arabic and save
+    if (response.getViolations() != null && !response.getViolations().isEmpty()) {
+        log.info("Translating {} OCL violations to Arabic", response.getViolations().size());
+        List<ViolationDTO> arabicViolations = 
+            translationService.translateViolationsToArabic(response.getViolations());
+        response.setViolations(arabicViolations);
+
+        // Save Arabic violations to DB
+        try {
+            entityManager.flush();
+            entityManager.clear();
+            
+            ContractDraft finalDraft = draftRepository.findBySubmissionId(submissionId)
+                    .orElseThrow(() -> new RuntimeException("Draft not found"));
+            Map<String, Object> arabicResults = Map.of(
+                    "violations", arabicViolations,
+                    "complianceScore", response.getComplianceScore()
+            );
+            finalDraft.setValidationResultsJson(
+                objectMapper.writeValueAsString(arabicResults));
+            draftRepository.saveAndFlush(finalDraft);
+            log.info("Arabic OCL violations saved to DB for submission {}", submissionId);
+        } catch (Exception e) {
+            log.error("Failed to save Arabic OCL violations: {}", e.getMessage());
+        }
+    }
+
+    return response;
+}
 }

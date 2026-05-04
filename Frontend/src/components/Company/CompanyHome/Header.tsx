@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '../../../assets/logo.png';
 
 const CorporateHeader: React.FC = () => {
   const styles = {
@@ -93,10 +94,10 @@ const CorporateHeader: React.FC = () => {
     <header style={styles.header}>
       <div className="d-flex align-items-center gap-3">
         <div style={styles.brandIconBox}>
-          <i className="bi bi-building fs-5"></i>
+          <img src={logo} alt="S" style={{ height: '30px' }} />
         </div>
         <div>
-          <h1 style={styles.brandText}>LexGuard AI Corporate</h1>
+          <h1 style={styles.brandText}>SoftwareGuard Corporate</h1>
           <div style={styles.brandSub}>Company Administration Dashboard</div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import com.grad.backend.contracts.entity.ContractRecord;
 import com.grad.backend.contracts.entity.NdaSigningDraft;
 import com.grad.backend.contracts.repository.ContractRecordRepository;
 import com.grad.backend.contracts.repository.NdaSigningDraftRepository;
+import com.grad.backend.project.repository.CompanyProjectRepository;
 import com.grad.backend.events.NdaFullySignedEvent;
 import com.grad.backend.config.InternalApiConfig;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
@@ -47,6 +48,7 @@ public class ContractService {
     private final RestTemplate restTemplate;
     private final InternalApiConfig internalApiConfig;
     private final ApplicationEventPublisher eventPublisher;
+    private final CompanyProjectRepository companyProjectRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${app.frontend.url:http://localhost:5173}")
@@ -138,6 +140,7 @@ public class ContractService {
                 .clientSignedAt(draft.getClientSignedAt())
                 .clientSignatureBase64(draft.getClientSignatureBase64())
                 .companySignatureBase64(signatureBase64)
+                .contractPayloadJson(draft.getContractPayloadJson())
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);
@@ -256,14 +259,24 @@ public class ContractService {
     @Transactional(readOnly = true)
     public List<ContractRecordResponse> listRecordsByCompany(Long companyId) {
         return recordRepository.findByCompanyIdOrderBySignedAtDesc(companyId).stream()
-                .map(r -> ContractRecordResponse.builder()
-                        .id(r.getId())
-                        .submissionId(r.getSubmissionId())
-                        .contractType(r.getContractType())
-                        .fileName(r.getFileName())
-                        .signedAt(r.getSignedAt())
-                        .createdAt(r.getCreatedAt())
-                        .build())
+                .map(r -> {
+                    String projectTitle = submissionRepository.findById(r.getSubmissionId())
+                            .map(sub -> sub.getProposal().getProjectTitle())
+                            .orElse("Project #" + r.getSubmissionId());
+                    return ContractRecordResponse.builder()
+                            .id(r.getId())
+                            .submissionId(r.getSubmissionId())
+                            .contractType(r.getContractType())
+                            .fileName(r.getFileName())
+                            .signedAt(r.getSignedAt())
+                            .createdAt(r.getCreatedAt())
+                            .isAssigned(companyProjectRepository.existsByContractRecordId(r.getId()))
+                            .assignedPmName(companyProjectRepository.findByContractRecordId(r.getId())
+                                .map(cp -> cp.getProjectManager().getUser().getFirstName() + " " + cp.getProjectManager().getUser().getLastName())
+                                .orElse(null))
+                            .projectTitle(projectTitle)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 

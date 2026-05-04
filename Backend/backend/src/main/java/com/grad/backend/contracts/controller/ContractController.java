@@ -7,6 +7,11 @@ import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.contracts.dto.ContractRecordResponse;
 import com.grad.backend.contracts.dto.NdaDraftResponse;
 import com.grad.backend.contracts.dto.NdaSignRequest;
+import com.grad.backend.contracts.dto.NdaSignRequest;
+import com.grad.backend.contracts.entity.ContractDraft;
+import com.grad.backend.contracts.entity.ContractRecord;
+import com.grad.backend.contracts.repository.ContractDraftRepository;
+import com.grad.backend.contracts.repository.ContractRecordRepository;
 import com.grad.backend.contracts.service.ContractService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +30,8 @@ public class ContractController {
 
     private final ContractService contractService;
     private final CompanyEmployeeRepository companyEmployeeRepository;
+    private final ContractRecordRepository contractRecordRepository;
+    private final ContractDraftRepository contractDraftRepository;
 
     @GetMapping("/nda/draft")
     public ResponseEntity<NdaDraftResponse> getNdaDraft(
@@ -94,6 +101,23 @@ public class ContractController {
         if (pdf == null)
             return ResponseEntity.notFound().build();
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
+    }
+
+    @GetMapping(value = "/records/{id}/payload", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getRecordPayload(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        
+        Optional<ContractRecord> recordOpt = contractRecordRepository.findById(id);
+        if (recordOpt.isEmpty()) return ResponseEntity.notFound().build();
+        
+        ContractRecord record = recordOpt.get();
+        Long targetId = resolveCompanyUserId(user);
+        if (!record.getCompanyId().equals(targetId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        return ResponseEntity.ok(record.getContractPayloadJson() != null ? record.getContractPayloadJson() : "{}");
     }
 
     @GetMapping("/client/signed")

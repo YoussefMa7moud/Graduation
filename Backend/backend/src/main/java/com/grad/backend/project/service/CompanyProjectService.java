@@ -1,0 +1,123 @@
+package com.grad.backend.project.service;
+
+import com.grad.backend.Auth.entity.Company;
+import com.grad.backend.Auth.entity.ProjectManager;
+import com.grad.backend.Auth.repository.CompanyRepository;
+import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
+import com.grad.backend.Auth.repository.ProjectManagerRepository;
+import com.grad.backend.contracts.entity.ContractRecord;
+import com.grad.backend.contracts.repository.ContractRecordRepository;
+import com.grad.backend.project.DTO.AssignProjectRequest;
+import com.grad.backend.project.DTO.CompanyProjectDTO;
+import com.grad.backend.project.entity.CompanyProject;
+import com.grad.backend.project.entity.ProjectProposal;
+import com.grad.backend.project.repository.CompanyProjectRepository;
+import com.grad.backend.project.repository.ProjectProposalRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class CompanyProjectService {
+
+    private final CompanyProjectRepository companyProjectRepository;
+    private final ContractRecordRepository contractRecordRepository;
+    private final ProjectManagerRepository projectManagerRepository;
+    private final CompanyRepository companyRepository;
+    private final CompanyEmployeeRepository companyEmployeeRepository;
+    private final ProjectProposalRepository projectProposalRepository;
+
+    @Transactional
+    public CompanyProjectDTO assignProject(AssignProjectRequest request, Long companyUserId) {
+        Company company = companyRepository.findByUser_Id(companyUserId)
+                .orElseGet(() -> companyEmployeeRepository.findByUserId(companyUserId)
+                    .map(emp -> emp.getCompany())
+                    .orElseThrow(() -> new RuntimeException("Company not found for user")));
+
+        if (companyProjectRepository.existsByContractRecordId(request.getContractRecordId())) {
+            throw new RuntimeException("This contract is already assigned to a project manager.");
+        }
+
+        ContractRecord record = contractRecordRepository.findById(request.getContractRecordId())
+                .orElseThrow(() -> new RuntimeException("Contract Record not found"));
+
+        if (!"MAIN_CONTRACT".equals(record.getContractType())) {
+            throw new RuntimeException("Can only assign project managers to a main contract.");
+        }
+
+        if (!record.getCompanyId().equals(company.getId())) {
+            throw new RuntimeException("Unauthorized: Contract does not belong to this company");
+        }
+
+        ProjectManager pm = projectManagerRepository.findById(request.getProjectManagerId())
+                .orElseThrow(() -> new RuntimeException("Project Manager not found"));
+
+        if (!pm.getCompany().getId().equals(company.getId())) {
+            throw new RuntimeException("Unauthorized: Project Manager does not belong to this company");
+        }
+
+        CompanyProject project = CompanyProject.builder()
+                .contractRecord(record)
+                .projectManager(pm)
+                .companyId(company.getId())
+                .oclRules(request.getOclRules())
+                .guidelines(request.getGuidelines())
+                .status("ASSIGNED")
+                .build();
+
+        CompanyProject saved = companyProjectRepository.save(project);
+        return mapToDTO(saved);
+    }
+
+    public List<CompanyProjectDTO> getCompanyProjects(Long companyUserId) {
+        Company company = companyRepository.findByUser_Id(companyUserId)
+                .orElseGet(() -> companyEmployeeRepository.findByUserId(companyUserId)
+                    .map(emp -> emp.getCompany())
+                    .orElseThrow(() -> new RuntimeException("Company not found for user")));
+
+        return companyProjectRepository.findByCompanyId(company.getId()).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<CompanyProjectDTO> getPMProjects(Long pmUserId) {
+        // ProjectManager's id is the same as User id due to @MapsId
+        return companyProjectRepository.findByProjectManagerId(pmUserId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private CompanyProjectDTO mapToDTO(CompanyProject entity) {
+        String pmName = entity.getProjectManager().getUser().getFirstName() + " " +
+                        entity.getProjectManager().getUser().getLastName();
+        
+        Long submissionId = entity.getContractRecord().getSubmissionId();
+        
+        // Check if an NDA exists for this submissionId
+        boolean ndaSigned = contractRecordRepository.findBySubmissionId(submissionId)
+            .stream()
+            .anyMatch(r -> "NDA".equals(r.getContractType()));
+            
+        ProjectProposal proposal = projectProposalRepository.findById(submissionId).orElse(null);
+
+        return CompanyProjectDTO.builder()
+                .id(entity.getId())
+                .contractRecordId(entity.getContractRecord().getId())
+                .contractName(entity.getContractRecord().getFileName())
+                .projectManagerId(entity.getProjectManager().getId())
+                .projectManagerName(pmName)
+                .ndaSigned(ndaSigned)
+                .proposalId(submissionId)
+                .projectTitle(proposal != null ? proposal.getProjectTitle() : "Unknown Proposal")
+                .projectDescription(proposal != null ? proposal.getDescription() : "No description available")
+                .oclRules(entity.getOclRules())
+                .guidelines(entity.getGuidelines())
+                .status(entity.getStatus())
+                .createdAt(entity.getCreatedAt())
+                .build();
+    }
+}

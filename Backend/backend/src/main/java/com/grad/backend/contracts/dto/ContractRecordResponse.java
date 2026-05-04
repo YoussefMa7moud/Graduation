@@ -1,5 +1,6 @@
 package com.grad.backend.contracts.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,4 +19,8 @@ public class ContractRecordResponse {
     private String fileName;
     private LocalDateTime signedAt;
     private LocalDateTime createdAt;
+    @JsonProperty("isAssigned")
+    private boolean isAssigned;
+    private String assignedPmName;
+    private String projectTitle;
 }

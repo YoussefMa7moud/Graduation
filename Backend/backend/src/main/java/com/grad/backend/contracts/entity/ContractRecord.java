@@ -56,4 +56,7 @@ public class ContractRecord {
 
     @Column(name = "company_signatory_name")
     private String companySignatoryName;
+
+    @Column(name = "contract_payload_json", columnDefinition = "LONGTEXT")
+    private String contractPayloadJson;
 }

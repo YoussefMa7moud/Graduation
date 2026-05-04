@@ -19,7 +19,7 @@
     height: auto;
   }
   
-  .lexguard-landing-page {
+  .softwareguard-landing-page {
     font-family: 'Poppins', sans-serif;
     color: var(--navy);
     width: 100%;
@@ -117,7 +117,7 @@
     display: block !important;
   }
   
-  .lexguard-landing-page {
+  .softwareguard-landing-page {
     height: auto !important;
     min-height: 100vh;
     overflow: visible !important;

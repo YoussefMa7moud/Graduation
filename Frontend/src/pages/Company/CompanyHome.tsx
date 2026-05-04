@@ -65,7 +65,7 @@ const CompanyHome: React.FC = () => {
              <div className="mb-4">
                 <i className="bi bi-shield-check text-mint" style={{ fontSize: '4rem' }}></i>
              </div>
-             <h3 className="fw-bold mb-3">Welcome to LexGuard AI Company Portal</h3>
+             <h3 className="fw-bold mb-3">Welcome to SoftwareGuard Company Portal</h3>
              <p className="text-muted lead mx-auto" style={{ maxWidth: '600px' }}>
                You are logged in as an authorized employee. Use the navigation menu on the left to access client requests, your contract repository, or the policy engine based on your assigned permissions.
              </p>

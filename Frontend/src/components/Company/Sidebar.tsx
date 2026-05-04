@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
+import logo from '../../assets/logo.png';
 
 /**
  * Logout Button Component
@@ -56,17 +57,17 @@ const Sidebar: React.FC = () => {
 <div className="brand-logo-container">
   <div className="logo-flex">
     {/* Shield Icon Box */}
-    <div className="logo-icon-box">
-      <i className="bi bi-shield-lock-fill"></i>
+    <div className="logo-icon-box" style={{ background: 'transparent', padding: '0' }}>
+      <img src={logo} alt="S" style={{ height: '35px', width: 'auto' }} />
     </div>
-
+    
     {/* Brand Text Wrapper */}
     <div className="logo-text-wrapper">
-      <h2 className="brand-name">
-        LexGuard <span className="brand-accent">AI</span>
+      <h2 className="brand-name" style={{ fontSize: '1.2rem', marginBottom: '0' }}>
+        SoftwareGuard
       </h2>
       <small className="brand-subtext">
-        Company Portal
+        Security Portal
       </small>
     </div>
   </div>

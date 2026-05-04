@@ -10,14 +10,14 @@ const Hero: React.FC = () => {
         <div className="row align-items-center g-5">
           <div className="col-lg-6">
             <span className="badge-law mb-3">
-              <i className="bi bi-shield-check me-2"></i> NOW WITH LAW NO. 151 SUPPORT
+              <i className="bi bi-shield-check me-2"></i> ENTERPRISE SOFTWARE SECURITY
             </span>
             <h1 className="hero-main-title">
-              Automate Legal Reviews with <span className="text-highlight">AI</span> for <br />
-              Egyptian Law
+              Automate Security Reviews with <span className="text-highlight">AI</span> for <br />
+              Your Enterprise
             </h1>
             <p className="hero-description my-4">
-              LexGuard AI empowers corporate legal teams to automate contract reviews, ensuring 100% alignment with Egyptian regulatory frameworks and internal GCL policies.
+              SoftwareGuard empowers tech teams to automate software reviews, ensuring 100% alignment with industry security standards and internal compliance policies.
             </p>
             <div className="hero-btns mt-5">
               <Link to="/auth" className="btn btn-mint px-4 py-3 me-3">Get Started <i className="bi bi-arrow-right ms-2"></i></Link>

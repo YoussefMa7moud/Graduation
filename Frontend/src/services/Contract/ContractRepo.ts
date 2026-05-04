@@ -35,6 +35,8 @@ export interface ContractRecordResponse {
     fileName: string;
     signedAt: string;
     createdAt: string;
+    isAssigned: boolean;
+    assignedPmName?: string;
 }
 
 // --- Helper for Auth Headers ---

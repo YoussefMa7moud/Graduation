@@ -70,3 +70,28 @@ export const generateOCLLogic = async (
     throw error;
   }
 };
+
+export const askGroq = async (prompt: string): Promise<string> => {
+  try {
+    const groq = getGroqClient();
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.3,
+    });
+
+    const content = chatCompletion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No response from Groq AI");
+    }
+    return content;
+  } catch (error) {
+    console.error("Groq API Error:", error);
+    throw error;
+  }
+};

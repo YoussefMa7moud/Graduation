@@ -17,7 +17,7 @@ import java.util.Map;
 @Service
 public class TranslationService {
 
-    @Value("${app.groq.api.key}")
+    @Value("${app.groq.api.key:}")
     private String groqApiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -29,8 +29,23 @@ public class TranslationService {
     private static final String MODEL = "llama-3.3-70b-versatile";
 
     @PostConstruct
-    public void checkKey() {
-        log.info("Groq API Key loaded: {}", groqApiKey != null ? groqApiKey.substring(0, 6) + "..." : "NULL");
+    public void init() {
+        if (groqApiKey == null || groqApiKey.isBlank() || groqApiKey.equals("${GROQ_API_KEY}")) {
+            try {
+                java.nio.file.Path envPath = java.nio.file.Paths.get(".env");
+                if (java.nio.file.Files.exists(envPath)) {
+                    for (String line : java.nio.file.Files.readAllLines(envPath)) {
+                        if (line.startsWith("GROQ_API_KEY=")) {
+                            groqApiKey = line.substring("GROQ_API_KEY=".length()).trim();
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not read .env file manually: {}", e.getMessage());
+            }
+        }
+        log.info("Groq API Key loaded: {}", groqApiKey != null && groqApiKey.length() > 6 ? groqApiKey.substring(0, 6) + "..." : "NULL");
     }
 
     // ─── Language Detection ───────────────────────────────────────────────────

@@ -11,8 +11,10 @@ import com.grad.backend.project.DTO.AssignProjectRequest;
 import com.grad.backend.project.DTO.CompanyProjectDTO;
 import com.grad.backend.project.entity.CompanyProject;
 import com.grad.backend.project.entity.ProjectProposal;
+import com.grad.backend.project.entity.ProposalSubmission;
 import com.grad.backend.project.repository.CompanyProjectRepository;
 import com.grad.backend.project.repository.ProjectProposalRepository;
+import com.grad.backend.project.repository.ProposalSubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class CompanyProjectService {
     private final CompanyRepository companyRepository;
     private final CompanyEmployeeRepository companyEmployeeRepository;
     private final ProjectProposalRepository projectProposalRepository;
+    private final ProposalSubmissionRepository submissionRepository;
 
     @Transactional
     public CompanyProjectDTO assignProject(AssignProjectRequest request, Long companyUserId) {
@@ -85,24 +88,39 @@ public class CompanyProjectService {
     }
 
     public List<CompanyProjectDTO> getPMProjects(Long pmUserId) {
-        // ProjectManager's id is the same as User id due to @MapsId
         return companyProjectRepository.findByProjectManagerId(pmUserId).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
+    public CompanyProjectDTO getProjectById(Long projectId, Long pmUserId) {
+        CompanyProject project = companyProjectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (!project.getProjectManager().getId().equals(pmUserId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        return mapToDTO(project);
+    }
+
     private CompanyProjectDTO mapToDTO(CompanyProject entity) {
         String pmName = entity.getProjectManager().getUser().getFirstName() + " " +
                         entity.getProjectManager().getUser().getLastName();
-        
+
         Long submissionId = entity.getContractRecord().getSubmissionId();
-        
-        // Check if an NDA exists for this submissionId
+
+        // Check if NDA exists for this submission
         boolean ndaSigned = contractRecordRepository.findBySubmissionId(submissionId)
             .stream()
             .anyMatch(r -> "NDA".equals(r.getContractType()));
-            
-        ProjectProposal proposal = projectProposalRepository.findById(submissionId).orElse(null);
+
+        // Fetch the full ProposalSubmission to get proposal + client details
+        ProposalSubmission submission = submissionRepository.findById(submissionId).orElse(null);
+        ProjectProposal proposal = submission != null ? submission.getProposal() : null;
+
+        String clientName = null;
+        if (submission != null && submission.getClient() != null) {
+            clientName = submission.getClient().getFirstName() + " " + submission.getClient().getLastName();
+        }
 
         return CompanyProjectDTO.builder()
                 .id(entity.getId())
@@ -112,8 +130,13 @@ public class CompanyProjectService {
                 .projectManagerName(pmName)
                 .ndaSigned(ndaSigned)
                 .proposalId(submissionId)
-                .projectTitle(proposal != null ? proposal.getProjectTitle() : "Unknown Proposal")
-                .projectDescription(proposal != null ? proposal.getDescription() : "No description available")
+                .projectTitle(proposal != null ? proposal.getProjectTitle() : "Unknown Project")
+                .projectDescription(proposal != null ? proposal.getDescription() : null)
+                .projectType(proposal != null ? proposal.getProjectType() : null)
+                .mainFeatures(proposal != null ? proposal.getMainFeatures() : null)
+                .budgetUsd(proposal != null ? proposal.getBudgetUsd() : null)
+                .durationDays(proposal != null ? proposal.getDurationDays() : null)
+                .clientName(clientName)
                 .oclRules(entity.getOclRules())
                 .guidelines(entity.getGuidelines())
                 .status(entity.getStatus())

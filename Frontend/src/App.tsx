@@ -40,8 +40,9 @@ import VerifySignature from "./pages/VerifySignature";
 import PMDashboard from "./pages/ProjectManager/PMDashboard";
 import IncomingProposals from "./pages/ProjectManager/IncomingProposals";
 import PMLayout from "./components/ProjectManager/PMLayout";
-import TechnicalDocWorkspace from "./pages/ProjectManager/TechDocWorkspace";
+import TechDocWorkspace from "./pages/ProjectManager/TechDocWorkspace";
 import TechnicalDocEditor from "./pages/ProjectManager/TechnicalDocEditor";
+import PMTasks from "./pages/ProjectManager/PMTasks";
 import PMAccountSettings from "./pages/ProjectManager/PMSettings";
 import AdminLayout from "./components/Admin/AdminLayout";
 import AdminHome from "./pages/Admin/AdminHome";
@@ -462,12 +463,34 @@ const AppRoutes: React.FC = () => {
       />
     
 
+       <Route
+        path="/ProjectTasks"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <PMTasks/>
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
+    
    <Route
         path="/TechnicalDocWorkSpaces"
         element={
           <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
             <PMLayout>
-                <TechnicalDocWorkspace/>
+                <TechDocWorkspace/>
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
+
+   <Route
+        path="/TechnicalDocWorkSpaces/:id"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <TechDocWorkspace/>
             </PMLayout>  
           </RoleBasedRoute>
         }
@@ -476,6 +499,17 @@ const AppRoutes: React.FC = () => {
       
    <Route
         path="/TechDocEditor"
+        element={
+          <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
+            <PMLayout>
+                <TechnicalDocEditor/>
+            </PMLayout>  
+          </RoleBasedRoute>
+        }
+      />
+
+   <Route
+        path="/TechDocEditor/:id"
         element={
           <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
             <PMLayout>

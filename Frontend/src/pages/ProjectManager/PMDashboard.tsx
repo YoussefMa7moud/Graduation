@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PMService } from '../../services/ProjectManager/PMService';
+import { getPMProjects } from '../../services/CompanyProjectRepo';
+import type { CompanyProjectDTO } from '../../services/CompanyProjectRepo';
 import { toast } from 'react-toastify';
 import './PMDashboard.css';
 
@@ -101,11 +103,14 @@ const PMDashboard: React.FC = () => {
 
   const [proposals,      setProposals]      = useState<Proposal[]>([]);
   const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
+  const [assignedProjects, setAssignedProjects] = useState<CompanyProjectDTO[]>([]);
   const [loading,        setLoading]        = useState(true);
   const [searchTerm,     setSearchTerm]     = useState('');
-  const [filterType,     setFilterType]     = useState<'all' | 'proposals' | 'projects'>('all');
+  const [filterType,     setFilterType]     = useState<'all' | 'proposals' | 'projects' | 'assigned'>('all');
   const [error,          setError]          = useState<string | null>(null);
   const [actingId,       setActingId]       = useState<number | null>(null);
+  const [selectedGuideline, setSelectedGuideline] = useState<CompanyProjectDTO | null>(null);
+  const [selectedProposal, setSelectedProposal] = useState<CompanyProjectDTO | null>(null);
 
   const [recentActivities] = useState<RecentActivity[]>([
     { id: 1, description: "Proposal for 'Tech Doc Project A' accepted", timestamp: '2 hours ago' },
@@ -123,12 +128,14 @@ const PMDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [pending, active] = await Promise.all([
+      const [pending, active, assigned] = await Promise.all([
         PMService.getPendingProposals(),
         PMService.getActiveProjects(),
+        getPMProjects()
       ]);
       setProposals(pending);
       setActiveProjects(active);
+      setAssignedProjects(assigned || []);
     } catch (err) {
       const msg = 'Failed to load dashboard data. Please try again.';
       setError(msg);
@@ -171,9 +178,16 @@ const PMDashboard: React.FC = () => {
     );
   }, [activeProjects, searchTerm]);
 
+  const filteredAssignedProjects = useMemo(() => {
+    if (!searchTerm) return assignedProjects;
+    const q = searchTerm.toLowerCase();
+    return assignedProjects.filter(p => p.contractName.toLowerCase().includes(q));
+  }, [assignedProjects, searchTerm]);
+
   const displayedProposals = filteredProposals.slice(0, 4);
   const showProposals = filterType === 'all' || filterType === 'proposals';
   const showProjects  = filterType === 'all' || filterType === 'projects';
+  const showAssigned  = filterType === 'all' || filterType === 'assigned';
 
   // ── Loading state ────────────────────────────────────────────────────────
   if (loading) {
@@ -260,6 +274,7 @@ const PMDashboard: React.FC = () => {
           <option value="all">All</option>
           <option value="proposals">Proposals only</option>
           <option value="projects">Projects only</option>
+          <option value="assigned">Assigned Projects</option>
         </select>
       </div>
 
@@ -405,6 +420,70 @@ const PMDashboard: React.FC = () => {
         </section>
       )}
 
+      {/* ── Assigned Projects ── */}
+      {showAssigned && (
+        <section className="pmd-section">
+          <div className="pmd-section-header">
+            <div className="pmd-section-title-group">
+              <h2 className="pmd-section-title">Assigned Projects (from Contracts)</h2>
+              <span className="pmd-count-pill">{filteredAssignedProjects.length}</span>
+            </div>
+          </div>
+
+          {filteredAssignedProjects.length === 0 ? (
+            <p className="pmd-no-data">No assigned projects yet.</p>
+          ) : (
+            <div className="pmd-table-wrap">
+              <table className="pmd-table" aria-label="Assigned projects">
+                <thead>
+                  <tr>
+                    <th>Ref ID</th>
+                    <th>Contract Name</th>
+                    <th>Assigned Date</th>
+                    <th>NDA Signed</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAssignedProjects.map(project => (
+                    <tr key={project.id}>
+                      <td className="pmd-td-bold">#{project.id}</td>
+                      <td>{project.contractName}</td>
+                      <td>{new Date(project.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        {project.ndaSigned ? (
+                          <span className="badge bg-success" style={{ padding: '5px 8px', fontSize: '0.75rem' }}><IconCheck /> Yes</span>
+                        ) : (
+                          <span className="badge bg-secondary" style={{ padding: '5px 8px', fontSize: '0.75rem' }}>No</span>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            className="btn btn-sm btn-outline-primary d-flex align-items-center"
+                            onClick={() => setSelectedProposal(project)}
+                            style={{ fontSize: '0.8rem' }}
+                          >
+                            <IconDoc /> View Proposal
+                          </button>
+                          <button
+                            className="pmd-btn-workspace"
+                            onClick={() => setSelectedGuideline(project)}
+                            style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0' }}
+                          >
+                            <IconDoc /> View Guidelines
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ── Two-column bottom ── */}
       <div className="pmd-bottom-grid">
 
@@ -453,6 +532,73 @@ const PMDashboard: React.FC = () => {
         </section>
 
       </div>
+
+      {/* Guidelines Modal */}
+      {selectedGuideline && (
+        <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-navy text-white">
+                <h5 className="modal-title d-flex align-items-center">
+                  <IconDoc /> <span className="ms-2">Guidelines for {selectedGuideline.contractName}</span>
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setSelectedGuideline(null)}></button>
+              </div>
+              <div className="modal-body bg-light">
+                <div className="mb-4">
+                  <h6 className="fw-bold text-navy border-bottom pb-2">Extracted OCL Rules</h6>
+                  <pre className="p-3 bg-dark text-white rounded mt-2" style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>
+                    {selectedGuideline.oclRules}
+                  </pre>
+                </div>
+                <div>
+                  <h6 className="fw-bold text-navy border-bottom pb-2">AI Guidelines for SRS/SDD</h6>
+                  <div className="p-3 bg-white border rounded mt-2 shadow-sm" style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    {selectedGuideline.guidelines}
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer bg-white">
+                <button type="button" className="btn btn-secondary" onClick={() => setSelectedGuideline(null)}>Close</button>
+                <button type="button" className="btn btn-mint" onClick={() => { setSelectedGuideline(null); navigate('/TechnicalDocWorkSpaces'); }}>
+                  Open Workspace
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proposal Modal */}
+      {selectedProposal && (
+        <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header bg-navy text-white">
+                <h5 className="modal-title d-flex align-items-center">
+                  <IconDoc /> <span className="ms-2">Original Proposal: {selectedProposal.projectTitle}</span>
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setSelectedProposal(null)}></button>
+              </div>
+              <div className="modal-body bg-light">
+                <div className="mb-4">
+                  <h6 className="fw-bold text-navy border-bottom pb-2">Project Title</h6>
+                  <p className="mt-2 text-dark">{selectedProposal.projectTitle}</p>
+                </div>
+                <div>
+                  <h6 className="fw-bold text-navy border-bottom pb-2">Description</h6>
+                  <div className="p-3 bg-white border rounded mt-2 shadow-sm" style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    {selectedProposal.projectDescription}
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer bg-white">
+                <button type="button" className="btn btn-secondary" onClick={() => setSelectedProposal(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

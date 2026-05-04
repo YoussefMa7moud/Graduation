@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import logo from "../../assets/logo.png";
 
 interface User {
   firstName?: string;
@@ -66,11 +67,11 @@ const ClientHeader: React.FC = () => {
       <div style={{ width: "100%", maxWidth: "1280px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
         
         <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "200px" }}>
-          <div style={{ backgroundColor: "rgba(255, 255, 255, 0.1)", padding: "8px", borderRadius: "8px", color: "#ffffff", display: "flex", alignItems: "center" }}>
-            <i className="bi bi-briefcase fs-5"></i>
+          <div style={{ backgroundColor: "rgba(255, 255, 255, 0.05)", padding: "4px", borderRadius: "8px", color: "#ffffff", display: "flex", alignItems: "center" }}>
+            <img src={logo} alt="S" style={{ height: '32px' }} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#ffffff" }}>LexGuard AI</h1>
+            <h1 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#ffffff" }}>SoftwareGuard</h1>
             <div style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255, 255, 255, 0.5)", textTransform: "uppercase" }}>Client Dashboard</div>
           </div>
         </div>

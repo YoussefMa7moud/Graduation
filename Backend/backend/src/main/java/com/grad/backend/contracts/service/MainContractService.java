@@ -584,6 +584,7 @@ public class MainContractService {
                 .companySignatureBase64(signatureBase64)
                 .clientSignatoryName(clientName)
                 .companySignatoryName(companyName)
+                .contractPayloadJson(draft.getContractPayloadJson())
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);

@@ -6,6 +6,7 @@ import com.grad.backend.Auth.entity.User;
 import com.grad.backend.Auth.repository.CompanyRepository;
 import com.grad.backend.Auth.repository.ProjectManagerRepository;
 import com.grad.backend.Auth.repository.UserRepository;
+import com.grad.backend.project.repository.CompanyProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class ProjectManagerService {
     private final ProjectManagerRepository projectManagerRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
+    private final CompanyProjectRepository companyProjectRepository;
 
     public List<ProjectManager> getProjectManagers(Long companyUserId) {
         Company company = companyRepository.findByUser_Id(companyUserId)
@@ -51,6 +53,10 @@ public class ProjectManagerService {
     public void deleteProjectManager(Long pmId) {
         ProjectManager pm = projectManagerRepository.findById(pmId)
                 .orElseThrow(() -> new RuntimeException("Project Manager not found"));
+
+        if (companyProjectRepository.existsByProjectManagerId(pmId)) {
+            throw new RuntimeException("Cannot delete Project Manager because they have assigned projects.");
+        }
 
         // Delete the ProjectManager entity
         projectManagerRepository.delete(pm);

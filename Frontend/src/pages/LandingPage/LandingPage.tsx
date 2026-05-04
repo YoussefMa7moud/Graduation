@@ -11,7 +11,7 @@ import Footer from '../../components/LandingPage/Footer';
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="lexguard-landing-page page-fade-in">
+    <div className="softwareguard-landing-page page-fade-in">
       <Navbar />
       <Hero />
       <TrustedBy />

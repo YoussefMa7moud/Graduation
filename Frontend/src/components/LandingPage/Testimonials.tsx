@@ -9,7 +9,7 @@ const Testimonials: React.FC = () => {
         <div className="row g-4 mt-5">
           <div className="col-md-6">
             <div className="testimonial-card p-4 text-start bg-white rounded-4 border">
-              <p className="text-muted fst-italic mb-4">"LexGuard AI has reduced our contract review time by 70%. The GCL rule engine is a game-changer for maintaining internal policy consistency across our regional Cairo and Alexandria offices."</p>
+              <p className="text-muted fst-italic mb-4">"SoftwareGuard has reduced our software review time by 70%. The automated engine is a game-changer for maintaining consistency across our regional Cairo and Alexandria offices."</p>
               <div className="d-flex align-items-center gap-3">
                 <div className="avatar-small" id="testimonial-avatar-1"></div>
                 <div>

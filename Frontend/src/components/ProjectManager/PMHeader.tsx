@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import logo from "../../assets/logo.png";
 
 interface User {
   firstName?: string;
@@ -74,18 +75,18 @@ const PMHeader: React.FC = () => {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div
             style={{
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              padding: "8px",
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              padding: "4px",
               borderRadius: "8px",
               color: "#fff",
               display: "flex",
               alignItems: "center",
             }}
           >
-            <i className="bi bi-briefcase fs-5"></i>
+            <img src={logo} alt="S" style={{ height: '32px' }} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#ffffff" }}>LexGuard PM</h1>
+            <h1 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#ffffff" }}>SoftwareGuard PM</h1>
             <div style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Internal Management</div>
           </div>
         </div>

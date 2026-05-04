@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import TechnicalDocTemplate from '../../assets/Technical_Document_Template.pdf';
 
 // ─── Design tokens — light theme matching PMLayout (#f8fafc base) ─────────────
 const tk = {
@@ -360,7 +361,7 @@ const TechnicalDocWorkspace: React.FC = () => {
           {/* ── Document card ── */}
           <div
             className="tdw-card tdw-doc-card"
-            onClick={() => navigate('/TechDocEditor')}
+            onClick={() => window.open(TechnicalDocTemplate, '_blank')}
             style={{
               background: tk.cardBg,
               border: `1px solid ${tk.border}`,
@@ -547,7 +548,7 @@ const TechnicalDocWorkspace: React.FC = () => {
                 }}
               >
                 <IconEdit />
-                Open in editor
+                Start working on the document
               </button>
             </div>
           </div>

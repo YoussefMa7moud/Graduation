@@ -120,7 +120,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitch }) => {
               </>
             ) : (
               <>
-                Sign in to LexAI <i className="bi bi-arrow-right ms-2"></i>
+                Sign in to SoftwareGuard <i className="bi bi-arrow-right ms-2"></i>
               </>
             )}
           </button>

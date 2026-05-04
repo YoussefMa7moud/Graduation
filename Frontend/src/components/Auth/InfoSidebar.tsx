@@ -11,12 +11,12 @@ const InfoSidebar = () => {
       <div className="brand-section">
         <div className="d-flex align-items-center mb-5">
           <div className="logo-icon me-3"></div>
-          <h4 className="m-0">LexAI Egypt</h4>
+          <h4 className="m-0">SoftwareGuard</h4>
         </div>
         
-        <h1>The intelligent standard for Egyptian Law.</h1>
+        <h1>The intelligent standard for Software Security.</h1>
         <p className="lead">
-          Enterprise-grade contract analysis tailored specifically for corporate legal teams navigating the Egyptian regulatory landscape.
+          Enterprise-grade software analysis tailored specifically for corporate tech teams navigating the complex security landscape.
         </p>
       </div>
 

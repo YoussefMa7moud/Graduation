@@ -1,13 +1,17 @@
 import React from 'react';
 import './Navbar.css';
+import logo from '../../assets/logo.png';
 
 const Navbar: React.FC = () => {
   return (
     <nav className="navbar navbar-expand-lg sticky-top">
       <div className="container">
-        <a className="navbar-brand fw-bold" href="#">
-          <span className="logo-icon"><i className="bi bi-shield-check"></i></span> LexGuard AI
-          <small className="d-block brand-sub">EGYPTIAN LEGAL TECH</small>
+        <a className="navbar-brand fw-bold d-flex align-items-center" href="#">
+          <img src={logo} alt="SoftwareGuard" style={{ height: '35px', marginRight: '10px' }} />
+          <div>
+            SoftwareGuard
+            <small className="d-block brand-sub">PREMIUM SOFTWARE SECURITY</small>
+          </div>
         </a>
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
           <span className="navbar-toggler-icon"></span>

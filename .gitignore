@@ -5,3 +5,4 @@ Frontend/package-lock.json
 ocl/.env
 ocl/.env
 Backend/backend/.env
+Frontend/.env

@@ -37,4 +37,16 @@ public class CompanyProjectController {
         List<CompanyProjectDTO> projects = companyProjectService.getPMProjects(user.getId());
         return ResponseEntity.ok(projects);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CompanyProjectDTO> getProjectById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        try {
+            CompanyProjectDTO dto = companyProjectService.getProjectById(id, user.getId());
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

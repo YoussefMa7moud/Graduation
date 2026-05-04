@@ -361,7 +361,7 @@ const TechnicalDocWorkspace: React.FC = () => {
           {/* ── Document card ── */}
           <div
             className="tdw-card tdw-doc-card"
-            onClick={() => window.open(TechnicalDocTemplate, '_blank')}
+            onClick={() => navigate('/TechDocEditor')}
             style={{
               background: tk.cardBg,
               border: `1px solid ${tk.border}`,

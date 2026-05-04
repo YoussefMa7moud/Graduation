@@ -95,8 +95,8 @@ const PMHeader: React.FC = () => {
         <nav style={{ display: "flex", gap: "30px" }}>
           {[
             { name: "Dashboard", path: "/ProjectManagerHome"},
-            { name: "Incoming Proposals", path: "/ProposalRequests" },
-            { name: "Active Projects", path: "/TechnicalDocWorkSpaces" },
+            { name: "Project Tasks", path: "/ProjectTasks" },
+            { name: "Workspaces", path: "/TechnicalDocWorkSpaces" },
           ].map((item) => (
             <Link
               key={item.name}

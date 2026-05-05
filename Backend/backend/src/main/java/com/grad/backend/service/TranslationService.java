@@ -20,8 +20,15 @@ public class TranslationService {
     @Value("${app.groq.api.key:}")
     private String groqApiKey;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public TranslationService() {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10_000); // 10 seconds
+        factory.setReadTimeout(60_000);    // 60 seconds
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     private static final String GROQ_URL =
             "https://api.groq.com/openai/v1/chat/completions";
@@ -31,21 +38,46 @@ public class TranslationService {
     @PostConstruct
     public void init() {
         if (groqApiKey == null || groqApiKey.isBlank() || groqApiKey.equals("${GROQ_API_KEY}")) {
-            try {
-                java.nio.file.Path envPath = java.nio.file.Paths.get(".env");
-                if (java.nio.file.Files.exists(envPath)) {
-                    for (String line : java.nio.file.Files.readAllLines(envPath)) {
-                        if (line.startsWith("GROQ_API_KEY=")) {
-                            groqApiKey = line.substring("GROQ_API_KEY=".length()).trim();
-                            break;
+            log.info("Groq API Key not found in environment. Attempting to load from .env file...");
+            
+            // Try multiple locations for .env
+            String[] possiblePaths = {
+                ".env",
+                "Backend/backend/.env",
+                "backend/.env",
+                "../.env"
+            };
+
+            for (String pathStr : possiblePaths) {
+                try {
+                    java.nio.file.Path envPath = java.nio.file.Paths.get(pathStr);
+                    if (java.nio.file.Files.exists(envPath)) {
+                        log.info("Found .env file at: {}", envPath.toAbsolutePath());
+                        for (String line : java.nio.file.Files.readAllLines(envPath)) {
+                            line = line.trim();
+                            if (line.startsWith("GROQ_API_KEY=")) {
+                                groqApiKey = line.substring("GROQ_API_KEY=".length()).trim();
+                                // Remove quotes if present
+                                if (groqApiKey.startsWith("\"") && groqApiKey.endsWith("\"")) {
+                                    groqApiKey = groqApiKey.substring(1, groqApiKey.length() - 1);
+                                }
+                                log.info("Successfully loaded GROQ_API_KEY from {}", pathStr);
+                                break;
+                            }
                         }
+                        if (groqApiKey != null && !groqApiKey.isBlank()) break;
                     }
+                } catch (Exception e) {
+                    log.warn("Failed to read .env at {}: {}", pathStr, e.getMessage());
                 }
-            } catch (Exception e) {
-                log.warn("Could not read .env file manually: {}", e.getMessage());
             }
         }
-        log.info("Groq API Key loaded: {}", groqApiKey != null && groqApiKey.length() > 6 ? groqApiKey.substring(0, 6) + "..." : "NULL");
+        
+        if (groqApiKey != null && groqApiKey.length() > 6) {
+            log.info("Groq API Key initialized: {}...", groqApiKey.substring(0, 6));
+        } else {
+            log.error("Groq API Key initialization FAILED. Translation service will not work.");
+        }
     }
 
     // ─── Language Detection ───────────────────────────────────────────────────
@@ -102,7 +134,13 @@ public class TranslationService {
     // ─── Groq API Call ────────────────────────────────────────────────────────
 
     private String callGroq(String prompt) {
+        if (groqApiKey == null || groqApiKey.isBlank()) {
+            log.error("Groq API Key is missing! Translation will fail.");
+            throw new RuntimeException("Translation service not configured (missing API key)");
+        }
+
         try {
+            log.debug("Calling Groq with prompt: {}", prompt.substring(0, Math.min(prompt.length(), 50)) + "...");
             Map<String, Object> message = Map.of(
                     "role", "user",
                     "content", prompt
@@ -112,7 +150,7 @@ public class TranslationService {
                     "model", MODEL,
                     "messages", List.of(message),
                     "temperature", 0.1,
-                    "max_tokens", 1024
+                    "max_tokens", 2048 // Increased for longer legal clauses
             );
 
             HttpHeaders headers = new HttpHeaders();
@@ -126,17 +164,25 @@ public class TranslationService {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 JsonNode root = objectMapper.readTree(response.getBody());
-                return root.path("choices")
+                String content = root.path("choices")
                         .path(0)
                         .path("message")
                         .path("content")
                         .asText();
+                
+                if (content == null || content.isBlank()) {
+                    log.warn("Groq returned empty content for prompt");
+                    throw new RuntimeException("Translation returned empty response");
+                }
+                return content;
+            } else {
+                log.error("Groq API returned error status: {}", response.getStatusCode());
+                throw new RuntimeException("Groq API error: " + response.getStatusCode());
             }
 
         } catch (Exception e) {
             log.error("Groq API call failed: {}", e.getMessage());
             throw new RuntimeException("Translation failed: " + e.getMessage());
         }
-        throw new RuntimeException("Translation returned empty response");
     }
 }

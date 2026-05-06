@@ -94,6 +94,12 @@ public class TranslationService {
     public String translateToEnglish(String arabicText) {
     if (arabicText == null || arabicText.isBlank()) return arabicText;
     
+    // If it's already primarily English, don't waste an API call
+    if (!isArabic(arabicText)) {
+        log.debug("Text is already English, skipping translation");
+        return arabicText;
+    }
+    
     String prompt = "Translate the following Arabic legal contract clause to English. " +
             "Preserve all legal terminology accurately. " +
             "Return only the translated text, nothing else, no explanations:\n\n" + arabicText;
@@ -102,6 +108,12 @@ public class TranslationService {
 
     public String translateToArabic(String englishText) {
     if (englishText == null || englishText.isBlank()) return englishText;
+    
+    // If it's already primarily Arabic, don't waste an API call
+    if (isArabic(englishText)) {
+        log.debug("Text is already Arabic, skipping translation");
+        return englishText;
+    }
     
     String prompt = "Translate the following legal text to Arabic. " +
             "The text may contain legal article references, law terms, or mixed content. " +

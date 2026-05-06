@@ -364,7 +364,14 @@ const CompanyWorkspace: React.FC = () => {
       await saveDraft();
       
       // Call sequentially to merge validation objects properly in backend
-      await validateWithAI(submissionId);
+      const aiResult = await validateWithAI(submissionId);
+      if (aiResult.violations && aiResult.violations.length > 0) {
+        const unique = getUniqueViolations(aiResult.violations);
+        setViolations(unique);
+        applyViolationsToClauses(unique);
+        setIsValidated(true);
+      }
+      
       const result = await validateWithOCL(submissionId);
       
       if (result.violations && result.violations.length > 0) {
@@ -373,9 +380,13 @@ const CompanyWorkspace: React.FC = () => {
         applyViolationsToClauses(uniqueViolations);
         setIsValidated(true);
       } else {
-        setViolations([]);
-        applyViolationsToClauses([]);
-        setIsValidated(true);
+        // If OCL returns empty but AI found something, don't clear it!
+        // But the backend now merges them, so result.violations should contain AI results too.
+        if (!aiResult.violations || aiResult.violations.length === 0) {
+          setViolations([]);
+          applyViolationsToClauses([]);
+          setIsValidated(true);
+        }
       }
 
       // Snapshot the validated payload so we can detect post-validation edits

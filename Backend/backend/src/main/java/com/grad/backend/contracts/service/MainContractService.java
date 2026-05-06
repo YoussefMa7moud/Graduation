@@ -391,24 +391,17 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         }
 
         // Merge with existing POLICY violations
-        List<ViolationDTO> combinedViolations = new ArrayList<>(allViolations);
-        if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
-            try {
-                JsonNode jsonNode = objectMapper.readTree(draft.getValidationResultsJson());
-                if (jsonNode.has("violations") && jsonNode.get("violations").isArray()) {
-                    for (JsonNode vNode : jsonNode.get("violations")) {
-                        ViolationDTO v = objectMapper.treeToValue(vNode, ViolationDTO.class);
-                        if ("POLICY".equals(v.getType())) combinedViolations.add(v);
-                    }
-                }
-            } catch (Exception ignored) {}
-        }
+        List<ViolationDTO> combinedViolations = mergeViolations(draft.getValidationResultsJson(), allViolations, "LAW");
 
         // Save results to DB
         draft.setAiValidated(allViolations.isEmpty());
+        
+        double currentScore = allViolations.isEmpty() ? 100.0 : 0.0;
+        double mergedScore = mergeComplianceScore(draft.getValidationResultsJson(), currentScore);
+
         Map<String, Object> results = new HashMap<>();
         results.put("violations", combinedViolations);
-        results.put("complianceScore", minCompliance);
+        results.put("complianceScore", mergedScore);
 
         ObjectMapper arabicMapper = new ObjectMapper();
         arabicMapper.configure(
@@ -418,8 +411,8 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         draftRepository.save(draft);
 
         return ContractValidationResponse.builder()
-                .isValid(allViolations.isEmpty())
-                .complianceScore(minCompliance)
+                .isValid(allViolations.isEmpty() && mergedScore >= 100.0)
+                .complianceScore(mergedScore)
                 .violations(combinedViolations)
                 .message(allViolations.isEmpty() ? "No violations detected" : "Violations found")
                 .build();
@@ -443,12 +436,22 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
 
         if (companyPolicies.isEmpty()) {
             draft.setOclValidated(true);
+            
+            // Still need to merge existing LAW violations!
+            List<ViolationDTO> combinedViolations = mergeViolations(draft.getValidationResultsJson(), new ArrayList<>(), "POLICY");
+            double mergedScore = mergeComplianceScore(draft.getValidationResultsJson(), 100.0);
+            
+            Map<String, Object> results = new HashMap<>();
+            results.put("violations", combinedViolations);
+            results.put("complianceScore", mergedScore);
+            draft.setValidationResultsJson(objectMapper.writeValueAsString(results));
+            
             draftRepository.save(draft);
             return ContractValidationResponse.builder()
-                    .isValid(true)
-                    .complianceScore(100.0)
-                    .violations(new ArrayList<>())
-                    .message("No company policies defined. Proceeding with contract natively.")
+                    .isValid(mergedScore >= 100.0)
+                    .complianceScore(mergedScore)
+                    .violations(combinedViolations)
+                    .message("No company policies defined. Proceeding with existing LAW results.")
                     .build();
         }
 
@@ -509,39 +512,10 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                 for (ViolationDTO v : oclViolations) { v.setType("POLICY"); }
 
                 // Merge with existing LAW violations
-                List<ViolationDTO> combinedViolations = new ArrayList<>(oclViolations);
-                if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
-                    try {
-                        JsonNode jsonNode = objectMapper.readTree(draft.getValidationResultsJson());
-                        if (jsonNode.has("violations") && jsonNode.get("violations").isArray()) {
-                            int lawCount = 0;
-                            for (JsonNode vNode : jsonNode.get("violations")) {
-                                ViolationDTO v = objectMapper.treeToValue(vNode, ViolationDTO.class);
-                                if ("LAW".equals(v.getType())) {
-                                    combinedViolations.add(v);
-                                    lawCount++;
-                                }
-                            }
-                            log.info("Merged {} existing LAW violations from AI into OCL results", lawCount);
-                        }
-                    } catch (Exception e) {
-                        log.warn("Failed to merge existing violations: {}", e.getMessage());
-                    }
-                }
+                List<ViolationDTO> combinedViolations = mergeViolations(draft.getValidationResultsJson(), oclViolations, "POLICY");
                 
                 double currentScore = isValid ? 100.0 : 0.0;
-                double mergedScore = currentScore;
-                
-                if (draft.getValidationResultsJson() != null && !draft.getValidationResultsJson().isBlank()) {
-                    try {
-                        JsonNode jsonNode = objectMapper.readTree(draft.getValidationResultsJson());
-                        if (jsonNode.has("complianceScore")) {
-                            double existingScore = jsonNode.get("complianceScore").asDouble();
-                            mergedScore = Math.min(existingScore, currentScore);
-                            log.info("Merged compliance score: existing={}, current={}, final={}", existingScore, currentScore, mergedScore);
-                        }
-                    } catch (Exception ignored) {}
-                }
+                double mergedScore = mergeComplianceScore(draft.getValidationResultsJson(), currentScore);
 
                 Map<String, Object> results = new HashMap<>();
                 results.put("violations", combinedViolations);
@@ -859,28 +833,38 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         if (text == null || fieldName == null) return null;
 
         // Try to parse as JSON first if it looks like JSON
-        if (text.trim().startsWith("{") && text.trim().endsWith("}")) {
+        String trimmed = text.trim();
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
             try {
-                JsonNode node = objectMapper.readTree(text);
+                JsonNode node = objectMapper.readTree(trimmed);
                 String[] fieldNames = { fieldName, fieldName.replace(" ", "_"), fieldName.replace(" ", "") };
                 for (String fn : fieldNames) {
                     if (node.has(fn)) return node.get(fn).asText();
                     if (node.has(fn.toLowerCase())) return node.get(fn.toLowerCase()).asText();
+                    if (node.has(fn.toUpperCase())) return node.get(fn.toUpperCase()).asText();
                 }
             } catch (Exception e) {
                 log.debug("Failed to parse field '{}' from JSON (falling back to text): {}", fieldName, e.getMessage());
             }
         }
 
+        // Improved Regex based extraction
+        // Handles: "VERDICT: value", "**VERDICT:** value", "VERDICT : value", etc.
+        String patternString = "(?i)(?:\\*\\*|__)?" + fieldName + "(?:\\*\\*|__)?\\s*:\\s*(.*?)(?=\\s*(?:\\*\\*|__)?[A-Z\\s]+(?:\\*\\*|__)?\\s*:|$)";
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(patternString, java.util.regex.Pattern.DOTALL);
+        java.util.regex.Matcher matcher = pattern.matcher(text);
+
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+
+        // Fallback to old method if regex fails
         String[] knownFields = {"VERDICT", "VIOLATION TYPE", "LEGAL ANALYSIS", "ENHANCEMENT"};
         String marker = fieldName.toUpperCase() + ":";
-
         int start = text.toUpperCase().indexOf(marker);
         if (start < 0) return null;
 
         int valueStart = start + marker.length();
-
-        // Find the next field marker to determine where this field's value ends
         int end = text.length();
         for (String field : knownFields) {
             if (field.equalsIgnoreCase(fieldName)) continue;
@@ -892,6 +876,48 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         }
 
         return text.substring(valueStart, end).trim();
+    }
+
+    private List<ViolationDTO> mergeViolations(String existingResultsJson, List<ViolationDTO> newViolations, String typeToReplace) {
+        List<ViolationDTO> combined = new ArrayList<>(newViolations);
+        if (existingResultsJson == null || existingResultsJson.isBlank()) {
+            return combined;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(existingResultsJson);
+            if (root.has("violations") && root.get("violations").isArray()) {
+                for (JsonNode node : root.get("violations")) {
+                    ViolationDTO v = objectMapper.treeToValue(node, ViolationDTO.class);
+                    if (v != null && !typeToReplace.equals(v.getType())) {
+                        combined.add(v);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to merge violations: {}", e.getMessage());
+        }
+        // Deduplicate by clauseId and reason
+        return combined.stream()
+                .filter(v -> v != null && v.getClauseId() != null)
+                .collect(Collectors.toMap(
+                        v -> v.getClauseId() + ":" + v.getReason(),
+                        v -> v,
+                        (v1, v2) -> v1
+                )).values().stream().collect(Collectors.toList());
+    }
+
+    private double mergeComplianceScore(String existingResultsJson, double currentScore) {
+        if (existingResultsJson == null || existingResultsJson.isBlank()) {
+            return currentScore;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(existingResultsJson);
+            if (root.has("complianceScore")) {
+                double existingScore = root.get("complianceScore").asDouble();
+                return Math.min(existingScore, currentScore);
+            }
+        } catch (Exception ignored) {}
+        return currentScore;
     }
 
 @Transactional

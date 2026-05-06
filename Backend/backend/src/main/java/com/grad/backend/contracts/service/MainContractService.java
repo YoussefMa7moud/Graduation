@@ -279,7 +279,6 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
             log.error("Failed to parse contract payload JSON for submission {}: {}", submissionId, e.getMessage());
             throw new RuntimeException("Invalid contract format. Please check the document content.");
         }
-
         if (root.has("sections")) {
             for (JsonNode section : root.get("sections")) {
                 int sectionNum = section.path("num").asInt();
@@ -340,7 +339,6 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                                     String enhancement = extractField(resultText, "ENHANCEMENT");
 
                                     log.info("Clause {}: Extracted Verdict='{}', ViolationType='{}'", cId, verdict, violationType);
-
                                     // If original clause was Arabic, translate response fields back to Arabic
                                     if (isArabic) {
                                         violationType = translationService.translateToArabic(violationType);
@@ -408,7 +406,6 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
 
         // Save results to DB
         draft.setAiValidated(allViolations.isEmpty());
-        
         Map<String, Object> results = new HashMap<>();
         results.put("violations", combinedViolations);
         results.put("complianceScore", minCompliance);
@@ -861,6 +858,7 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
     private String extractField(String text, String fieldName) {
         if (text == null || fieldName == null) return null;
 
+<<<<<<< HEAD
         // Try to parse as JSON first if it looks like JSON
         if (text.trim().startsWith("{") && text.trim().endsWith("}")) {
             try {
@@ -879,6 +877,12 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         String marker = fieldName.toUpperCase() + ":";
 
         int start = text.toUpperCase().indexOf(marker);
+=======
+        String[] knownFields = {"VERDICT", "VIOLATION TYPE", "LEGAL ANALYSIS", "ENHANCEMENT"};
+        String marker = fieldName + ":";
+
+        int start = text.toUpperCase().indexOf(marker.toUpperCase());
+>>>>>>> 196b2162db89f8d287f1d5cea57b6d53d8f451db
         if (start < 0) return null;
 
         int valueStart = start + marker.length();
@@ -887,8 +891,13 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         int end = text.length();
         for (String field : knownFields) {
             if (field.equalsIgnoreCase(fieldName)) continue;
+<<<<<<< HEAD
             String nextMarker = field.toUpperCase() + ":";
             int nextIdx = text.toUpperCase().indexOf(nextMarker, valueStart);
+=======
+            String nextMarker = field + ":";
+            int nextIdx = text.toUpperCase().indexOf(nextMarker.toUpperCase(), valueStart);
+>>>>>>> 196b2162db89f8d287f1d5cea57b6d53d8f451db
             if (nextIdx > 0 && nextIdx < end) {
                 end = nextIdx;
             }
@@ -966,6 +975,7 @@ public ContractValidationResponse validateWithAIForLanguage(Long submissionId, L
     }
 
     // Step 4 — Run AI validation with English payload
+<<<<<<< HEAD
     ContractValidationResponse response;
     try {
         response = validateWithAI(submissionId, userId);
@@ -977,6 +987,20 @@ public ContractValidationResponse validateWithAIForLanguage(Long submissionId, L
 
     // Step 5 — Restore original Arabic payload
     restoreArabicPayload(submissionId, originalPayloadJson);
+=======
+    ContractValidationResponse response = validateWithAI(submissionId, userId);
+
+    // Step 5 — Restore original Arabic payload
+    try {
+        ContractDraft draftToRestore = draftRepository.findBySubmissionId(submissionId)
+                .orElseThrow(() -> new RuntimeException("Draft not found after validation"));
+        draftToRestore.setContractPayloadJson(originalPayloadJson);
+        draftRepository.save(draftToRestore);
+        log.info("Original Arabic payload restored for submission {}", submissionId);
+    } catch (Exception e) {
+        log.error("Failed to restore Arabic payload: {}", e.getMessage());
+    }
+>>>>>>> 196b2162db89f8d287f1d5cea57b6d53d8f451db
 
     // Step 6 — If violations found, translate to Arabic and return
     if (response.getViolations() != null && !response.getViolations().isEmpty()) {
@@ -1017,9 +1041,19 @@ public ContractValidationResponse validateWithAIForLanguage(Long submissionId, L
                 .build();
     }
 
+<<<<<<< HEAD
     // Step 7 — No NEW violations found by OCL, but return merged ones (AI violations might still exist)
     log.info("No new OCL violations found. Returning merged response with {} total violations.", response.getViolations().size());
     return response;
+=======
+    // Step 7 — No violations found
+    return ContractValidationResponse.builder()
+            .isValid(true)
+            .complianceScore(100.0)
+            .violations(new ArrayList<>())
+            .message("No violations detected")
+            .build();
+>>>>>>> 196b2162db89f8d287f1d5cea57b6d53d8f451db
 }
 
 @Transactional
@@ -1088,6 +1122,7 @@ public ContractValidationResponse validateWithOCLForLanguage(Long submissionId, 
     }
 
     // Run OCL validation with English payload
+<<<<<<< HEAD
     ContractValidationResponse response;
     try {
         response = validateWithOCL(submissionId, userId);
@@ -1099,6 +1134,20 @@ public ContractValidationResponse validateWithOCLForLanguage(Long submissionId, 
 
     // Restore Arabic payload
     restoreArabicPayload(submissionId, originalPayloadJson);
+=======
+    ContractValidationResponse response = validateWithOCL(submissionId, userId);
+
+    // Restore Arabic payload
+    try {
+        ContractDraft toRestore = draftRepository.findBySubmissionId(submissionId)
+                .orElseThrow(() -> new RuntimeException("Draft not found"));
+        toRestore.setContractPayloadJson(originalPayloadJson);
+        draftRepository.save(toRestore);
+        log.info("Arabic payload restored after OCL for submission {}", submissionId);
+    } catch (Exception e) {
+        log.error("Failed to restore Arabic payload after OCL: {}", e.getMessage());
+    }
+>>>>>>> 196b2162db89f8d287f1d5cea57b6d53d8f451db
 
     // Translate OCL violations back to Arabic and save
     if (response.getViolations() != null && !response.getViolations().isEmpty()) {
@@ -1129,6 +1178,7 @@ public ContractValidationResponse validateWithOCLForLanguage(Long submissionId, 
 
     return response;
 }
+<<<<<<< HEAD
 
 private void restoreArabicPayload(Long submissionId, String originalPayloadJson) {
     try {
@@ -1141,4 +1191,6 @@ private void restoreArabicPayload(Long submissionId, String originalPayloadJson)
         log.error("Failed to restore payload for submission {}: {}", submissionId, e.getMessage());
     }
 }
+=======
+>>>>>>> 196b2162db89f8d287f1d5cea57b6d53d8f451db
 }

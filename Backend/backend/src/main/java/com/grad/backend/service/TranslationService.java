@@ -29,7 +29,6 @@ public class TranslationService {
         factory.setReadTimeout(60_000);    // 60 seconds
         this.restTemplate = new RestTemplate(factory);
     }
-
     private static final String GROQ_URL =
             "https://api.groq.com/openai/v1/chat/completions";
 

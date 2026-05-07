@@ -760,7 +760,7 @@ const CompanyWorkspace: React.FC = () => {
                 )}
 
                 {/* 3. Success State: 0 Violations */}
-                {isValidated && violations.length === 0 && (
+                {!isValidatingAI && isValidated && violations.length === 0 && (
                   <div className="intel-placeholder success-state">
                     <div className="placeholder-icon success"><i className="bi bi-check-circle-fill"></i></div>
                     <h4>Compliant Draft</h4>
@@ -770,7 +770,7 @@ const CompanyWorkspace: React.FC = () => {
                 )}
 
                 {/* 4. Violation List */}
-                {isValidated && violations.length > 0 && (
+                {!isValidatingAI && isValidated && violations.length > 0 && (
                   <div className="violation-list">
                     <div className="intel-summary mb-3">
                       <i className="bi bi-exclamation-triangle-fill text-warning me-2"></i>

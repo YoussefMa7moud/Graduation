@@ -86,6 +86,42 @@ public class MainContractService {
     @Autowired
     private TranslationService translationService;
 
+    // Section 10 (Applicable Law) is fixed boilerplate and must never be validated/flagged.
+    private boolean shouldSkipValidationSection(int sectionNum, String sectionTitle) {
+        if (sectionNum == 10) return true;
+        if (sectionTitle == null) return false;
+        String t = sectionTitle.trim().toLowerCase();
+        return t.equals("applicable law") || t.equals("governing law");
+    }
+
+    private boolean looksCompliantMessage(String text) {
+        if (text == null) return false;
+        String s = text.trim().toLowerCase();
+        return s.contains("no changes required")
+                || s.contains("compliant with egyptian law")
+                || s.contains("this clause is compliant")
+                || s.contains("لا يوجد تغييرات مطلوبة")
+                || s.contains("هذا البند متوافق");
+    }
+
+    private boolean looksViolationMessage(String text) {
+        if (text == null) return false;
+        String s = text.trim().toLowerCase();
+        return s.contains("invalid")
+                || s.contains("non-compliant")
+                || s.contains("noncompliant")
+                || s.contains("violation")
+                || s.contains("incompliant")
+                || s.contains("breach")
+                || s.contains("مخالفة")
+                || s.contains("غير متوافق")
+                || s.contains("غير متوافقة")
+                || s.contains("غير قانوني")
+                || s.contains("غير قانونية")
+                || s.contains("ينتهك")
+                || s.contains("تنتهك");
+    }
+
     @SuppressWarnings("rawtypes")
     private String verifyActor(Long submissionId, Long userId) {
         try {
@@ -283,6 +319,12 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         if (root.has("sections")) {
             for (JsonNode section : root.get("sections")) {
                 int sectionNum = section.path("num").asInt();
+                String sectionTitle = section.path("title").asText(null);
+                if (shouldSkipValidationSection(sectionNum, sectionTitle)) {
+                    log.debug("Skipping AI validation for section {} ({})", sectionNum, sectionTitle);
+                    continue;
+                }
+
                 JsonNode clauses = section.get("clauses");
 
                 if (clauses != null && clauses.isArray()) {
@@ -348,16 +390,21 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                                         log.info("Translated response back to Arabic for clause {}", cId);
                                     }
 
-                                    // Check if the clause is invalid (violation detected)
-                                    boolean isInvalid = false;
-                                    if (verdict != null) {
-                                        String vUpper = verdict.toUpperCase().trim();
-                                        isInvalid = vUpper.contains("INVALID") 
-                                                 || vUpper.contains("NON-COMPLIANT") 
-                                                 || vUpper.contains("VIOLATION")
-                                                 || vUpper.contains("INCOMPLIANT")
-                                                 || (!vUpper.contains("VALID") && !vUpper.contains("COMPLIANT"));
-                                    }
+                                    // Determine invalidity using multiple signals because model output format can vary.
+                                    // 1) If we see explicit "compliant / no changes required", treat as valid.
+                                    boolean saysCompliant = looksCompliantMessage(verdict)
+                                            || looksCompliantMessage(violationType)
+                                            || looksCompliantMessage(legalAnalysis)
+                                            || looksCompliantMessage(enhancement)
+                                            || looksCompliantMessage(resultText);
+
+                                    // 2) Otherwise, flag invalid if any field mentions violation keywords.
+                                    boolean saysViolation = looksViolationMessage(verdict)
+                                            || looksViolationMessage(violationType)
+                                            || looksViolationMessage(legalAnalysis)
+                                            || looksViolationMessage(resultText);
+
+                                    boolean isInvalid = !saysCompliant && saysViolation;
 
                                     if (isInvalid) {
                                         log.warn("Violation detected in clause {}: verdict='{}', reason='{}'", cId, verdict, legalAnalysis);
@@ -466,7 +513,12 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
             JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
             if (root.has("sections")) {
                 for (JsonNode section : root.get("sections")) {
+                    int sectionNum = section.path("num").asInt();
                     String sectionTitle = section.path("title").asText();
+                    if (shouldSkipValidationSection(sectionNum, sectionTitle)) {
+                        log.debug("Skipping OCL validation for section {} ({})", sectionNum, sectionTitle);
+                        continue;
+                    }
                     JsonNode clauses = section.get("clauses");
                     if (clauses != null && clauses.isArray()) {
                         for (JsonNode clause : clauses) {

@@ -40,35 +40,64 @@ public class TranslationService {
             log.info("Groq API Key not found in environment. Attempting to load from .env file...");
             
             // Try multiple locations for .env
-            String[] possiblePaths = {
-                ".env",
-                "Backend/backend/.env",
-                "backend/.env",
-                "../.env"
-            };
+            java.util.List<java.nio.file.Path> candidates = new java.util.ArrayList<>();
 
-            for (String pathStr : possiblePaths) {
-                try {
-                    java.nio.file.Path envPath = java.nio.file.Paths.get(pathStr);
-                    if (java.nio.file.Files.exists(envPath)) {
-                        log.info("Found .env file at: {}", envPath.toAbsolutePath());
-                        for (String line : java.nio.file.Files.readAllLines(envPath)) {
-                            line = line.trim();
-                            if (line.startsWith("GROQ_API_KEY=")) {
-                                groqApiKey = line.substring("GROQ_API_KEY=".length()).trim();
-                                // Remove quotes if present
-                                if (groqApiKey.startsWith("\"") && groqApiKey.endsWith("\"")) {
-                                    groqApiKey = groqApiKey.substring(1, groqApiKey.length() - 1);
-                                }
-                                log.info("Successfully loaded GROQ_API_KEY from {}", pathStr);
-                                break;
-                            }
-                        }
-                        if (groqApiKey != null && !groqApiKey.isBlank()) break;
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to read .env at {}: {}", pathStr, e.getMessage());
+            // Common relative paths from various run directories
+            candidates.add(java.nio.file.Paths.get(".env"));
+            candidates.add(java.nio.file.Paths.get("Backend/backend/.env"));
+            candidates.add(java.nio.file.Paths.get("backend/.env"));
+            candidates.add(java.nio.file.Paths.get("../.env"));
+
+            // Walk up parent directories and try ".env" (covers running from target/, etc.)
+            try {
+                java.nio.file.Path here = java.nio.file.Paths.get("").toAbsolutePath().normalize();
+                java.nio.file.Path p = here;
+                for (int i = 0; i < 6 && p != null; i++) {
+                    candidates.add(p.resolve(".env"));
+                    candidates.add(p.resolve("Backend").resolve("backend").resolve(".env"));
+                    candidates.add(p.resolve("backend").resolve(".env"));
+                    p = p.getParent();
                 }
+            } catch (Exception ignored) {}
+
+            java.nio.file.Path loadedFrom = null;
+            for (java.nio.file.Path envPath : candidates) {
+                try {
+                    if (!java.nio.file.Files.exists(envPath)) continue;
+                    log.info("Found .env candidate at: {}", envPath.toAbsolutePath());
+                    for (String line : java.nio.file.Files.readAllLines(envPath)) {
+                        String raw = line;
+                        line = line.trim();
+                        if (line.isEmpty() || line.startsWith("#")) continue;
+                        // Support: "GROQ_API_KEY=...", "export GROQ_API_KEY=..."
+                        if (line.startsWith("export ")) line = line.substring("export ".length()).trim();
+
+                        if (line.startsWith("GROQ_API_KEY=")) {
+                            groqApiKey = line.substring("GROQ_API_KEY=".length()).trim();
+                            // Remove quotes if present
+                            if ((groqApiKey.startsWith("\"") && groqApiKey.endsWith("\""))
+                                    || (groqApiKey.startsWith("'") && groqApiKey.endsWith("'"))) {
+                                groqApiKey = groqApiKey.substring(1, groqApiKey.length() - 1);
+                            }
+                            if (!groqApiKey.isBlank()) {
+                                loadedFrom = envPath.toAbsolutePath();
+                                break;
+                            } else {
+                                log.warn("GROQ_API_KEY was blank in {}", envPath.toAbsolutePath());
+                            }
+                        } else if (raw != null && raw.trim().startsWith("GROQ_API_KEY")) {
+                            // Helpful diagnostics when line is malformed (e.g., spaces around '=')
+                            log.debug("Ignoring malformed GROQ_API_KEY line in {}: {}", envPath.toAbsolutePath(), raw);
+                        }
+                    }
+                    if (loadedFrom != null) break;
+                } catch (Exception e) {
+                    log.warn("Failed to read .env at {}: {}", envPath.toAbsolutePath(), e.getMessage());
+                }
+            }
+
+            if (loadedFrom != null) {
+                log.info("Successfully loaded GROQ_API_KEY from {}", loadedFrom);
             }
         }
         

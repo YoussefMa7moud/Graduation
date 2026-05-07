@@ -100,10 +100,21 @@ public class TranslationService {
         return arabicText;
     }
     
+    // If translation is not configured or fails, fall back to original text
+    if (groqApiKey == null || groqApiKey.isBlank()) {
+        log.warn("Groq API Key missing; skipping Arabic→English translation fallback");
+        return arabicText;
+    }
+
     String prompt = "Translate the following Arabic legal contract clause to English. " +
             "Preserve all legal terminology accurately. " +
             "Return only the translated text, nothing else, no explanations:\n\n" + arabicText;
-    return callGroq(prompt);    
+    try {
+        return callGroq(prompt);
+    } catch (Exception e) {
+        log.warn("Arabic→English translation failed; falling back to original text. reason={}", e.getMessage());
+        return arabicText;
+    }
 }
 
     public String translateToArabic(String englishText) {
@@ -115,12 +126,23 @@ public class TranslationService {
         return englishText;
     }
     
+    // If translation is not configured or fails, fall back to original text
+    if (groqApiKey == null || groqApiKey.isBlank()) {
+        log.warn("Groq API Key missing; skipping English→Arabic translation fallback");
+        return englishText;
+    }
+
     String prompt = "Translate the following legal text to Arabic. " +
             "The text may contain legal article references, law terms, or mixed content. " +
             "Translate everything to Arabic accurately. " +
             "If any part is already in Arabic, keep it as is. " +
             "Return only the translated Arabic text, nothing else:\n\n" + englishText;
-    return callGroq(prompt);
+    try {
+        return callGroq(prompt);
+    } catch (Exception e) {
+        log.warn("English→Arabic translation failed; falling back to original text. reason={}", e.getMessage());
+        return englishText;
+    }
 }
 
     // ─── Batch Violation Translation ─────────────────────────────────────────

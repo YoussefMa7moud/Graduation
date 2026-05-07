@@ -1,5 +1,6 @@
 package com.grad.backend.contracts.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grad.backend.Auth.entity.ClientCompany;
@@ -444,7 +445,12 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
             Map<String, Object> results = new HashMap<>();
             results.put("violations", combinedViolations);
             results.put("complianceScore", mergedScore);
-            draft.setValidationResultsJson(objectMapper.writeValueAsString(results));
+            try {
+                draft.setValidationResultsJson(objectMapper.writeValueAsString(results));
+            } catch (JsonProcessingException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             
             draftRepository.save(draft);
             return ContractValidationResponse.builder()

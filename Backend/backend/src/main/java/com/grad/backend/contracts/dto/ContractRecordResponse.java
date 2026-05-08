@@ -23,4 +23,8 @@ public class ContractRecordResponse {
     private boolean isAssigned;
     private String assignedPmName;
     private String projectTitle;
+
+    // New field for the hash
+     private String contractHash;
+
 }

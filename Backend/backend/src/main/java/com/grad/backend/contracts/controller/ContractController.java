@@ -6,6 +6,7 @@ import com.grad.backend.Auth.enums.UserRole;
 import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.contracts.dto.ContractRecordResponse;
 import com.grad.backend.contracts.dto.ContractVerifyResponse;
+import com.grad.backend.contracts.dto.RevealPasswordRequest;
 import com.grad.backend.contracts.dto.NdaDraftResponse;
 import com.grad.backend.contracts.dto.NdaSignRequest;
 import com.grad.backend.contracts.dto.NdaSignRequest;
@@ -136,6 +137,22 @@ public class ContractController {
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
+
+    @PostMapping("/records/{id}/reveal-password")
+    public ResponseEntity<?> revealPassword(
+            @PathVariable Long id,
+            @RequestBody RevealPasswordRequest request,
+            @AuthenticationPrincipal User user) {
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        Long targetId = resolveCompanyUserId(user);
+        try {
+            String pwd = contractService.revealPassword(id, targetId, user, request.getEmail(), request.getPassword());
+            return ResponseEntity.ok(Map.of("contractPassword", pwd));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
         }
     }
 

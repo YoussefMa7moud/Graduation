@@ -681,7 +681,8 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         String companyName = partiesRes.getPartyA() != null ? partiesRes.getPartyA().getSignatory() : "Company";
         String clientName = partiesRes.getPartyB() != null ? partiesRes.getPartyB().getSignatory() : "Client";
 
-        byte[] pdf = buildContractPdf(draft, submissionId);
+        String pdfPassword = Contracthashutil.generatePassword();
+        byte[] pdf = buildContractPdf(draft, submissionId, pdfPassword);
         String fileName = "Contract-Submission-" + submissionId + "-" + System.currentTimeMillis() + ".pdf";
         String hash = Contracthashutil.computeHash(
                 submissionId,
@@ -704,6 +705,7 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                 .companySignatoryName(companyName)
                 .contractPayloadJson(draft.getContractPayloadJson())
                 .contractHash(hash)
+                .contractPassword(pdfPassword)
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);
@@ -800,11 +802,17 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                 .build();
     }
 
-    private byte[] buildContractPdf(ContractDraft draft, Long submissionId) {
+    private byte[] buildContractPdf(ContractDraft draft, Long submissionId, String password) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document doc = new Document(PageSize.A4);
-            PdfWriter.getInstance(doc, baos);
+            PdfWriter writer = PdfWriter.getInstance(doc, baos);
+            writer.setEncryption(
+                password.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                (password + "_OWN").getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                PdfWriter.ALLOW_PRINTING | PdfWriter.ALLOW_COPY,
+                PdfWriter.ENCRYPTION_AES_128
+            );
             doc.open();
 
             JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());

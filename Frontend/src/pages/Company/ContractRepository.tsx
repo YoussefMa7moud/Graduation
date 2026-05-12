@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from 'axios';
-import { getContractRecords, verifyContract } from '../../services/Contract/ContractRepo';
+import { getContractRecords, verifyContract, revealContractPassword } from '../../services/Contract/ContractRepo';
 import type { ContractVerifyResponse } from '../../services/Contract/ContractRepo';
 import { assignProjectToPM } from '../../services/CompanyProjectRepo';
 import { askGroq } from '../../services/geminiService';
@@ -38,6 +38,13 @@ const ContractRepository: React.FC = () => {
   const [verifyResult, setVerifyResult] = useState<ContractVerifyResponse | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // ── Password reveal state ─────────────────────────────────────────────────
+  const [showRevealForm, setShowRevealForm] = useState(false);
+  const [revealPassInput, setRevealPassInput] = useState('');
+  const [revealedPassword, setRevealedPassword] = useState<string | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [revealError, setRevealError] = useState('');
+
   // Assignment State
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [pms, setPms] = useState<any[]>([]);
@@ -65,6 +72,14 @@ const ContractRepository: React.FC = () => {
     };
     fetchRecords();
   }, []);
+
+  // ── Reset password reveal when contract changes ───────────────────────────
+  useEffect(() => {
+    setShowRevealForm(false);
+    setRevealPassInput('');
+    setRevealedPassword(null);
+    setRevealError('');
+  }, [selected?.id]);
 
   // ── When selected contract changes, re-run verification ──────────────────
   useEffect(() => {
@@ -129,6 +144,84 @@ const ContractRepository: React.FC = () => {
       default:
         return <span className="text-muted">—</span>;
     }
+  };
+
+  const handleReveal = async () => {
+    if (!selected) return;
+    setIsRevealing(true);
+    setRevealError('');
+    try {
+      const pwd = await revealContractPassword(selected.id, user?.email || '', revealPassInput);
+      setRevealedPassword(pwd);
+      setShowRevealForm(false);
+      setRevealPassInput('');
+      setTimeout(() => setRevealedPassword(null), 30000);
+    } catch (err: any) {
+      setRevealError(err.response?.data?.error || 'Invalid credentials. Try again.');
+    } finally {
+      setIsRevealing(false);
+    }
+  };
+
+  const renderPasswordReveal = () => {
+    if (!selected?.contractHash) {
+      return <span className="text-muted fst-italic" style={{ fontSize: '0.75rem' }}>No password (legacy)</span>;
+    }
+    if (revealedPassword) {
+      return (
+        <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
+          {revealedPassword}
+          <button
+            onClick={() => navigator.clipboard.writeText(revealedPassword)}
+            title="Copy password"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#059669', padding: 0 }}
+          >
+            <i className="bi bi-clipboard"></i>
+          </button>
+        </span>
+      );
+    }
+    if (showRevealForm) {
+      return (
+        <div style={{ width: '100%' }}>
+          <input
+            type="email"
+            className="form-control form-control-sm mb-1"
+            value={user?.email || ''}
+            readOnly
+            style={{ fontSize: '0.75rem' }}
+          />
+          <input
+            type="password"
+            className="form-control form-control-sm mb-1"
+            value={revealPassInput}
+            onChange={e => setRevealPassInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleReveal()}
+            placeholder="Your account password"
+            style={{ fontSize: '0.75rem' }}
+            autoFocus
+          />
+          {revealError && <div style={{ color: '#dc2626', fontSize: '0.7rem', marginBottom: 4 }}>{revealError}</div>}
+          <div className="d-flex gap-2">
+            <button className="btn btn-sm btn-mint" onClick={handleReveal} disabled={isRevealing || !revealPassInput}>
+              {isRevealing ? <span className="spinner-border spinner-border-sm"></span> : 'Confirm'}
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={() => { setShowRevealForm(false); setRevealError(''); setRevealPassInput(''); }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        style={{ fontSize: '0.72rem', letterSpacing: 2 }}
+        onClick={() => setShowRevealForm(true)}
+      >
+        <i className="bi bi-lock-fill me-1"></i>••••••••••••
+      </button>
+    );
   };
 
   const groups: ProjectGroup[] = React.useMemo(() => {
@@ -464,6 +557,11 @@ const ContractRepository: React.FC = () => {
                       </span>
                     </div>
                   )}
+                  {/* ── PDF Password reveal ── */}
+                  <div className="audit-item" style={{ alignItems: 'flex-start' }}>
+                    <span style={{ paddingTop: 4 }}>PDF Password</span>
+                    <span className="text-end">{renderPasswordReveal()}</span>
+                  </div>
                 </div>
               </div>
             ) : (

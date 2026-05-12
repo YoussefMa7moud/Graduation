@@ -60,7 +60,9 @@ public class ContractRecord {
     @Column(name = "contract_payload_json", columnDefinition = "LONGTEXT")
     private String contractPayloadJson;
 
- //for hashing the contracts
     @Column(name = "contract_hash", length = 64)
     private String contractHash;
+
+    @Column(name = "contract_password", length = 32)
+    private String contractPassword;
 }

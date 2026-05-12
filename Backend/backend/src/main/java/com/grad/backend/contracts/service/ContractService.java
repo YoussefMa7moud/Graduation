@@ -18,9 +18,11 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.grad.backend.Auth.entity.User;
 import com.grad.backend.contracts.util.QrCodeGenerator;
 import com.grad.backend.contracts.util.Contracthashutil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,6 +52,7 @@ public class ContractService {
     private final InternalApiConfig internalApiConfig;
     private final ApplicationEventPublisher eventPublisher;
     private final CompanyProjectRepository companyProjectRepository;
+    private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${app.frontend.url:http://localhost:5173}")
@@ -129,7 +132,8 @@ public class ContractService {
             draft.setContractPayloadJson(contractPayloadJson);
         draftRepository.save(draft);
 
-        byte[] pdf = buildNdaPdf(draft, submissionId);
+        String pdfPassword = Contracthashutil.generatePassword();
+        byte[] pdf = buildNdaPdf(draft, submissionId, pdfPassword);
         String fileName = "NDA-Submission-" + submissionId + "-" + System.currentTimeMillis() + ".pdf";
         String hash = Contracthashutil.computeHash(
                 submissionId,
@@ -150,6 +154,7 @@ public class ContractService {
                 .companySignatureBase64(signatureBase64)
                 .contractPayloadJson(draft.getContractPayloadJson())
                 .contractHash(hash)
+                .contractPassword(pdfPassword)
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);
@@ -173,11 +178,17 @@ public class ContractService {
                 .build();
     }
 
-    private byte[] buildNdaPdf(NdaSigningDraft draft, Long submissionId) {
+    private byte[] buildNdaPdf(NdaSigningDraft draft, Long submissionId, String password) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Document doc = new Document(PageSize.A4);
-            PdfWriter.getInstance(doc, baos);
+            PdfWriter writer = PdfWriter.getInstance(doc, baos);
+            writer.setEncryption(
+                password.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                (password + "_OWN").getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                PdfWriter.ALLOW_PRINTING | PdfWriter.ALLOW_COPY,
+                PdfWriter.ENCRYPTION_AES_128
+            );
             doc.open();
             JsonNode root = objectMapper.readTree(draft.getContractPayloadJson());
             JsonNode partyA = root.has("partyA") ? root.get("partyA") : null;
@@ -306,6 +317,34 @@ public class ContractService {
                 .filter(sub -> sub.getClient().getId().equals(userId))
                 .map(sub -> record.getPdfBytes())
                 .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public String revealPassword(Long recordId, Long userId, User authenticatedUser,
+                                 String providedEmail, String providedPassword) {
+        // Must be the same person who is logged in
+        if (!authenticatedUser.getEmail().equalsIgnoreCase(providedEmail)) {
+            throw new RuntimeException("Credential mismatch");
+        }
+        if (!passwordEncoder.matches(providedPassword, authenticatedUser.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        ContractRecord record = recordRepository.findById(recordId)
+                .orElseThrow(() -> new RuntimeException("Contract not found"));
+
+        boolean authorized = record.getCompanyId().equals(userId)
+                || submissionRepository.findById(record.getSubmissionId())
+                        .map(sub -> sub.getClient().getId().equals(userId))
+                        .orElse(false);
+        if (!authorized) {
+            throw new RuntimeException("Forbidden");
+        }
+
+        if (record.getContractPassword() == null) {
+            throw new RuntimeException("No password set for this contract (legacy)");
+        }
+        return record.getContractPassword();
     }
 
     @Transactional(readOnly = true)

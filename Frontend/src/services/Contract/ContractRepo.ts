@@ -122,6 +122,19 @@ export const downloadContractPdf = async (recordId: number, fileName: string) =>
  *   { verified: false, status: "TAMPERED",  storedHash: "a3f9...", message: "..." }
  *   { verified: false, status: "NO_HASH",   storedHash: null,      message: "..." }
  */
+export const revealContractPassword = async (
+    recordId: number,
+    email: string,
+    password: string
+): Promise<string> => {
+    const response = await axios.post<{ contractPassword: string }>(
+        `/api/contracts/records/${recordId}/reveal-password`,
+        { email, password },
+        getAuthHeaders()
+    );
+    return response.data.contractPassword;
+};
+
 export const verifyContract = async (recordId: number): Promise<ContractVerifyResponse> => {
     try {
         const response = await axios.get<ContractVerifyResponse>(

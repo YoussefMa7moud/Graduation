@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import './SignedProjects.css';
 import api from '../../services/api';
-import { verifyContract, type ContractVerifyResponse } from '../../services/Contract/ContractRepo';
+import { verifyContract, revealContractPassword, type ContractVerifyResponse } from '../../services/Contract/ContractRepo';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SignedProjectDTO {
   id: number;
@@ -15,6 +16,7 @@ interface SignedProjectDTO {
 }
 
 const SignedProjects: React.FC = () => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState<SignedProjectDTO[]>([]);
   const [selected, setSelected] = useState<SignedProjectDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +24,13 @@ const SignedProjects: React.FC = () => {
   // ── Hash verification state ───────────────────────────────────────────────
   const [verifyResult, setVerifyResult] = useState<ContractVerifyResponse | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // ── Password reveal state ─────────────────────────────────────────────────
+  const [showRevealForm, setShowRevealForm] = useState(false);
+  const [revealPassInput, setRevealPassInput] = useState('');
+  const [revealedPassword, setRevealedPassword] = useState<string | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [revealError, setRevealError] = useState('');
 
   useEffect(() => {
     const fetchSignedProjects = async () => {
@@ -69,6 +78,98 @@ const SignedProjects: React.FC = () => {
 
     runVerify();
   }, [selected?.id]);
+
+  // ── Reset password reveal when contract changes ───────────────────────────
+  useEffect(() => {
+    setShowRevealForm(false);
+    setRevealPassInput('');
+    setRevealedPassword(null);
+    setRevealError('');
+  }, [selected?.id]);
+
+  const handleReveal = async () => {
+    if (!selected) return;
+    setIsRevealing(true);
+    setRevealError('');
+    try {
+      const pwd = await revealContractPassword(selected.id, user?.email || '', revealPassInput);
+      setRevealedPassword(pwd);
+      setShowRevealForm(false);
+      setRevealPassInput('');
+      setTimeout(() => setRevealedPassword(null), 30000);
+    } catch (err: any) {
+      setRevealError(err.response?.data?.error || 'Invalid credentials. Try again.');
+    } finally {
+      setIsRevealing(false);
+    }
+  };
+
+  const renderPasswordReveal = () => {
+    if (revealedPassword) {
+      return (
+        <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
+          {revealedPassword}
+          <button
+            onClick={() => navigator.clipboard.writeText(revealedPassword)}
+            title="Copy password"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#059669', padding: 0 }}
+          >
+            <i className="bi bi-clipboard"></i>
+          </button>
+        </span>
+      );
+    }
+    if (showRevealForm) {
+      return (
+        <div style={{ width: '100%' }}>
+          <input
+            type="email"
+            className="form-control form-control-sm mb-1"
+            value={user?.email || ''}
+            readOnly
+            style={{ fontSize: '0.75rem' }}
+          />
+          <input
+            type="password"
+            className="form-control form-control-sm mb-1"
+            value={revealPassInput}
+            onChange={e => setRevealPassInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleReveal()}
+            placeholder="Your account password"
+            style={{ fontSize: '0.75rem' }}
+            autoFocus
+          />
+          {revealError && <div style={{ color: '#dc2626', fontSize: '0.7rem', marginBottom: 4 }}>{revealError}</div>}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              className="btn btn-sm btn-success"
+              onClick={handleReveal}
+              disabled={isRevealing || !revealPassInput}
+              style={{ fontSize: '0.72rem' }}
+            >
+              {isRevealing ? <span className="spinner-border spinner-border-sm"></span> : 'Confirm'}
+            </button>
+            <button
+              className="btn btn-sm btn-outline-secondary"
+              style={{ fontSize: '0.72rem' }}
+              onClick={() => { setShowRevealForm(false); setRevealError(''); setRevealPassInput(''); }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        style={{ fontSize: '0.72rem', letterSpacing: 2 }}
+        onClick={() => setShowRevealForm(true)}
+      >
+        <i className="bi bi-lock-fill me-1"></i>••••••••••••
+      </button>
+    );
+  };
 
   // ── Helper: render the Validation row value ───────────────────────────────
   const renderValidation = () => {
@@ -217,6 +318,11 @@ const SignedProjects: React.FC = () => {
                   </span>
                 </div>
               )}
+              {/* ── PDF Password reveal ── */}
+              <div style={{ alignItems: 'flex-start' }}>
+                <span>PDF Password</span>
+                <span>{renderPasswordReveal()}</span>
+              </div>
             </div>
           </div>
         )}

@@ -3,6 +3,7 @@ package com.grad.backend.contracts.util;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 /**
  * Utility for computing a SHA-256 integrity hash over a finalized ContractRecord.
@@ -73,6 +74,20 @@ public class Contracthashutil {
             // SHA-256 is mandated by the JVM spec — this will never happen
             throw new IllegalStateException("SHA-256 algorithm not available", e);
         }
+    }
+
+    /**
+     * Generate a random 12-character alphanumeric password (no ambiguous chars).
+     * Called once at contract signing time; result is stored in the DB.
+     */
+    public static String generatePassword() {
+        String chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(12);
+        for (int i = 0; i < 12; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

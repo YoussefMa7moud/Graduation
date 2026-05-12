@@ -33,6 +33,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 import com.grad.backend.contracts.util.QrCodeGenerator;
+import com.grad.backend.contracts.util.Contracthashutil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -682,6 +683,13 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
 
         byte[] pdf = buildContractPdf(draft, submissionId);
         String fileName = "Contract-Submission-" + submissionId + "-" + System.currentTimeMillis() + ".pdf";
+        String hash = Contracthashutil.computeHash(
+                submissionId,
+                "MAIN_CONTRACT",
+                draft.getContractPayloadJson(),
+                draft.getClientSignatureBase64(),
+                signatureBase64,
+                pdf);
         ContractRecord record = ContractRecord.builder()
                 .submissionId(submissionId)
                 .companyId(userId)
@@ -695,6 +703,7 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                 .clientSignatoryName(clientName)
                 .companySignatoryName(companyName)
                 .contractPayloadJson(draft.getContractPayloadJson())
+                .contractHash(hash)
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);

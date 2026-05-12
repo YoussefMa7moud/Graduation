@@ -19,6 +19,7 @@ import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.grad.backend.contracts.util.QrCodeGenerator;
+import com.grad.backend.contracts.util.Contracthashutil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,6 +131,13 @@ public class ContractService {
 
         byte[] pdf = buildNdaPdf(draft, submissionId);
         String fileName = "NDA-Submission-" + submissionId + "-" + System.currentTimeMillis() + ".pdf";
+        String hash = Contracthashutil.computeHash(
+                submissionId,
+                "NDA",
+                draft.getContractPayloadJson(),
+                draft.getClientSignatureBase64(),
+                signatureBase64,
+                pdf);
         ContractRecord record = ContractRecord.builder()
                 .submissionId(submissionId)
                 .companyId(userId)
@@ -141,6 +149,7 @@ public class ContractService {
                 .clientSignatureBase64(draft.getClientSignatureBase64())
                 .companySignatureBase64(signatureBase64)
                 .contractPayloadJson(draft.getContractPayloadJson())
+                .contractHash(hash)
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);
@@ -275,6 +284,7 @@ public class ContractService {
                                 .map(cp -> cp.getProjectManager().getUser().getFirstName() + " " + cp.getProjectManager().getUser().getLastName())
                                 .orElse(null))
                             .projectTitle(projectTitle)
+                            .contractHash(r.getContractHash())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -296,6 +306,47 @@ public class ContractService {
                 .filter(sub -> sub.getClient().getId().equals(userId))
                 .map(sub -> record.getPdfBytes())
                 .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public com.grad.backend.contracts.dto.ContractVerifyResponse verifyContract(Long recordId, Long userId) {
+        ContractRecord record = recordRepository.findById(recordId).orElse(null);
+        if (record == null) {
+            return com.grad.backend.contracts.dto.ContractVerifyResponse.builder()
+                    .verified(false).status("NOT_FOUND")
+                    .storedHash(null).message("Contract record not found").build();
+        }
+
+        // userId is already resolved: company employee → company owner ID
+        boolean authorized = record.getCompanyId().equals(userId)
+                || submissionRepository.findById(record.getSubmissionId())
+                        .map(sub -> sub.getClient().getId().equals(userId))
+                        .orElse(false);
+        if (!authorized) {
+            throw new RuntimeException("Forbidden");
+        }
+
+        if (record.getContractHash() == null || record.getContractHash().isBlank()) {
+            return com.grad.backend.contracts.dto.ContractVerifyResponse.builder()
+                    .verified(false).status("NO_HASH")
+                    .storedHash(null).message("No hash stored for this contract").build();
+        }
+
+        String recomputed = Contracthashutil.computeHash(
+                record.getSubmissionId(),
+                record.getContractType(),
+                record.getContractPayloadJson(),
+                record.getClientSignatureBase64(),
+                record.getCompanySignatureBase64(),
+                record.getPdfBytes());
+
+        boolean verified = recomputed.equals(record.getContractHash());
+        return com.grad.backend.contracts.dto.ContractVerifyResponse.builder()
+                .verified(verified)
+                .status(verified ? "VERIFIED" : "TAMPERED")
+                .storedHash(record.getContractHash())
+                .message(verified ? "Contract integrity verified" : "Contract may have been tampered with")
+                .build();
     }
 
     @Transactional(readOnly = true)

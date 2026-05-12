@@ -5,6 +5,7 @@ import com.grad.backend.Auth.entity.User;
 import com.grad.backend.Auth.enums.UserRole;
 import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.contracts.dto.ContractRecordResponse;
+import com.grad.backend.contracts.dto.ContractVerifyResponse;
 import com.grad.backend.contracts.dto.NdaDraftResponse;
 import com.grad.backend.contracts.dto.NdaSignRequest;
 import com.grad.backend.contracts.dto.NdaSignRequest;
@@ -12,6 +13,9 @@ import com.grad.backend.contracts.entity.ContractDraft;
 import com.grad.backend.contracts.entity.ContractRecord;
 import com.grad.backend.contracts.repository.ContractDraftRepository;
 import com.grad.backend.contracts.repository.ContractRecordRepository;
+import com.grad.backend.contracts.util.Contracthashutil;
+
+import java.util.Map;
 import com.grad.backend.contracts.service.ContractService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -118,6 +122,21 @@ public class ContractController {
         }
         
         return ResponseEntity.ok(record.getContractPayloadJson() != null ? record.getContractPayloadJson() : "{}");
+    }
+
+    @GetMapping("/records/{id}/verify")
+    public ResponseEntity<ContractVerifyResponse> verifyContract(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        if (user == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        Long targetId = resolveCompanyUserId(user);
+        try {
+            ContractVerifyResponse result = contractService.verifyContract(id, targetId);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @GetMapping("/client/signed")

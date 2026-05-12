@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from 'axios';
-import { getContractRecords } from '../../services/Contract/ContractRepo';
+import { getContractRecords, verifyContract } from '../../services/Contract/ContractRepo';
+import type { ContractVerifyResponse } from '../../services/Contract/ContractRepo';
 import { assignProjectToPM } from '../../services/CompanyProjectRepo';
 import { askGroq } from '../../services/geminiService';
 import { toast } from 'react-toastify';
@@ -17,6 +18,7 @@ export interface ContractRecordResponse {
   isAssigned: boolean;
   assignedPmName?: string;
   projectTitle?: string;
+  contractHash?: string | null;
 }
 
 interface ProjectGroup {
@@ -31,6 +33,10 @@ const ContractRepository: React.FC = () => {
   const [selected, setSelected] = useState<ContractRecordResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [openGroups, setOpenGroups] = useState<Set<number>>(new Set());
+
+  // ── Hash verification state ───────────────────────────────────────────────
+  const [verifyResult, setVerifyResult] = useState<ContractVerifyResponse | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Assignment State
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -47,7 +53,6 @@ const ContractRepository: React.FC = () => {
         const data = await getContractRecords();
         if (data && Array.isArray(data)) {
           setRecords(data);
-          // Auto-expand all groups and select first contract
           const allSubmissionIds = new Set(data.map(r => r.submissionId));
           setOpenGroups(allSubmissionIds);
           if (data.length > 0) setSelected(data[0]);
@@ -61,7 +66,71 @@ const ContractRepository: React.FC = () => {
     fetchRecords();
   }, []);
 
-  // Group records by submissionId
+  // ── When selected contract changes, re-run verification ──────────────────
+  useEffect(() => {
+    if (!selected) {
+      setVerifyResult(null);
+      return;
+    }
+
+    // If the record has no hash at all (legacy), skip the API call
+    if (!selected.contractHash) {
+      setVerifyResult({
+        verified: false,
+        status: 'NO_HASH',
+        storedHash: null,
+        message: 'No hash found for this record (legacy contract)',
+      });
+      return;
+    }
+
+    // Call the verify endpoint
+    const runVerify = async () => {
+      setIsVerifying(true);
+      setVerifyResult(null);
+      try {
+        const result = await verifyContract(selected.id);
+        setVerifyResult(result);
+      } catch {
+        setVerifyResult({
+          verified: false,
+          status: 'NO_HASH',
+          storedHash: null,
+          message: 'Could not verify contract integrity',
+        });
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    runVerify();
+  }, [selected?.id]);
+
+  // ── Helper: render the Hash Status row ───────────────────────────────────
+  const renderHashStatus = () => {
+    if (isVerifying) {
+      return (
+        <span className="text-muted" style={{ fontSize: '0.75rem' }}>
+          <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+          Verifying...
+        </span>
+      );
+    }
+
+    if (!verifyResult) return <span className="text-muted">—</span>;
+
+    switch (verifyResult.status) {
+      case 'VERIFIED':
+        return <span className="text-mint fw-bold">✓ VERIFIED</span>;
+      case 'TAMPERED':
+        return <span className="text-danger fw-bold">⚠ TAMPERED</span>;
+      case 'NO_HASH':
+        return <span className="text-muted fst-italic">No hash (legacy)</span>;
+      default:
+        return <span className="text-muted">—</span>;
+    }
+  };
+
   const groups: ProjectGroup[] = React.useMemo(() => {
     const map = new Map<number, ProjectGroup>();
     records.forEach(r => {
@@ -74,7 +143,6 @@ const ContractRepository: React.FC = () => {
       }
       map.get(r.submissionId)!.contracts.push(r);
     });
-    // Sort contracts within each group: MAIN_CONTRACT first
     map.forEach(g => {
       g.contracts.sort((a, b) => {
         if (a.contractType === 'MAIN_CONTRACT') return -1;
@@ -106,20 +174,13 @@ const ContractRepository: React.FC = () => {
     }
   };
 
-  const handleAssignClick = () => {
-    setShowAssignModal(true);
-  };
-
   const confirmAssignment = async () => {
     if (!selected || selectedPmId === '') return;
-
     setIsAssigning(true);
-
     let oclRules = "No rules extracted.";
     let guidelines = "No guidelines generated.";
 
     try {
-      // 1. Get Contract Payload
       setAssignProgress("Fetching Contract Details...");
       const token = localStorage.getItem('auth_token');
       const payloadRes = await axios.get(`/api/contracts/records/${selected.id}/payload`, {
@@ -127,7 +188,6 @@ const ContractRepository: React.FC = () => {
       });
       const contractPayload = payloadRes.data;
 
-      // 2. Extract OCL Rules (AI — non-blocking on failure)
       try {
         setAssignProgress("AI is extracting OCL rules from the contract...");
         const oclPrompt = `You are a Legal AI. Extract strict OCL (Object Constraint Language) rules from the following JSON contract. Return ONLY the OCL rules as plain text.\n\nContract:\n${JSON.stringify(contractPayload)}`;
@@ -136,7 +196,6 @@ const ContractRepository: React.FC = () => {
         console.warn("OCL extraction failed, using fallback.", aiErr);
       }
 
-      // 3. Generate PM Guidelines (AI — non-blocking on failure)
       try {
         setAssignProgress("AI is generating PM guidelines for SRS/SDD...");
         const guidelinesPrompt = `You are a Technical AI. Based on the following contract and OCL rules, generate a concise set of guidelines for the Project Manager to follow when creating the SRS and SDD documents. Format as Markdown.\n\nContract:\n${JSON.stringify(contractPayload)}\n\nOCL Rules:\n${oclRules}`;
@@ -145,7 +204,6 @@ const ContractRepository: React.FC = () => {
         console.warn("Guidelines generation failed, using fallback.", aiErr);
       }
 
-      // 4. Assign to PM (critical — errors propagate to outer catch)
       setAssignProgress("Finalizing assignment...");
       await assignProjectToPM({
         contractRecordId: selected.id,
@@ -154,7 +212,6 @@ const ContractRepository: React.FC = () => {
         guidelines,
       });
 
-      // Update local state
       const pm = pms.find(p => p.id === selectedPmId);
       const pmName = pm ? `${pm.user?.firstName ?? ''} ${pm.user?.lastName ?? ''}`.trim() : 'Unknown PM';
       setRecords(prev => prev.map(p =>
@@ -185,7 +242,6 @@ const ContractRepository: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob',
       });
-
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -243,7 +299,6 @@ const ContractRepository: React.FC = () => {
 
               return (
                 <div key={group.submissionId} className="project-group">
-                  {/* Group Header */}
                   <div
                     className={`project-group-header ${isOpen ? 'open' : ''}`}
                     onClick={() => toggleGroup(group.submissionId)}
@@ -273,7 +328,6 @@ const ContractRepository: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Contracts List (collapsible) */}
                   {isOpen && (
                     <div className="project-contracts-list">
                       {group.contracts.map(contract => (
@@ -369,7 +423,7 @@ const ContractRepository: React.FC = () => {
                     ) : (
                       <button
                         className="btn btn-outline-primary w-100 mb-4"
-                        onClick={handleAssignClick}
+                        onClick={() => setShowAssignModal(true)}
                       >
                         <i className="bi bi-person-plus-fill me-2"></i> Assign to PM
                       </button>
@@ -392,10 +446,24 @@ const ContractRepository: React.FC = () => {
                     <span>Contract Type</span>
                     <span className="text-end">{selected.contractType}</span>
                   </div>
+                  {/* ── Hash Status: real verification result ── */}
                   <div className="audit-item">
                     <span>Hash Status</span>
-                    <span className="text-mint fw-bold">✓ VERIFIED</span>
+                    <span className="text-end">{renderHashStatus()}</span>
                   </div>
+                  {/* ── Show truncated hash fingerprint if available ── */}
+                  {verifyResult?.storedHash && (
+                    <div className="audit-item">
+                      <span>Fingerprint</span>
+                      <span
+                        className="text-end text-muted"
+                        style={{ fontSize: '0.65rem', fontFamily: 'monospace', wordBreak: 'break-all' }}
+                        title={verifyResult.storedHash}
+                      >
+                        {verifyResult.storedHash.substring(0, 16)}...
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

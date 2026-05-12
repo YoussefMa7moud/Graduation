@@ -478,9 +478,7 @@ const AppRoutes: React.FC = () => {
         path="/TechnicalDocWorkSpaces"
         element={
           <RoleBasedRoute allowedRoles={[...RoleGroups.PROJECT_MANAGER]}>
-            <PMLayout>
-                <TechDocWorkspace/>
-            </PMLayout>  
+            <Navigate to="/ProjectManagerHome" replace />
           </RoleBasedRoute>
         }
       />

@@ -1,569 +1,504 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import TechnicalDocTemplate from '../../assets/Technical_Document_Template.pdf';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getPMProjects, getProjectById, type CompanyProjectDTO } from '../../services/CompanyProjectRepo';
+import { toast } from 'react-toastify';
 
-// ─── Design tokens — light theme matching PMLayout (#f8fafc base) ─────────────
-const tk = {
-  // Surface hierarchy
-  pageBg:       '#f8fafc',   // matches PMLayout backgroundColor exactly
-  cardBg:       '#ffffff',
-  cardBgAlt:    '#f8fafc',
-  rowHover:     '#f1f5f9',
-
-  // Borders
-  border:       '#e2e8f0',
-  borderStrong: '#cbd5e1',
-
-  // Text
-  textPrimary:  '#0f172a',
-  textSecondary:'#334155',
-  textMuted:    '#64748b',
-  textDim:      '#94a3b8',
-
-  // Accent — navy blue (matches typical MIU / academic palette)
-  accent:       '#1d4ed8',
-  accentMid:    '#2563eb',
-  accentLight:  '#3b82f6',
-  accentBg:     '#eff6ff',
-  accentBorder: '#bfdbfe',
-
-  // Semantic
-  success:      '#059669',
-  successBg:    '#ecfdf5',
-  successBorder:'#a7f3d0',
-  gold:         '#b45309',
-  goldBg:       '#fffbeb',
-  goldBorder:   '#fde68a',
-
-  // Fonts
-  sans:         '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  mono:         '"JetBrains Mono", "Fira Code", "Courier New", monospace',
-
-  // Shape
-  radius:       '10px',
-  radiusLg:     '14px',
-  shadow:       '0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)',
-  shadowMd:     '0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
+// ─── Task helper ──────────────────────────────────────────────────────────────
+interface Task { id: string; text: string; done: boolean }
+const loadTasks = (pid: number): Task[] => {
+  try { return JSON.parse(localStorage.getItem(`pm_tasks_${pid}`) || '[]'); }
+  catch { return []; }
 };
 
-// ─── Injected CSS — only transitions, hovers, keyframes ──────────────────────
-const INJECTED_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+// ─── CSS ──────────────────────────────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-  @keyframes tdw-fade-up {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes tdw-fade-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes tdw-pulse-dot {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(5,150,105,0.4); }
-    50%       { box-shadow: 0 0 0 4px rgba(5,150,105,0); }
-  }
+@keyframes pd-fade-up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pd-fade-in { from{opacity:0} to{opacity:1} }
+@keyframes pd-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
 
-  .tdw-card {
-    transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
-  }
-  .tdw-doc-card {
-    cursor: pointer;
-  }
-  .tdw-doc-card:hover {
-    box-shadow: 0 8px 28px rgba(37,99,235,0.13), 0 2px 6px rgba(0,0,0,0.04) !important;
-    border-color: #93c5fd !important;
-    transform: translateY(-2px);
-  }
-  .tdw-doc-card:hover .tdw-arrow {
-    transform: translateX(4px);
-    color: #2563eb;
-  }
-  .tdw-arrow {
-    transition: transform 0.18s ease, color 0.18s ease;
-  }
-  .tdw-validate-btn {
-    transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
-  }
-  .tdw-validate-btn:hover:not(:disabled) {
-    background: #1e40af !important;
-    box-shadow: 0 4px 16px rgba(29,78,216,0.30) !important;
-    transform: translateY(-1px);
-  }
-  .tdw-validate-btn:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-  .tdw-detail-row:hover {
-    background: #f8fafc !important;
-  }
-  .tdw-open-btn {
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-  }
-  .tdw-open-btn:hover {
-    background: #eff6ff !important;
-    border-color: #93c5fd !important;
-    color: #1d4ed8 !important;
-  }
-  .tdw-stat-card {
-    transition: box-shadow 0.15s ease, border-color 0.15s ease;
-  }
-  .tdw-stat-card:hover {
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-  }
+.pd-root { font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; animation:pd-fade-in .3s ease both; display:flex; flex-direction:column; gap:24px; }
+
+/* ── Breadcrumb ── */
+.pd-breadcrumb { display:flex; align-items:center; gap:8px; font-size:13px; color:#64748b; }
+.pd-breadcrumb a { color:#3b82f6; text-decoration:none; font-weight:500; }
+.pd-breadcrumb a:hover { text-decoration:underline; }
+
+/* ── Top bar (validate) ── */
+.pd-top-bar {
+  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+  border:1px solid rgba(255,255,255,0.08); border-radius:16px;
+  padding:20px 26px; color:#fff;
+  box-shadow:0 4px 20px rgba(15,23,42,0.25);
+  animation:pd-fade-up .35s ease both;
+}
+.pd-top-bar-left { display:flex; align-items:center; gap:14px; }
+.pd-top-bar-icon {
+  width:46px; height:46px; border-radius:12px; flex-shrink:0;
+  background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.25);
+  display:flex; align-items:center; justify-content:center; font-size:20px; color:#60a5fa;
+}
+.pd-top-bar-title { font-size:18px; font-weight:700; letter-spacing:-0.01em; }
+.pd-top-bar-sub { font-size:12px; color:rgba(255,255,255,0.55); margin-top:2px; }
+.pd-validate-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:0 22px; height:42px; border-radius:11px; border:none;
+  background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff;
+  font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;
+  box-shadow:0 2px 10px rgba(37,99,235,0.3);
+  transition:opacity .15s,transform .12s,box-shadow .15s;
+  white-space:nowrap;
+}
+.pd-validate-btn:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 4px 18px rgba(37,99,235,0.4); }
+.pd-validate-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+
+/* ── Violations Panel ── */
+.pd-violations {
+  border-radius:14px; overflow:hidden; border:1px solid #e2e8f0;
+  animation:pd-fade-up .35s ease .05s both;
+}
+.pd-violations-header {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:16px 22px;
+  font-size:13px; font-weight:700; letter-spacing:-0.01em;
+}
+.pd-violations-header--pass { background:#ecfdf5; color:#059669; border-bottom:1px solid #a7f3d0; }
+.pd-violations-header--fail { background:#fef2f2; color:#dc2626; border-bottom:1px solid #fecaca; }
+.pd-violations-header--idle { background:#f8fafc; color:#64748b; border-bottom:1px solid #e2e8f0; }
+.pd-violations-body { padding:16px 22px; background:#fff; font-size:13px; color:#334155; line-height:1.7; }
+.pd-violation-item {
+  display:flex; align-items:flex-start; gap:10px; padding:10px 0;
+  border-bottom:1px solid #f1f5f9;
+}
+.pd-violation-item:last-child { border-bottom:none; }
+.pd-violation-icon { flex-shrink:0; margin-top:2px; }
+
+/* ── Content Grid ── */
+.pd-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; animation:pd-fade-up .35s ease .1s both; }
+@media(max-width:900px) { .pd-grid { grid-template-columns:1fr; } }
+
+/* ── Cards ── */
+.pd-card {
+  background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 14px rgba(0,0,0,0.03);
+  transition:border-color .2s,box-shadow .2s;
+}
+.pd-card:hover { border-color:#cbd5e1; box-shadow:0 4px 18px rgba(0,0,0,0.07); }
+.pd-card-head {
+  display:flex; align-items:center; gap:10px;
+  padding:16px 22px; border-bottom:1px solid #f1f5f9;
+  background:#fafbfc;
+}
+.pd-card-head-icon {
+  width:30px; height:30px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+.pd-card-head-icon--blue   { background:#eff6ff; color:#2563eb; }
+.pd-card-head-icon--violet { background:#f5f3ff; color:#7c3aed; }
+.pd-card-head-icon--amber  { background:#fffbeb; color:#d97706; }
+.pd-card-head-icon--cyan   { background:#ecfeff; color:#0891b2; }
+.pd-card-head-title { font-size:13px; font-weight:700; color:#0f172a; letter-spacing:-0.01em; }
+.pd-card-body { padding:18px 22px; }
+
+/* ── Proposal fields ── */
+.pd-prop-row { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid #f8fafc; }
+.pd-prop-row:last-child { border-bottom:none; }
+.pd-prop-label { font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; min-width:90px; flex-shrink:0; padding-top:1px; }
+.pd-prop-value { font-size:13px; color:#0f172a; font-weight:500; }
+
+/* ── OCL Rules ── */
+.pd-ocl-list { display:flex; flex-direction:column; gap:0; max-height:420px; overflow-y:auto; }
+.pd-ocl-rule { border-bottom:1px solid #f1f5f9; }
+.pd-ocl-rule:last-child { border-bottom:none; }
+.pd-ocl-rule-head {
+  display:flex; align-items:center; gap:8px; padding:12px 18px;
+  background:#fafbfc; font-size:11px; font-weight:700; color:#1d4ed8;
+  letter-spacing:.03em; text-transform:uppercase;
+}
+.pd-ocl-rule-num {
+  width:22px; height:22px; border-radius:6px; flex-shrink:0;
+  background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:800;
+}
+.pd-ocl-code {
+  margin:0; padding:12px 18px; font-size:12px; line-height:1.7;
+  background:#0f172a; color:#a5f3fc; white-space:pre-wrap;
+  font-family:"JetBrains Mono","Fira Code",monospace;
+}
+.pd-ocl-explain {
+  padding:10px 18px; font-size:12px; line-height:1.6; color:#475569;
+  background:#f8fafc; display:flex; align-items:flex-start; gap:8px;
+}
+.pd-ocl-explain-icon { flex-shrink:0; color:#d97706; margin-top:1px; }
+.pd-ocl-empty {
+  padding:28px 18px; text-align:center; color:#94a3b8; font-size:13px;
+}
+
+/* ── NDA badge in proposal ── */
+.pd-nda-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:700;
+}
+.pd-nda-badge--signed { background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; }
+.pd-nda-badge--unsigned { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+
+/* ── Guidelines ── */
+.pd-guidelines {
+  font-size:13px; line-height:1.7; color:#334155;
+  white-space:pre-wrap; max-height:320px; overflow-y:auto;
+}
+
+/* ── Document CTA card ── */
+.pd-doc-cta {
+  grid-column:1/-1;
+  background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%);
+  border:1px solid #bfdbfe; border-radius:16px;
+  padding:28px 30px; display:flex; align-items:center; justify-content:space-between;
+  gap:20px; flex-wrap:wrap;
+  animation:pd-fade-up .35s ease .15s both;
+  transition:box-shadow .2s;
+}
+.pd-doc-cta:hover { box-shadow:0 4px 20px rgba(59,130,246,0.1); }
+.pd-doc-cta-left { display:flex; align-items:center; gap:16px; }
+.pd-doc-cta-icon {
+  width:52px; height:52px; border-radius:14px; flex-shrink:0;
+  background:#fff; border:1px solid #bfdbfe;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; color:#ef4444;
+}
+.pd-doc-cta-title { font-size:16px; font-weight:700; color:#0f172a; margin:0 0 4px; }
+.pd-doc-cta-sub { font-size:12px; color:#64748b; margin:0; }
+.pd-doc-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:0 22px; height:44px; border-radius:11px; border:none;
+  background:linear-gradient(135deg,#1d4ed8,#3b82f6); color:#fff;
+  font-size:14px; font-weight:600; cursor:pointer; font-family:inherit;
+  box-shadow:0 2px 10px rgba(29,78,216,0.22);
+  transition:opacity .15s,transform .12s,box-shadow .15s;
+}
+.pd-doc-btn:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 4px 18px rgba(29,78,216,0.3); }
+
+/* ── Skeleton ── */
+.pd-skeleton {
+  background:linear-gradient(90deg,#e2e8f0 25%,#eef2f7 50%,#e2e8f0 75%);
+  background-size:200% 100%; animation:pd-shimmer 1.8s ease-in-out infinite;
+}
 `;
 
-// ─── SVG Icons ────────────────────────────────────────────────────────────────
-const IconPdf = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-      fill="#fef2f2" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <polyline points="14,2 14,8 20,8" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <text x="6.5" y="18" fontSize="5.5" fontWeight="700" fill="#ef4444" fontFamily="sans-serif">PDF</text>
-  </svg>
-);
+// ─── OCL Parser ───────────────────────────────────────────────────────────────
+interface ParsedRule { name: string; code: string; explanation: string }
 
-const IconShield = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    <polyline points="9,12 11,14 15,10"/>
-  </svg>
-);
+function parseOclRules(raw: string): ParsedRule[] {
+  if (!raw || !raw.trim()) return [];
+  // Split by 'context' keyword (each rule starts with 'context')
+  const chunks = raw.split(/(?=context\s)/gi).filter(s => s.trim());
+  return chunks.map((chunk, i) => {
+    // Try to extract rule name from 'inv <name>:' pattern
+    const invMatch = chunk.match(/inv\s+([\w]+)\s*:/i);
+    const name = invMatch ? invMatch[1] : `Rule ${i + 1}`;
+    // Generate a simple English explanation from the OCL
+    const explanation = generateExplanation(chunk.trim());
+    return { name, code: chunk.trim(), explanation };
+  });
+}
 
-const IconChevron = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9,18 15,12 9,6"/>
-  </svg>
-);
-
-const IconClock = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
-  </svg>
-);
-
-const IconLayers = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="12,2 2,7 12,12 22,7 12,2"/>
-    <polyline points="2,17 12,22 22,17"/>
-    <polyline points="2,12 12,17 22,12"/>
-  </svg>
-);
-
-const IconEdit = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </svg>
-);
-
-const IconInfo = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={tk.accentMid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-  </svg>
-);
+function generateExplanation(ocl: string): string {
+  // Simple heuristic explanations based on common OCL patterns
+  const explanations: string[] = [];
+  if (/->forAll/i.test(ocl)) explanations.push('This rule checks that ALL items in a collection satisfy a condition.');
+  if (/->exists/i.test(ocl)) explanations.push('This rule verifies that at least one item meets the specified criteria.');
+  if (/->size\(\)/i.test(ocl)) explanations.push('This rule validates the count/size of a collection.');
+  if (/->isUnique/i.test(ocl)) explanations.push('This rule ensures uniqueness of values within a collection.');
+  if (/->select/i.test(ocl)) explanations.push('This rule filters elements based on a condition.');
+  if (/->includes/i.test(ocl)) explanations.push('This rule checks that a collection contains a specific element.');
+  if (/implies/i.test(ocl)) explanations.push('This rule defines a conditional requirement (if A then B).');
+  if (/not |<>|!=|oclIsUndefined/i.test(ocl)) explanations.push('This rule enforces that certain values must not be empty or invalid.');
+  if (/>=|<=|>|</i.test(ocl) && !/->/.test(ocl.split(/>=|<=|>|</)[0].slice(-3))) explanations.push('This rule enforces a numeric boundary constraint.');
+  if (explanations.length === 0) explanations.push('This constraint enforces a business rule defined in the contract policy.');
+  return explanations.join(' ');
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const TechnicalDocWorkspace: React.FC = () => {
   const navigate = useNavigate();
-  const [validating, setValidating] = useState(false);
-  const [validated,  setValidated]  = useState(false);
-  const [now, setNow] = useState('');
+  const { id } = useParams<{ id?: string }>();
+  const [project, setProject] = useState<CompanyProjectDTO | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [validationState, setValidationState] = useState<'idle' | 'running' | 'pass' | 'fail'>('idle');
+  const [violations, setViolations] = useState<string[]>([]);
 
   useEffect(() => {
-    const raw = localStorage.getItem('miu_doc_last_saved');
-    if (raw) {
-      const d = new Date(raw);
-      setNow(
-        d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
-        ' · ' +
-        d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      );
-    } else {
-      setNow('Never saved');
-    }
-  }, []);
+    (async () => {
+      try {
+        if (!id) { navigate('/ProjectManagerHome', { replace: true }); return; }
+        const data = await getProjectById(Number(id));
+        setProject(data);
+      } catch {
+        toast.error('Failed to load project details.');
+        navigate('/ProjectManagerHome', { replace: true });
+      } finally { setLoading(false); }
+    })();
+  }, [id, navigate]);
 
   const handleValidate = () => {
-    if (validated || validating) return;
-    setValidating(true);
-    setTimeout(() => { setValidating(false); setValidated(true); }, 1800);
+    if (validationState === 'running') return;
+    setValidationState('running');
+    setViolations([]);
+    // Placeholder: simulate validation (to be replaced with real API call)
+    setTimeout(() => {
+      setValidationState('pass');
+      setViolations([]);
+    }, 2500);
   };
 
-  // ─── Divider ───────────────────────────────────────────────────────────────
-  const Divider = () => (
-    <div style={{ height: 1, background: tk.border, margin: '0' }} />
+  if (loading || !project) return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <div className="pd-root">
+        <div className="pd-skeleton" style={{ height: 100, borderRadius: 16 }} />
+        <div className="pd-skeleton" style={{ height: 60, borderRadius: 14 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div className="pd-skeleton" style={{ height: 280, borderRadius: 16 }} />
+          <div className="pd-skeleton" style={{ height: 280, borderRadius: 16 }} />
+        </div>
+      </div>
+    </>
   );
+
+  const tasks = loadTasks(project.id);
+  const done = tasks.filter(t => t.done).length;
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: INJECTED_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <div className="pd-root">
 
-      {/*
-        No wrapper div with its own padding/maxWidth/background.
-        PMLayout already provides: background #f8fafc, p-4, maxWidth 1280px, overflow-y-auto.
-        We render directly into that space.
-      */}
-      <div style={{ fontFamily: tk.sans, animation: 'tdw-fade-up 0.35s ease both' }}>
+        {/* ── Breadcrumb ── */}
+        <div className="pd-breadcrumb">
+          <a href="#" onClick={e => { e.preventDefault(); navigate('/ProjectManagerHome'); }}>Dashboard</a>
+          <span>/</span>
+          <span style={{ color: '#0f172a', fontWeight: 600 }}>{project.projectTitle}</span>
+        </div>
 
-        {/* ── Page header ───────────────────────────────────────────────────── */}
-        <div style={{
-          display: 'flex', alignItems: 'flex-start',
-          justifyContent: 'space-between', gap: 16,
-          marginBottom: 24, flexWrap: 'wrap',
-        }}>
-          {/* Title block */}
-          <div>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6,
-            }}>
-              {/* Back link */}
-              <button
-                onClick={() => navigate(-1)}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: tk.textMuted, fontSize: 13, fontFamily: tk.sans,
-                  padding: 0, display: 'flex', alignItems: 'center', gap: 4,
-                  fontWeight: 400,
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="15,18 9,12 15,6"/>
-                </svg>
-                Projects
-              </button>
-              <span style={{ color: tk.border, fontSize: 14 }}>/</span>
-              <span style={{
-                fontSize: 12, color: tk.textMuted,
-                fontFamily: tk.mono, letterSpacing: '.03em',
-              }}>
-                Workspace
-              </span>
+        {/* ── Validate Bar ── */}
+        <div className="pd-top-bar">
+          <div className="pd-top-bar-left">
+            <div className="pd-top-bar-icon"><i className="bi bi-shield-check" /></div>
+            <div>
+              <div className="pd-top-bar-title">{project.projectTitle}</div>
+              <div className="pd-top-bar-sub">Validate your technical document against the contract's OCL constraints</div>
             </div>
-
-            <h2 style={{
-              margin: '0 0 4px',
-              fontSize: 22, fontWeight: 600,
-              color: tk.textPrimary, letterSpacing: '-.02em',
-              fontFamily: tk.sans,
-            }}>
-              Project Workspace
-            </h2>
-            <p style={{
-              margin: 0, fontSize: 13, color: tk.textMuted, fontWeight: 400,
-            }}>
-              Manage documentation and technical validation for this project.
-            </p>
           </div>
-
-          {/* Validate button */}
-          <button
-            className="tdw-validate-btn"
-            onClick={handleValidate}
-            disabled={validating || validated}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7,
-              padding: '0 18px', height: 40,
-              borderRadius: tk.radius,
-              border: 'none',
-              background: validated
-                ? tk.success
-                : tk.accent,
-              color: '#fff',
-              fontSize: 13, fontWeight: 500, fontFamily: tk.sans,
-              cursor: (validating || validated) ? 'default' : 'pointer',
-              boxShadow: validated
-                ? '0 2px 8px rgba(5,150,105,0.25)'
-                : '0 2px 8px rgba(29,78,216,0.22)',
-              whiteSpace: 'nowrap', flexShrink: 0,
-              letterSpacing: '.01em',
-            }}
-          >
-            {validating ? (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                  style={{ animation: 'tdw-fade-in 0.1s', transformOrigin:'center' }}>
-                  <line x1="12" y1="2" x2="12" y2="6"/>
-                  <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-                  <line x1="18" y1="12" x2="22" y2="12"/>
-                  <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                  <line x1="12" y1="18" x2="12" y2="22"/>
-                  <line x1="7.76" y1="16.24" x2="4.93" y2="19.07"/>
-                  <line x1="2" y1="12" x2="6" y2="12"/>
-                  <line x1="7.76" y1="7.76" x2="4.93" y2="4.93"/>
-                </svg>
-                Validating…
-              </>
-            ) : validated ? (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="20,6 9,17 4,12"/>
-                </svg>
-                Validated
-              </>
+          <button className="pd-validate-btn" onClick={handleValidate} disabled={validationState === 'running'}>
+            {validationState === 'running' ? (
+              <><div className="spinner-border spinner-border-sm" role="status" /> Validating…</>
             ) : (
-              <>
-                <IconShield />
-                Validate with OCL
-              </>
+              <><i className="bi bi-check2-circle" /> Validate Based on Contract</>
             )}
           </button>
         </div>
 
-        {/* ── Stats row ─────────────────────────────────────────────────────── */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 12, marginBottom: 20,
-          animation: 'tdw-fade-up 0.4s ease 0.05s both',
-        }}>
-          {[
-            { icon: <IconLayers />,  label: 'Document type', value: 'Technical Doc',   mono: false },
-            { icon: <IconClock />,   label: 'Last modified', value: now || 'Just now', mono: false },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="tdw-stat-card"
-              style={{
-                background: tk.cardBg,
-                border: `1px solid ${tk.border}`,
-                borderRadius: tk.radius,
-                padding: '14px 16px',
-                boxShadow: tk.shadow,
-              }}
-            >
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                color: tk.textDim, fontSize: 11, fontWeight: 500,
-                letterSpacing: '.05em', textTransform: 'uppercase',
-                marginBottom: 6,
-              }}>
-                {s.icon} {s.label}
-              </div>
-              <div style={{
-                fontSize: 13, fontWeight: 500, color: tk.textSecondary,
-                fontFamily: s.mono ? tk.mono : tk.sans,
-              }}>
-                {s.value}
-              </div>
+        {/* ── Violations Panel ── */}
+        <div className="pd-violations">
+          <div className={`pd-violations-header ${
+            validationState === 'pass' ? 'pd-violations-header--pass' :
+            validationState === 'fail' ? 'pd-violations-header--fail' :
+            'pd-violations-header--idle'
+          }`}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className={`bi ${
+                validationState === 'pass' ? 'bi-check-circle-fill' :
+                validationState === 'fail' ? 'bi-x-circle-fill' :
+                validationState === 'running' ? 'bi-arrow-repeat' :
+                'bi-info-circle'
+              }`} />
+              {validationState === 'idle' && 'Validation Results'}
+              {validationState === 'running' && 'Running validation…'}
+              {validationState === 'pass' && 'No Violations Found'}
+              {validationState === 'fail' && `${violations.length} Violation${violations.length !== 1 ? 's' : ''} Detected`}
             </div>
-          ))}
+            {validationState !== 'idle' && validationState !== 'running' && (
+              <button
+                onClick={handleValidate}
+                style={{ background: 'none', border: '1px solid currentColor', borderRadius: 7, padding: '4px 12px', fontSize: 11, fontWeight: 600, color: 'inherit', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                <i className="bi bi-arrow-clockwise me-1" />Re-validate
+              </button>
+            )}
+          </div>
+          <div className="pd-violations-body">
+            {validationState === 'idle' && (
+              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px 0' }}>
+                <i className="bi bi-shield" style={{ fontSize: 28, display: 'block', marginBottom: 8, opacity: 0.5 }} />
+                Click <strong>"Validate Based on Contract"</strong> to check your document against OCL constraints.
+              </div>
+            )}
+            {validationState === 'running' && (
+              <div style={{ textAlign: 'center', color: '#64748b', padding: '16px 0' }}>
+                <div className="spinner-border spinner-border-sm me-2" role="status" />
+                Analyzing document against contract constraints…
+              </div>
+            )}
+            {validationState === 'pass' && (
+              <div style={{ textAlign: 'center', color: '#059669', padding: '16px 0' }}>
+                <i className="bi bi-patch-check-fill" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
+                Your document complies with all contract constraints. No violations were detected.
+              </div>
+            )}
+            {validationState === 'fail' && violations.map((v, i) => (
+              <div key={i} className="pd-violation-item">
+                <i className="bi bi-exclamation-triangle-fill pd-violation-icon" style={{ color: '#dc2626' }} />
+                <span>{v}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* ── Main content grid ─────────────────────────────────────────────── */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 300px',
-          gap: 16,
-          alignItems: 'start',
-          animation: 'tdw-fade-up 0.4s ease 0.10s both',
-        }}>
-
-          {/* ── Document card ── */}
-          <div
-            className="tdw-card tdw-doc-card"
-            onClick={() => navigate('/TechDocEditor')}
-            style={{
-              background: tk.cardBg,
-              border: `1px solid ${tk.border}`,
-              borderRadius: tk.radiusLg,
-              padding: '22px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 18,
-              boxShadow: tk.shadow,
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Subtle top accent line */}
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0,
-              height: 3, borderRadius: '14px 14px 0 0',
-              background: `linear-gradient(90deg, ${tk.accentMid}, ${tk.accentLight})`,
-            }} />
-
-            {/* PDF icon */}
-            <div style={{
-              width: 52, height: 52, borderRadius: 10, flexShrink: 0,
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <IconPdf />
+        {/* ── Document CTA ── */}
+        <div className="pd-doc-cta">
+          <div className="pd-doc-cta-left">
+            <div className="pd-doc-cta-icon"><i className="bi bi-file-earmark-pdf-fill" /></div>
+            <div>
+              <p className="pd-doc-cta-title">Technical Document Template</p>
+              <p className="pd-doc-cta-sub">Open the document editor to fill in your SRS/SDD sections based on the project requirements.</p>
             </div>
+          </div>
+          <button className="pd-doc-btn" onClick={() => navigate(`/TechDocEditor/${project.id}`)}>
+            <i className="bi bi-pencil-square" /> Open Document Editor
+          </button>
+        </div>
 
-            {/* Doc info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                <h4 style={{
-                  margin: 0, fontSize: 15, fontWeight: 600,
-                  color: tk.textPrimary, letterSpacing: '-.01em',
-                }}>
-                  Technical Document
-                </h4>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, letterSpacing: '.05em',
-                  background: tk.goldBg, color: tk.gold,
-                  border: `1px solid ${tk.goldBorder}`,
-                  padding: '1px 7px', borderRadius: 20,
-                }}>
-                  TEMPLATE
+        {/* ── Content Grid ── */}
+        <div className="pd-grid">
+
+          {/* ── Proposal Info ── */}
+          <div className="pd-card">
+            <div className="pd-card-head">
+              <div className="pd-card-head-icon pd-card-head-icon--cyan"><i className="bi bi-file-earmark-person" /></div>
+              <span className="pd-card-head-title">Client Proposal</span>
+            </div>
+            <div className="pd-card-body">
+              {[
+                ['Project Title', project.projectTitle],
+                ['Type', project.projectType],
+                ['Client', project.clientName],
+                ['Budget', project.budgetUsd ? `$${Number(project.budgetUsd).toLocaleString()} USD` : null],
+                ['Duration', project.durationDays ? `${project.durationDays} days` : null],
+                ['Status', project.status],
+              ].filter(([, v]) => v).map(([label, value]) => (
+                <div key={label as string} className="pd-prop-row">
+                  <span className="pd-prop-label">{label}</span>
+                  <span className="pd-prop-value">{value}</span>
+                </div>
+              ))}
+              {/* NDA Status */}
+              <div className="pd-prop-row">
+                <span className="pd-prop-label">NDA</span>
+                <span className={`pd-nda-badge ${project.ndaSigned ? 'pd-nda-badge--signed' : 'pd-nda-badge--unsigned'}`}>
+                  <i className={`bi ${project.ndaSigned ? 'bi-shield-check-fill' : 'bi-shield-x'}`} />
+                  {project.ndaSigned ? 'Signed' : 'Not Signed'}
                 </span>
               </div>
-              <p style={{
-                margin: '0 0 10px', fontSize: 11,
-                color: tk.textDim, fontFamily: tk.mono,
-                letterSpacing: '.02em',
-              }}>
-                Technical_Document_template.pdf
-              </p>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 500,
-                  background: tk.successBg, color: tk.success,
-                  border: `1px solid ${tk.successBorder}`,
-                  padding: '2px 9px', borderRadius: 20,
-                  display: 'flex', alignItems: 'center', gap: 5,
-                }}>
-                  <span style={{
-                    width: 5, height: 5, borderRadius: '50%',
-                    background: tk.success, display: 'inline-block',
-                    animation: 'tdw-pulse-dot 2.5s ease-in-out infinite',
-                  }} />
-                  Template loaded
-                </span>
-                <span style={{
-                  fontSize: 11, fontWeight: 500,
-                  background: tk.accentBg, color: tk.accentMid,
-                  border: `1px solid ${tk.accentBorder}`,
-                  padding: '2px 9px', borderRadius: 20,
-                }}>
-                  11 sections
-                </span>
-              </div>
-            </div>
-
-            {/* Arrow */}
-            <div className="tdw-arrow" style={{ color: tk.textDim, flexShrink: 0 }}>
-              <IconChevron />
+              {project.projectDescription && (
+                <div className="pd-prop-row" style={{ flexDirection: 'column', gap: 4 }}>
+                  <span className="pd-prop-label">Description</span>
+                  <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
+                    {project.projectDescription}
+                  </div>
+                </div>
+              )}
+              {project.mainFeatures && (
+                <div className="pd-prop-row" style={{ flexDirection: 'column', gap: 4 }}>
+                  <span className="pd-prop-label">Main Features</span>
+                  <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 14px', whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto' }}>
+                    {project.mainFeatures}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ── Context card ── */}
-          <div
-            className="tdw-card"
-            style={{
-              background: tk.cardBg,
-              border: `1px solid ${tk.border}`,
-              borderRadius: tk.radiusLg,
-              overflow: 'hidden',
-              boxShadow: tk.shadow,
-            }}
-          >
-            {/* Card header */}
-            <div style={{
-              padding: '14px 18px',
-              borderBottom: `1px solid ${tk.border}`,
-              display: 'flex', alignItems: 'center', gap: 7,
-              background: tk.cardBgAlt,
-            }}>
-              <IconInfo />
-              <span style={{
-                fontSize: 11, fontWeight: 600, color: tk.textMuted,
-                letterSpacing: '.06em', textTransform: 'uppercase',
-              }}>
-                Project context
+          {/* ── OCL Constraints ── */}
+          <div className="pd-card">
+            <div className="pd-card-head">
+              <div className="pd-card-head-icon pd-card-head-icon--blue"><i className="bi bi-code-square" /></div>
+              <span className="pd-card-head-title">OCL Constraints</span>
+              {project.oclRules && (
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: 12 }}>
+                  {parseOclRules(project.oclRules).length} rule{parseOclRules(project.oclRules).length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <div className="pd-card-body" style={{ padding: 0 }}>
+              {!project.oclRules ? (
+                <div className="pd-ocl-empty">
+                  <i className="bi bi-code-slash" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }} />
+                  No OCL constraints have been extracted for this project yet.
+                </div>
+              ) : (
+                <div className="pd-ocl-list">
+                  {parseOclRules(project.oclRules).map((rule, i) => (
+                    <div key={i} className="pd-ocl-rule">
+                      <div className="pd-ocl-rule-head">
+                        <span className="pd-ocl-rule-num">{i + 1}</span>
+                        {rule.name}
+                      </div>
+                      <pre className="pd-ocl-code">{rule.code}</pre>
+                      <div className="pd-ocl-explain">
+                        <i className="bi bi-lightbulb-fill pd-ocl-explain-icon" />
+                        <span>{rule.explanation}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── AI Guidelines / Summary ── */}
+          <div className="pd-card" style={{ gridColumn: '1 / -1' }}>
+            <div className="pd-card-head">
+              <div className="pd-card-head-icon pd-card-head-icon--amber"><i className="bi bi-stars" /></div>
+              <span className="pd-card-head-title">AI-Generated Guidelines & Project Summary</span>
+            </div>
+            <div className="pd-card-body">
+              <div className="pd-guidelines">
+                {project.guidelines || 'No AI guidelines have been generated for this project yet. Guidelines will appear here after the company assigns OCL constraints.'}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Task Progress (small summary) ── */}
+          <div className="pd-card" style={{ gridColumn: '1 / -1' }}>
+            <div className="pd-card-head">
+              <div className="pd-card-head-icon pd-card-head-icon--violet"><i className="bi bi-list-check" /></div>
+              <span className="pd-card-head-title">Task Progress</span>
+              <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: tasks.length > 0 && done === tasks.length ? '#059669' : '#64748b' }}>
+                {done}/{tasks.length} completed
               </span>
             </div>
-
-            {/* Rows */}
-            {[
-              {
-                label: 'Status',
-                value: (
-                  <span style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    color: tk.success, fontSize: 12, fontWeight: 600,
-                  }}>
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%',
-                      background: tk.success, display: 'inline-block',
-                      animation: 'tdw-pulse-dot 2.5s ease-in-out infinite',
-                    }} />
-                    Active
-                  </span>
-                ),
-              },
-              {
-                label: 'OCL validation',
-                value: (
-                  <span style={{
-                    fontSize: 12, fontWeight: 500,
-                    color: validated ? tk.success : validating ? tk.accentMid : tk.textDim,
-                  }}>
-                    {validated ? '✓ Passed' : validating ? 'Running…' : 'Not run'}
-                  </span>
-                ),
-              },
-              {
-                label: 'Last edited',
-                value: <span style={{ fontSize: 12, color: tk.textSecondary }}>{now || 'Just now'}</span>,
-              },
-              {
-                label: 'Format',
-                value: <span style={{ fontSize: 11, color: tk.textMuted, fontFamily: tk.mono }}>MIU / A4</span>,
-              },
-            ].map((row, i, arr) => (
-              <React.Fragment key={i}>
-                <div
-                  className="tdw-detail-row"
-                  style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', padding: '11px 18px',
-                  }}
-                >
-                  <span style={{ fontSize: 12, color: tk.textMuted, fontWeight: 400 }}>
-                    {row.label}
-                  </span>
-                  {row.value}
+            <div className="pd-card-body" style={{ padding: '14px 22px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ flex: 1, height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ width: tasks.length ? `${(done / tasks.length) * 100}%` : '0%', height: '100%', background: 'linear-gradient(90deg,#3b82f6,#6366f1)', borderRadius: 4, transition: 'width .3s' }} />
                 </div>
-                {i < arr.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-
-            {/* CTA */}
-            <div style={{ padding: '12px 18px', borderTop: `1px solid ${tk.border}` }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                  {tasks.length ? `${Math.round((done / tasks.length) * 100)}%` : '0%'}
+                </span>
+              </div>
               <button
-                className="tdw-open-btn"
-                onClick={() => navigate('/TechDocEditor')}
-                style={{
-                  width: '100%', height: 34,
-                  borderRadius: 7,
-                  border: `1px solid ${tk.border}`,
-                  background: 'transparent',
-                  color: tk.textMuted,
-                  fontSize: 12, fontWeight: 500, fontFamily: tk.sans,
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                }}
+                onClick={() => navigate('/ProjectTasks')}
+                style={{ marginTop: 12, background: 'none', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#3b82f6', cursor: 'pointer', fontFamily: 'inherit' }}
               >
-                <IconEdit />
-                Start working on the document
+                <i className="bi bi-arrow-right me-1" />Manage Tasks
               </button>
             </div>
           </div>
         </div>
-
-        {/* ── Footer ────────────────────────────────────────────────────────── */}
-        <p style={{
-          marginTop: 28, fontSize: 11,
-          color: tk.textDim, fontFamily: tk.mono,
-          letterSpacing: '.03em', textAlign: 'center',
-          animation: 'tdw-fade-in 0.5s ease 0.2s both',
-        }}>
-          MIU Faculty of Computer Science · Technical Documentation System
-        </p>
-
       </div>
     </>
   );

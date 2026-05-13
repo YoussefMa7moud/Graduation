@@ -34,11 +34,11 @@ const ContractRepository: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [openGroups, setOpenGroups] = useState<Set<number>>(new Set());
 
-  // ── Hash verification state ───────────────────────────────────────────────
+  // ── Hash verification state ──────────────────────
   const [verifyResult, setVerifyResult] = useState<ContractVerifyResponse | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // ── Password reveal state ─────────────────────────────────────────────────
+  // ── Password reveal state ────────────────────────
   const [showRevealForm, setShowRevealForm] = useState(false);
   const [revealPassInput, setRevealPassInput] = useState('');
   const [revealedPassword, setRevealedPassword] = useState<string | null>(null);
@@ -73,7 +73,7 @@ const ContractRepository: React.FC = () => {
     fetchRecords();
   }, []);
 
-  // ── Reset password reveal when contract changes ───────────────────────────
+  // ── Reset password reveal when contract changes ─────────
   useEffect(() => {
     setShowRevealForm(false);
     setRevealPassInput('');
@@ -81,14 +81,13 @@ const ContractRepository: React.FC = () => {
     setRevealError('');
   }, [selected?.id]);
 
-  // ── When selected contract changes, re-run verification ──────────────────
+  // ── When selected contract changes, re-run verification ───────
   useEffect(() => {
     if (!selected) {
       setVerifyResult(null);
       return;
     }
 
-    // If the record has no hash at all (legacy), skip the API call
     if (!selected.contractHash) {
       setVerifyResult({
         verified: false,

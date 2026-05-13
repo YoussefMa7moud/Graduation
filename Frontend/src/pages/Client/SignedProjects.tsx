@@ -21,7 +21,6 @@ const SignedProjects: React.FC = () => {
   const [selected, setSelected] = useState<SignedProjectDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ── Hash verification state ───────────────────────────────────────────────
   const [verifyResult, setVerifyResult] = useState<ContractVerifyResponse | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -50,7 +49,6 @@ const SignedProjects: React.FC = () => {
     fetchSignedProjects();
   }, []);
 
-  // ── When selected contract changes, run verification ─────────────────────
   useEffect(() => {
     if (!selected) {
       setVerifyResult(null);
@@ -64,7 +62,7 @@ const SignedProjects: React.FC = () => {
         const result = await verifyContract(selected.id);
         setVerifyResult(result);
       } catch {
-        // If verify fails (e.g. legacy record with no hash), show neutral state
+        // If verify fails, show neutral state
         setVerifyResult({
           verified: false,
           status: 'NO_HASH',
@@ -79,7 +77,7 @@ const SignedProjects: React.FC = () => {
     runVerify();
   }, [selected?.id]);
 
-  // ── Reset password reveal when contract changes ───────────────────────────
+  // ── Reset password reveal when contract changes ──────────────────
   useEffect(() => {
     setShowRevealForm(false);
     setRevealPassInput('');
@@ -171,7 +169,6 @@ const SignedProjects: React.FC = () => {
     );
   };
 
-  // ── Helper: render the Validation row value ───────────────────────────────
   const renderValidation = () => {
     if (isVerifying) {
       return (

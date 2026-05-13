@@ -36,7 +36,6 @@ const ActiveProjectWorkspace: React.FC = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [signing, setSigning] = useState(false);
 
-  // --- Initial Data Load ---
   useEffect(() => {
     if (!project?.id) {
       toast.error("Project ID not found.");
@@ -71,8 +70,6 @@ const ActiveProjectWorkspace: React.FC = () => {
     loadWorkspaceData();
   }, [project?.id, navigate]);
 
-  // --- FIXED CHAT SCROLL LOGIC ---
-  // We target the scrollTop of the container specifically to prevent global page jumps
   const internalScrollToBottom = () => {
     if (chatContainerRef.current) {
       const { scrollHeight, clientHeight } = chatContainerRef.current;
@@ -98,7 +95,6 @@ const ActiveProjectWorkspace: React.FC = () => {
     return () => clearInterval(interval);
   }, [project?.id, chatMessages.length, isLoading]);
 
-  // Scroll only when chatMessages array changes
   useEffect(() => {
     internalScrollToBottom();
   }, [chatMessages]);

@@ -443,7 +443,7 @@ const TechnicalDocEditor: React.FC = () => {
       @media print { body { margin:0; } .doc-page { box-shadow:none; } }
     `;
 
-    const printHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>MIU Technical Document</title><style>${sharedCss}</style></head><body>${sectionsHtml}<script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script></body></html>`;
+    const printHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Technical Document</title><style>${sharedCss}</style></head><body>${sectionsHtml}<script>window.onload=function(){window.print();setTimeout(function(){window.close();},800);};<\/script></body></html>`;
     const win = window.open('','_blank','width=900,height=700');
     if (!win) { alert('Pop-up blocked. Please allow pop-ups and try again.'); setIsExporting(false); return; }
     win.document.open(); win.document.write(printHtml); win.document.close();
@@ -477,7 +477,7 @@ const TechnicalDocEditor: React.FC = () => {
             <button onClick={() => navigate(-1)} title="Back" style={{ width:30, height:30, borderRadius:6, border:'0.5px solid rgba(255,255,255,0.12)', background:'transparent', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:tk.navText }}>
               <ArrowLeft size={14} />
             </button>
-            <span style={{ fontSize:13, fontWeight:500, color:'#cbd5e1', letterSpacing:'.02em' }}>MIU Technical Document</span>
+            <span style={{ fontSize:13, fontWeight:500, color:'#cbd5e1', letterSpacing:'.02em' }}>Technical Document</span>
             <span style={{ fontSize:11, background:'rgba(59,130,246,0.14)', color:'#60a5fa', padding:'2px 8px', borderRadius:20, fontWeight:500, border:'0.5px solid rgba(59,130,246,0.28)' }}>
               {SECTION_IDS.length} sections
             </span>

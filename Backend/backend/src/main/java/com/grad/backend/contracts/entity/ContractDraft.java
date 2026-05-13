@@ -1,5 +1,6 @@
 package com.grad.backend.contracts.entity;
 
+import com.grad.backend.contracts.util.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,6 +24,7 @@ public class ContractDraft {
     @Column(name = "submission_id", nullable = false, unique = true)
     private Long submissionId;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "contract_payload_json", columnDefinition = "LONGTEXT", nullable = false)
     private String contractPayloadJson;
 
@@ -50,6 +52,7 @@ public class ContractDraft {
     @Column(name = "company_signature_base64", columnDefinition = "LONGTEXT")
     private String companySignatureBase64;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "validation_results_json", columnDefinition = "LONGTEXT")
     private String validationResultsJson;
 

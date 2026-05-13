@@ -4,6 +4,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Base64;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Utility for computing a SHA-256 integrity hash over a finalized ContractRecord.
@@ -88,6 +92,30 @@ public class Contracthashutil {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+
+    /** AES-encrypt a plaintext password. Returns a Base64-encoded ciphertext safe for VARCHAR storage. */
+    public static String encrypt(String plaintext, String key) {
+        try {
+            SecretKeySpec secretKey = new SecretKeySpec(Arrays.copyOf(key.getBytes(StandardCharsets.UTF_8), 16), "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            return Base64.getEncoder().encodeToString(cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new RuntimeException("Contract password encryption failed", e);
+        }
+    }
+
+    /** AES-decrypt a Base64-encoded ciphertext produced by {@link #encrypt}. */
+    public static String decrypt(String ciphertext, String key) {
+        try {
+            SecretKeySpec secretKey = new SecretKeySpec(Arrays.copyOf(key.getBytes(StandardCharsets.UTF_8), 16), "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            return new String(cipher.doFinal(Base64.getDecoder().decode(ciphertext)), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new RuntimeException("Contract password decryption failed", e);
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

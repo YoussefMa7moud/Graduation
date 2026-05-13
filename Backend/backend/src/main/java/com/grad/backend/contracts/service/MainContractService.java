@@ -81,6 +81,9 @@ public class MainContractService {
 
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
+
+    @Value("${app.contract.password.key:DefaultContKey16!}")
+    private String contractPasswordKey;
     
     @PersistenceContext
     private EntityManager entityManager;
@@ -705,7 +708,7 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                 .companySignatoryName(companyName)
                 .contractPayloadJson(draft.getContractPayloadJson())
                 .contractHash(hash)
-                .contractPassword(pdfPassword)
+                .contractPassword(Contracthashutil.encrypt(pdfPassword, contractPasswordKey))
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);

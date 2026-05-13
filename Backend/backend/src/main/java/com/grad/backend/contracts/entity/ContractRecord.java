@@ -63,6 +63,6 @@ public class ContractRecord {
     @Column(name = "contract_hash", length = 64)
     private String contractHash;
 
-    @Column(name = "contract_password", length = 32)
+    @Column(name = "contract_password", length = 128)
     private String contractPassword;
 }

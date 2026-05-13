@@ -55,6 +55,9 @@ public class ContractService {
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${app.contract.password.key:DefaultContKey16!}")
+    private String contractPasswordKey;
+
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
@@ -154,7 +157,7 @@ public class ContractService {
                 .companySignatureBase64(signatureBase64)
                 .contractPayloadJson(draft.getContractPayloadJson())
                 .contractHash(hash)
-                .contractPassword(pdfPassword)
+                .contractPassword(Contracthashutil.encrypt(pdfPassword, contractPasswordKey))
                 .build();
         recordRepository.save(record);
         draftRepository.delete(draft);
@@ -344,7 +347,7 @@ public class ContractService {
         if (record.getContractPassword() == null) {
             throw new RuntimeException("No password set for this contract (legacy)");
         }
-        return record.getContractPassword();
+        return Contracthashutil.decrypt(record.getContractPassword(), contractPasswordKey);
     }
 
     @Transactional(readOnly = true)

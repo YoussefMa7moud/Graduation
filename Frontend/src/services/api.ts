@@ -1,11 +1,4 @@
-/**
- * API Service
- * 
- * Centralized axios instance with interceptors for:
- * - Automatic JWT token injection
- * - 401 error handling (token expiration)
- * - Request/response logging (development only)
- */
+
 
 import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config/api.config';

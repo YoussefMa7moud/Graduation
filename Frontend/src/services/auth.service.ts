@@ -1,11 +1,4 @@
-/**
- * Authentication Service
- * 
- * Service for handling authentication API calls:
- * - User registration
- * - User login
- * - Token management
- */
+
 
 import api from './api';
 import { API_ENDPOINTS } from '../config/api.config';
@@ -27,12 +20,10 @@ export interface RegisterRequest {
   nationalId?: string;
   title?: 'CEO' | 'CTO' | 'Legal Rep'; // For software company
   companyRegNo?: string; // For software company and client company
-  phoneNumber?: string; // For all roles
+  phoneNumber?: string; // For all roles 
 }
 
-/**
- * Registration response
- */
+
 export interface RegisterResponse {
   userId: number;
   role: string;

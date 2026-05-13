@@ -12,7 +12,6 @@ const getAuthHeaders = (isJson = true) => {
     };
 };
 
-// --- Interfaces ---
 
 export interface SubmissionResponseDTO {
     id: number;
@@ -49,7 +48,7 @@ export interface ContractRecordResponse {
     isAssigned: boolean;
     assignedPmName?: string;
     projectTitle?: string;
-    contractHash?: string | null;  // 64-char hex SHA-256 hash, null for legacy records
+    contractHash?: string | null;  // 64-char hex SHA-256 hash,
 }
 
 // ── New: response from the verify endpoint ────────────────────────────────────
@@ -110,18 +109,7 @@ export const downloadContractPdf = async (recordId: number, fileName: string) =>
         throw error;
     }
 };
-
-/**
- * Verify contract integrity by re-computing the hash server-side
- * and comparing it to the hash stored at signing time.
- *
- * GET /api/contracts/records/{id}/verify
- *
- * Returns:
- *   { verified: true,  status: "VERIFIED",  storedHash: "a3f9...", message: "..." }
- *   { verified: false, status: "TAMPERED",  storedHash: "a3f9...", message: "..." }
- *   { verified: false, status: "NO_HASH",   storedHash: null,      message: "..." }
- */
+// ── New: reveal contract password ───────────────────────────────────────────────
 export const revealContractPassword = async (
     recordId: number,
     email: string,

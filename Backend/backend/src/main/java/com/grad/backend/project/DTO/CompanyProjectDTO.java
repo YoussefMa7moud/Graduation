@@ -24,6 +24,7 @@ public class CompanyProjectDTO {
     private String clientName;
     private String oclRules;
     private String guidelines;
+    private String projectSummary;
     private String status;
     private LocalDateTime createdAt;
 }

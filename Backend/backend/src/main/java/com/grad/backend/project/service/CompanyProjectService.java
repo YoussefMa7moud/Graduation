@@ -12,6 +12,8 @@ import com.grad.backend.project.DTO.CompanyProjectDTO;
 import com.grad.backend.project.entity.CompanyProject;
 import com.grad.backend.project.entity.ProjectProposal;
 import com.grad.backend.project.entity.ProposalSubmission;
+import com.grad.backend.project.DTO.GenerateGuidelinesResponse;
+import com.grad.backend.project.DTO.ai.AiGuidelinesResponseDTO;
 import com.grad.backend.project.repository.CompanyProjectRepository;
 import com.grad.backend.project.repository.ProjectProposalRepository;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
@@ -33,6 +35,7 @@ public class CompanyProjectService {
     private final CompanyEmployeeRepository companyEmployeeRepository;
     private final ProjectProposalRepository projectProposalRepository;
     private final ProposalSubmissionRepository submissionRepository;
+    private final ProjectGuidelinesAiService projectGuidelinesAiService;
 
     @Transactional
     public CompanyProjectDTO assignProject(AssignProjectRequest request, Long companyUserId) {
@@ -103,6 +106,28 @@ public class CompanyProjectService {
         return mapToDTO(project);
     }
 
+    @Transactional
+    public GenerateGuidelinesResponse generateGuidelinesAndSummary(Long projectId, Long pmUserId) {
+        CompanyProject project = companyProjectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (!project.getProjectManager().getId().equals(pmUserId)) {
+            throw new RuntimeException("Unauthorized: you are not assigned to this project");
+        }
+
+        CompanyProjectDTO dto = mapToDTO(project);
+        AiGuidelinesResponseDTO ai = projectGuidelinesAiService.generate(dto);
+
+        project.setProjectSummary(ai.getProjectSummary().trim());
+        project.setGuidelines(ai.getGuidelines().trim());
+        companyProjectRepository.save(project);
+
+        return GenerateGuidelinesResponse.builder()
+                .message("Guidelines and project summary generated successfully")
+                .projectSummary(project.getProjectSummary())
+                .guidelines(project.getGuidelines())
+                .build();
+    }
+
     private CompanyProjectDTO mapToDTO(CompanyProject entity) {
         String pmName = entity.getProjectManager().getUser().getFirstName() + " " +
                         entity.getProjectManager().getUser().getLastName();
@@ -140,6 +165,7 @@ public class CompanyProjectService {
                 .clientName(clientName)
                 .oclRules(entity.getOclRules())
                 .guidelines(entity.getGuidelines())
+                .projectSummary(entity.getProjectSummary())
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .build();

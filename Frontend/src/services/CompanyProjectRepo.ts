@@ -17,6 +17,7 @@ export interface CompanyProjectDTO {
   clientName?: string;
   oclRules: string;
   guidelines: string;
+  projectSummary?: string;
   status: string;
   createdAt: string;
 }
@@ -45,5 +46,22 @@ export const getPMProjects = async (): Promise<CompanyProjectDTO[]> => {
 
 export const getProjectById = async (id: number): Promise<CompanyProjectDTO> => {
   const response = await api.get<CompanyProjectDTO>(`/api/company-projects/${id}`);
+  return response.data;
+};
+
+export interface GenerateGuidelinesResponse {
+  message: string;
+  projectSummary: string;
+  guidelines: string;
+}
+
+export const generateProjectGuidelines = async (
+  projectId: number
+): Promise<GenerateGuidelinesResponse> => {
+  const response = await api.post<GenerateGuidelinesResponse>(
+    `/api/company-projects/${projectId}/generate-guidelines`,
+    {},
+    { timeout: 120000, skipAuthRedirect: true }
+  );
   return response.data;
 };

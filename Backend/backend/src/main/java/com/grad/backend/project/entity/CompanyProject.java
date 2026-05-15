@@ -41,6 +41,10 @@ public class CompanyProject {
     @Column(name = "guidelines", columnDefinition = "LONGTEXT")
     private String guidelines;
 
+    @Lob
+    @Column(name = "project_summary", columnDefinition = "LONGTEXT")
+    private String projectSummary;
+
     @Column(name = "status", nullable = false)
     private String status = "ASSIGNED";
 

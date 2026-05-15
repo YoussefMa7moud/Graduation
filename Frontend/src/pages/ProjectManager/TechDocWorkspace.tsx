@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getPMProjects, getProjectById, type CompanyProjectDTO } from '../../services/CompanyProjectRepo';
+import {
+  getProjectById,
+  generateProjectGuidelines,
+  type CompanyProjectDTO,
+} from '../../services/CompanyProjectRepo';
+import { getProjectTasks } from '../../services/pmTasks.service';
 import { toast } from 'react-toastify';
-
-// ─── Task helper ──────────────────────────────────────────────────────────────
-interface Task { id: string; text: string; done: boolean }
-const loadTasks = (pid: number): Task[] => {
-  try { return JSON.parse(localStorage.getItem(`pm_tasks_${pid}`) || '[]'); }
-  catch { return []; }
-};
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -146,10 +144,33 @@ const CSS = `
 .pd-nda-badge--signed { background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; }
 .pd-nda-badge--unsigned { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
 
-/* ── Guidelines ── */
-.pd-guidelines {
-  font-size:13px; line-height:1.7; color:#334155;
-  white-space:pre-wrap; max-height:320px; overflow-y:auto;
+/* ── Guidelines & Summary ── */
+.pd-guidelines-actions { display:flex; align-items:center; gap:10px; margin-left:auto; }
+.pd-gen-guidelines-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; border-radius:9px; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff;
+  font-size:12px; font-weight:600; font-family:inherit;
+  box-shadow:0 2px 8px rgba(245,158,11,0.3); transition:opacity .15s,transform .1s;
+}
+.pd-gen-guidelines-btn:hover:not(:disabled) { transform:translateY(-1px); }
+.pd-gen-guidelines-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+.pd-guidelines-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:768px) { .pd-guidelines-grid { grid-template-columns:1fr; } }
+.pd-guidelines-block {
+  background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;
+  padding:16px 18px; min-height:120px;
+}
+.pd-guidelines-block-title {
+  font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;
+  letter-spacing:.05em; margin-bottom:10px; display:flex; align-items:center; gap:6px;
+}
+.pd-guidelines-content {
+  font-size:13px; line-height:1.75; color:#334155;
+  white-space:pre-wrap; max-height:280px; overflow-y:auto;
+}
+.pd-guidelines-empty {
+  font-size:13px; color:#94a3b8; line-height:1.6; text-align:center; padding:24px 12px;
 }
 
 /* ── Document CTA card ── */
@@ -230,6 +251,9 @@ const TechnicalDocWorkspace: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [validationState, setValidationState] = useState<'idle' | 'running' | 'pass' | 'fail'>('idle');
   const [violations, setViolations] = useState<string[]>([]);
+  const [generatingGuidelines, setGeneratingGuidelines] = useState(false);
+  const [taskDone, setTaskDone] = useState(0);
+  const [taskTotal, setTaskTotal] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -237,12 +261,48 @@ const TechnicalDocWorkspace: React.FC = () => {
         if (!id) { navigate('/ProjectManagerHome', { replace: true }); return; }
         const data = await getProjectById(Number(id));
         setProject(data);
+        try {
+          const tasks = await getProjectTasks(Number(id));
+          setTaskTotal(tasks.length);
+          setTaskDone(tasks.filter(t => t.status === 'DONE').length);
+        } catch {
+          setTaskTotal(0);
+          setTaskDone(0);
+        }
       } catch {
         toast.error('Failed to load project details.');
         navigate('/ProjectManagerHome', { replace: true });
       } finally { setLoading(false); }
     })();
   }, [id, navigate]);
+
+  const handleGenerateGuidelines = async () => {
+    if (!project || generatingGuidelines) return;
+    setGeneratingGuidelines(true);
+    try {
+      const res = await generateProjectGuidelines(project.id);
+      setProject(prev =>
+        prev
+          ? { ...prev, projectSummary: res.projectSummary, guidelines: res.guidelines }
+          : prev
+      );
+      toast.success('Guidelines and project summary generated.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number; data?: { error?: string } }; message?: string };
+      const status = axiosErr.response?.status;
+      let msg = axiosErr.response?.data?.error;
+      if (!msg) {
+        if (status === 503) {
+          msg = 'AI is not configured. Add GROQ_API_KEY to Backend/backend/.env and restart the backend.';
+        } else {
+          msg = axiosErr.message ?? 'Failed to generate guidelines.';
+        }
+      }
+      toast.error(msg);
+    } finally {
+      setGeneratingGuidelines(false);
+    }
+  };
 
   const handleValidate = () => {
     if (validationState === 'running') return;
@@ -269,8 +329,7 @@ const TechnicalDocWorkspace: React.FC = () => {
     </>
   );
 
-  const tasks = loadTasks(project.id);
-  const done = tasks.filter(t => t.done).length;
+  const hasGuidelinesContent = Boolean(project.projectSummary?.trim() || project.guidelines?.trim());
 
   return (
     <>
@@ -464,11 +523,62 @@ const TechnicalDocWorkspace: React.FC = () => {
             <div className="pd-card-head">
               <div className="pd-card-head-icon pd-card-head-icon--amber"><i className="bi bi-stars" /></div>
               <span className="pd-card-head-title">AI-Generated Guidelines & Project Summary</span>
+              <div className="pd-guidelines-actions">
+                <button
+                  type="button"
+                  className="pd-gen-guidelines-btn"
+                  onClick={handleGenerateGuidelines}
+                  disabled={generatingGuidelines}
+                >
+                  {generatingGuidelines ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm" role="status" />
+                      Generating…
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-stars" />
+                      {hasGuidelinesContent ? 'Regenerate' : 'Generate with AI'}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
             <div className="pd-card-body">
-              <div className="pd-guidelines">
-                {project.guidelines || 'No AI guidelines have been generated for this project yet. Guidelines will appear here after the company assigns OCL constraints.'}
-              </div>
+              {!hasGuidelinesContent && !generatingGuidelines ? (
+                <div className="pd-guidelines-empty">
+                  <i className="bi bi-journal-text" style={{ fontSize: 28, display: 'block', marginBottom: 10, opacity: 0.5 }} />
+                  No guidelines yet. Click <strong>Generate with AI</strong> to create a project summary and SRS/SDD
+                  authoring guidelines from the proposal, contract context, and OCL rules.
+                </div>
+              ) : (
+                <div className="pd-guidelines-grid">
+                  <div className="pd-guidelines-block">
+                    <div className="pd-guidelines-block-title">
+                      <i className="bi bi-file-text" /> Project Summary
+                    </div>
+                    <div className="pd-guidelines-content">
+                      {generatingGuidelines && !project.projectSummary ? (
+                        <span style={{ color: '#94a3b8' }}>Generating summary…</span>
+                      ) : (
+                        project.projectSummary || '—'
+                      )}
+                    </div>
+                  </div>
+                  <div className="pd-guidelines-block">
+                    <div className="pd-guidelines-block-title">
+                      <i className="bi bi-list-check" /> PM Guidelines (SRS / SDD)
+                    </div>
+                    <div className="pd-guidelines-content">
+                      {generatingGuidelines && !project.guidelines ? (
+                        <span style={{ color: '#94a3b8' }}>Generating guidelines…</span>
+                      ) : (
+                        project.guidelines || '—'
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -477,17 +587,17 @@ const TechnicalDocWorkspace: React.FC = () => {
             <div className="pd-card-head">
               <div className="pd-card-head-icon pd-card-head-icon--violet"><i className="bi bi-list-check" /></div>
               <span className="pd-card-head-title">Task Progress</span>
-              <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: tasks.length > 0 && done === tasks.length ? '#059669' : '#64748b' }}>
-                {done}/{tasks.length} completed
+              <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: taskTotal > 0 && taskDone === taskTotal ? '#059669' : '#64748b' }}>
+                {taskDone}/{taskTotal} completed
               </span>
             </div>
             <div className="pd-card-body" style={{ padding: '14px 22px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1, height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{ width: tasks.length ? `${(done / tasks.length) * 100}%` : '0%', height: '100%', background: 'linear-gradient(90deg,#3b82f6,#6366f1)', borderRadius: 4, transition: 'width .3s' }} />
+                  <div style={{ width: taskTotal ? `${(taskDone / taskTotal) * 100}%` : '0%', height: '100%', background: 'linear-gradient(90deg,#3b82f6,#6366f1)', borderRadius: 4, transition: 'width .3s' }} />
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
-                  {tasks.length ? `${Math.round((done / tasks.length) * 100)}%` : '0%'}
+                  {taskTotal ? `${Math.round((taskDone / taskTotal) * 100)}%` : '0%'}
                 </span>
               </div>
               <button

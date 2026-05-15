@@ -33,20 +33,34 @@ export const saveToken = (token: string): void => {
  * Retrieves the authentication token from localStorage.
  * @returns The token string, or null if it's not found or expired.
  */
+/** Backfill expiry for sessions saved before auth_token_expiry existed. */
+const repairMissingExpiry = (): void => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const expiryTime = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  if (token && !expiryTime) {
+    localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + TOKEN_EXPIRY_TIME));
+  }
+};
+
 export const getToken = (): string | null => {
   try {
+    repairMissingExpiry();
     const token = localStorage.getItem(TOKEN_KEY);
     const expiryTime = localStorage.getItem(TOKEN_EXPIRY_KEY);
 
-    if (token && expiryTime) {
+    if (!token) {
+      return null;
+    }
+
+    if (expiryTime) {
       const expiry = parseInt(expiryTime, 10);
       if (!isNaN(expiry) && Date.now() < expiry) {
         return token;
       }
+      return null;
     }
-    // If token is expired or missing, clear everything for consistency
-    clearAuth();
-    return null;
+
+    return token;
   } catch (error) {
     console.warn('Error accessing token from localStorage:', error);
     return null;
@@ -119,11 +133,15 @@ export const clearAuth = (): void => {
  */
 export const isAuthenticated = (): boolean => {
   try {
+    repairMissingExpiry();
     const token = localStorage.getItem(TOKEN_KEY);
-    const expiryTime = localStorage.getItem(TOKEN_EXPIRY_KEY);
-
-    if (!token || !expiryTime) {
+    if (!token) {
       return false;
+    }
+
+    const expiryTime = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    if (!expiryTime) {
+      return true;
     }
 
     const expiry = parseInt(expiryTime, 10);

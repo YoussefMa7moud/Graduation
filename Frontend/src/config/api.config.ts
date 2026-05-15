@@ -5,8 +5,11 @@
  * Supports environment-based configuration for different deployment environments.
  */
 
-// Get API base URL from environment variable, fallback to localhost for development
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+// In dev, use relative URLs so Vite proxies /api → backend (same origin, fewer CORS/auth issues).
+// In production, set VITE_API_BASE_URL to your API host.
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.DEV ? '' : 'http://localhost:8080');
 
 // API Endpoints
 export const API_ENDPOINTS = {

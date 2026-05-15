@@ -93,6 +93,7 @@ public class CompanyProjectService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public CompanyProjectDTO getProjectById(Long projectId, Long pmUserId) {
         CompanyProject project = companyProjectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));

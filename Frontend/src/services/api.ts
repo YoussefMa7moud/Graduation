@@ -1,6 +1,12 @@
 
 
 import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    skipAuthRedirect?: boolean;
+  }
+}
 import { API_BASE_URL } from '../config/api.config';
 import { getToken, clearAuth } from '../utils/auth.utils';
 
@@ -72,23 +78,34 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    // Handle 401 Unauthorized - token expired or invalid
+    // Only force logout when we sent a token and the server rejected it (session invalid).
     if (error.response?.status === 401) {
-      console.warn('[API] Unauthorized - clearing auth and redirecting to login');
-      
-      // Clear authentication data
-      try {
-        clearAuth();
-      } catch (e) {
-        console.error('Error clearing auth:', e);
-      }
-      
-      // Redirect to login page only if we're not already there
-      // Use setTimeout to avoid issues during React rendering
-      if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
-        setTimeout(() => {
-          window.location.href = '/auth';
-        }, 100);
+      const headers = error.config?.headers;
+      const hadAuth = Boolean(
+        headers &&
+          (headers.Authorization ||
+            (headers as Record<string, string>).authorization ||
+            (typeof (headers as { get?: (k: string) => string }).get === 'function' &&
+              (headers as { get: (k: string) => string }).get('Authorization')))
+      );
+      const url = error.config?.url ?? '';
+      const isTaskApi = url.includes('/tasks');
+      const skipRedirect = error.config?.skipAuthRedirect || isTaskApi;
+
+      if (hadAuth && !skipRedirect) {
+        console.warn('[API] Session rejected (401) - clearing auth and redirecting to login');
+
+        try {
+          clearAuth();
+        } catch (e) {
+          console.error('Error clearing auth:', e);
+        }
+
+        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+          setTimeout(() => {
+            window.location.href = '/auth';
+          }, 100);
+        }
       }
     }
 

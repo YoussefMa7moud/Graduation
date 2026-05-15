@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./api";
 
 export interface CompanyProjectDTO {
   id: number;
@@ -28,29 +28,22 @@ export interface AssignProjectRequest {
   guidelines: string;
 }
 
-const authHeader = () => {
-  const token = localStorage.getItem("auth_token");
-  return { Authorization: `Bearer ${token}` };
-};
-
 export const assignProjectToPM = async (request: AssignProjectRequest): Promise<CompanyProjectDTO> => {
-  const response = await axios.post("/api/company-projects/assign", request, {
-    headers: authHeader()
-  });
+  const response = await api.post<CompanyProjectDTO>("/api/company-projects/assign", request);
   return response.data;
 };
 
 export const getCompanyProjects = async (): Promise<CompanyProjectDTO[]> => {
-  const response = await axios.get("/api/company-projects/company", { headers: authHeader() });
+  const response = await api.get<CompanyProjectDTO[]>("/api/company-projects/company");
   return response.data;
 };
 
 export const getPMProjects = async (): Promise<CompanyProjectDTO[]> => {
-  const response = await axios.get("/api/company-projects/pm", { headers: authHeader() });
+  const response = await api.get<CompanyProjectDTO[]>("/api/company-projects/pm");
   return response.data;
 };
 
 export const getProjectById = async (id: number): Promise<CompanyProjectDTO> => {
-  const response = await axios.get(`/api/company-projects/${id}`, { headers: authHeader() });
+  const response = await api.get<CompanyProjectDTO>(`/api/company-projects/${id}`);
   return response.data;
 };

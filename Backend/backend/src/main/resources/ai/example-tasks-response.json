@@ -1,0 +1,111 @@
+{
+  "projectSummary": "A web-based compliance management platform with client onboarding, contract workflows, and policy validation integrated into a Spring Boot and React stack.",
+  "phases": [
+    {
+      "phase": "PLANNING",
+      "milestone": "Project Kickoff & Scope Baseline",
+      "tasks": [
+        {
+          "title": "Conduct stakeholder discovery workshop",
+          "description": "Facilitate sessions with product, legal, and engineering leads to confirm goals, constraints, and success metrics. Document assumptions and out-of-scope items.",
+          "priority": "HIGH",
+          "estimatedDuration": "3 days",
+          "suggestedAssignee": "Product Owner",
+          "status": "TODO",
+          "dependencies": [],
+          "milestone": "Project Kickoff & Scope Baseline"
+        },
+        {
+          "title": "Define MVP scope and delivery roadmap",
+          "description": "Break the proposal into MVP vs post-MVP features. Produce a phased roadmap with target dates aligned to budget and duration constraints.",
+          "priority": "HIGH",
+          "estimatedDuration": "2 days",
+          "suggestedAssignee": "Tech Lead",
+          "status": "TODO",
+          "dependencies": ["Conduct stakeholder discovery workshop"],
+          "milestone": "Project Kickoff & Scope Baseline"
+        }
+      ]
+    },
+    {
+      "phase": "DESIGN",
+      "milestone": "Solution Design Sign-off",
+      "tasks": [
+        {
+          "title": "Create system architecture diagram",
+          "description": "Document frontend, API, database, and third-party integrations (AI, OCL). Include authentication flow and deployment topology.",
+          "priority": "HIGH",
+          "estimatedDuration": "4 days",
+          "suggestedAssignee": "Solution Architect",
+          "status": "TODO",
+          "dependencies": ["Define MVP scope and delivery roadmap"],
+          "milestone": "Solution Design Sign-off"
+        }
+      ]
+    },
+    {
+      "phase": "DEVELOPMENT",
+      "milestone": "MVP Feature Complete",
+      "tasks": [
+        {
+          "title": "Implement user authentication and RBAC",
+          "description": "Build JWT-based login, role-based route protection, and PM/company/client role mappings per security requirements.",
+          "priority": "CRITICAL",
+          "estimatedDuration": "1 week",
+          "suggestedAssignee": "Backend Developer",
+          "status": "TODO",
+          "dependencies": ["Create system architecture diagram"],
+          "milestone": "MVP Feature Complete"
+        }
+      ]
+    },
+    {
+      "phase": "TESTING",
+      "milestone": "Quality Gate Passed",
+      "tasks": [
+        {
+          "title": "Author end-to-end test suite for core workflows",
+          "description": "Automate proposal submission, contract signing, and PM task generation flows. Include negative cases for auth and validation errors.",
+          "priority": "HIGH",
+          "estimatedDuration": "1 week",
+          "suggestedAssignee": "QA Engineer",
+          "status": "TODO",
+          "dependencies": ["Implement user authentication and RBAC"],
+          "milestone": "Quality Gate Passed"
+        }
+      ]
+    },
+    {
+      "phase": "DEPLOYMENT",
+      "milestone": "Production Release",
+      "tasks": [
+        {
+          "title": "Configure CI/CD pipeline and staging environment",
+          "description": "Set up build, test, and deploy stages for backend and frontend. Configure environment variables and secrets management.",
+          "priority": "HIGH",
+          "estimatedDuration": "3 days",
+          "suggestedAssignee": "DevOps Engineer",
+          "status": "TODO",
+          "dependencies": ["Author end-to-end test suite for core workflows"],
+          "milestone": "Production Release"
+        }
+      ]
+    },
+    {
+      "phase": "MAINTENANCE",
+      "milestone": "Stable Operations",
+      "tasks": [
+        {
+          "title": "Establish monitoring and incident response runbook",
+          "description": "Configure application logging, uptime alerts, and on-call procedures. Document rollback steps for failed deployments.",
+          "priority": "MEDIUM",
+          "estimatedDuration": "2 days",
+          "suggestedAssignee": "DevOps Engineer",
+          "status": "TODO",
+          "dependencies": ["Configure CI/CD pipeline and staging environment"],
+          "milestone": "Stable Operations"
+        }
+      ]
+    }
+  ]
+}

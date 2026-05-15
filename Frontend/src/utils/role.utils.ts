@@ -55,6 +55,8 @@ const backendToFrontendRoleMap: Record<string, FrontendRole> = {
   company_employee: frontendRoles.COMPANY_EMPLOYEE,
   admin: frontendRoles.ADMIN,
   project_manager: frontendRoles.PROJECT_MANAGER,
+  // Backend enum UserRole.PROJECT_MANAGER serializes as PROJECT_MANAGER
+  projectmanager: frontendRoles.PROJECT_MANAGER,
 };
 
 /**

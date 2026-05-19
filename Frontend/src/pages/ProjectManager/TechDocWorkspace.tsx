@@ -3,8 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   getProjectById,
   generateProjectGuidelines,
+  validateTechnicalDocument,
   type CompanyProjectDTO,
+  type TechDocViolation,
 } from '../../services/CompanyProjectRepo';
+import {
+  collectTechnicalDocumentPlainText,
+  saveTechnicalDocumentFromDom,
+} from '../../utils/technicalDocStorage';
 import { getProjectTasks } from '../../services/pmTasks.service';
 import { toast } from 'react-toastify';
 import { parseOclRulesForDisplay } from '../../utils/oclRulesParser';
@@ -68,11 +74,31 @@ const CSS = `
 .pd-violations-header--idle { background:#f8fafc; color:#64748b; border-bottom:1px solid #e2e8f0; }
 .pd-violations-body { padding:16px 22px; background:#fff; font-size:13px; color:#334155; line-height:1.7; }
 .pd-violation-item {
-  display:flex; align-items:flex-start; gap:10px; padding:10px 0;
+  display:flex; flex-direction:column; gap:6px; padding:12px 0;
   border-bottom:1px solid #f1f5f9;
 }
 .pd-violation-item:last-child { border-bottom:none; }
-.pd-violation-icon { flex-shrink:0; margin-top:2px; }
+.pd-violation-head {
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; font-weight:700; color:#0f172a;
+}
+.pd-violation-icon { flex-shrink:0; color:#dc2626; }
+.pd-violation-ocl {
+  margin:4px 0 0 26px; padding:10px 14px; background:#0f172a; border-radius:8px;
+  font-size:11px; line-height:1.6; color:#a5f3fc; font-family:"JetBrains Mono","Fira Code",monospace;
+  white-space:pre-wrap;
+}
+.pd-violation-ocl-meaning {
+  font-size:12px; line-height:1.55; color:#475569; padding-left:26px; margin-top:4px;
+}
+.pd-violation-explain {
+  font-size:13px; line-height:1.65; color:#334155; padding-left:26px; margin-top:8px;
+}
+.pd-violation-doc {
+  font-size:12px; line-height:1.55; color:#64748b; padding-left:26px;
+  border-left:2px solid #fecaca; margin-left:24px; padding-top:4px; padding-bottom:4px;
+}
+.pd-violation-doc-label { font-weight:600; color:#94a3b8; font-size:10px; text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:4px; }
 
 /* ── Content Grid ── */
 .pd-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; animation:pd-fade-up .35s ease .1s both; }
@@ -208,7 +234,7 @@ const TechnicalDocWorkspace: React.FC = () => {
   const [project, setProject] = useState<CompanyProjectDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [validationState, setValidationState] = useState<'idle' | 'running' | 'pass' | 'fail'>('idle');
-  const [violations, setViolations] = useState<string[]>([]);
+  const [violations, setViolations] = useState<TechDocViolation[]>([]);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [taskDone, setTaskDone] = useState(0);
   const [taskTotal, setTaskTotal] = useState(0);
@@ -260,15 +286,49 @@ const TechnicalDocWorkspace: React.FC = () => {
     }
   };
 
-  const handleValidate = () => {
-    if (validationState === 'running') return;
+  const handleValidate = async () => {
+    if (validationState === 'running' || !project) return;
     setValidationState('running');
     setViolations([]);
-    // Placeholder: simulate validation (to be replaced with real API call)
-    setTimeout(() => {
-      setValidationState('pass');
+    try {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      saveTechnicalDocumentFromDom(project.id);
+      await new Promise<void>(resolve => {
+        window.setTimeout(() => resolve(), 150);
+      });
+      const plain = collectTechnicalDocumentPlainText(project.id);
+      const result = await validateTechnicalDocument(project.id, plain);
+      if (result.valid) {
+        setValidationState('pass');
+        setViolations([]);
+      } else {
+        setValidationState('fail');
+        setViolations(
+          result.violations?.length
+            ? result.violations
+            : [{
+                constraintName: 'Validation',
+                whyViolated: 'Issues were reported but no details were returned.',
+              }]
+        );
+      }
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number; data?: { error?: string } }; message?: string };
+      const status = axiosErr.response?.status;
+      let msg = axiosErr.response?.data?.error;
+      if (!msg) {
+        if (status === 503) {
+          msg = 'AI is not configured. Add GROQ_API_KEY to Backend/backend/.env and restart the backend.';
+        } else {
+          msg = axiosErr.message ?? 'Validation failed.';
+        }
+      }
+      toast.error(msg);
+      setValidationState('idle');
       setViolations([]);
-    }, 2500);
+    }
   };
 
   if (loading || !project) return (
@@ -306,7 +366,7 @@ const TechnicalDocWorkspace: React.FC = () => {
             <div className="pd-top-bar-icon"><i className="bi bi-shield-check" /></div>
             <div>
               <div className="pd-top-bar-title">{project.projectTitle}</div>
-              <div className="pd-top-bar-sub">Validate your technical document against the contract's OCL constraints</div>
+              <div className="pd-top-bar-sub">Check your technical document for conflicts with contract OCL constraints</div>
             </div>
           </div>
           <button className="pd-validate-btn" onClick={handleValidate} disabled={validationState === 'running'}>
@@ -350,25 +410,50 @@ const TechnicalDocWorkspace: React.FC = () => {
             {validationState === 'idle' && (
               <div style={{ textAlign: 'center', color: '#94a3b8', padding: '16px 0' }}>
                 <i className="bi bi-shield" style={{ fontSize: 28, display: 'block', marginBottom: 8, opacity: 0.5 }} />
-                Click <strong>"Validate Based on Contract"</strong> to check your document against OCL constraints.
+                Click <strong>"Validate Based on Contract"</strong> to find conflicts between your saved technical document and OCL constraints (omitted topics are not flagged; requires GROQ_API_KEY on the server).
               </div>
             )}
             {validationState === 'running' && (
               <div style={{ textAlign: 'center', color: '#64748b', padding: '16px 0' }}>
                 <div className="spinner-border spinner-border-sm me-2" role="status" />
-                Analyzing document against contract constraints…
+                Checking each OCL constraint against your full document (including long paragraphs)…
               </div>
             )}
             {validationState === 'pass' && (
               <div style={{ textAlign: 'center', color: '#059669', padding: '16px 0' }}>
                 <i className="bi bi-patch-check-fill" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
-                Your document complies with all contract constraints. No violations were detected.
+                No conflicts with contract OCL constraints were found in your document.
               </div>
             )}
             {validationState === 'fail' && violations.map((v, i) => (
               <div key={i} className="pd-violation-item">
-                <i className="bi bi-exclamation-triangle-fill pd-violation-icon" style={{ color: '#dc2626' }} />
-                <span>{v}</span>
+                <div className="pd-violation-head">
+                  <i className="bi bi-exclamation-triangle-fill pd-violation-icon" />
+                  <span>Violated: {v.constraintName}</span>
+                </div>
+                {v.oclCode?.trim() && (
+                  <>
+                    <div style={{ paddingLeft: 26, marginTop: 8 }}>
+                      <span className="pd-violation-doc-label">OCL constraint</span>
+                    </div>
+                    <pre className="pd-violation-ocl">{v.oclCode}</pre>
+                    {v.oclExplanation?.trim() && (
+                      <div className="pd-violation-ocl-meaning">{v.oclExplanation}</div>
+                    )}
+                  </>
+                )}
+                <div className="pd-violation-explain">
+                  <span className="pd-violation-doc-label" style={{ marginBottom: 6, display: 'block' }}>
+                    Why this violates the constraint
+                  </span>
+                  {v.whyViolated}
+                </div>
+                {v.documentConflict?.trim() && (
+                  <div className="pd-violation-doc">
+                    <span className="pd-violation-doc-label">In your document</span>
+                    {v.documentConflict}
+                  </div>
+                )}
               </div>
             ))}
           </div>

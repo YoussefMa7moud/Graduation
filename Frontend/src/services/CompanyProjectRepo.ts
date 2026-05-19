@@ -89,3 +89,29 @@ export const generateProjectGuidelines = async (
   );
   return response.data;
 };
+
+export interface TechDocViolation {
+  clauseId?: string;
+  constraintName: string;
+  oclCode?: string;
+  oclExplanation?: string;
+  whyViolated: string;
+  documentConflict?: string;
+}
+
+export interface TechDocValidationResponse {
+  valid: boolean;
+  violations: TechDocViolation[];
+}
+
+export const validateTechnicalDocument = async (
+  projectId: number,
+  documentText: string
+): Promise<TechDocValidationResponse> => {
+  const response = await api.post<TechDocValidationResponse>(
+    `/api/company-projects/${projectId}/validate-tech-doc`,
+    { documentText },
+    { timeout: 600000, skipAuthRedirect: true }
+  );
+  return response.data;
+};

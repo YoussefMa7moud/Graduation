@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Save,
@@ -322,6 +322,8 @@ const SECTION_COMPONENTS: Record<SectionId, React.FC> = {
 // ─── Main component ───────────────────────────────────────────────────────────
 const TechnicalDocEditor: React.FC = () => {
   const navigate = useNavigate();
+  const { id: projectIdParam } = useParams<{ id?: string }>();
+  const projectId = projectIdParam ? Number(projectIdParam) : NaN;
 
   const [activeSection, setActiveSection] = useState<SectionId>('cover');
   const [scale,         setScale]         = useState(1.0);
@@ -333,7 +335,10 @@ const TechnicalDocEditor: React.FC = () => {
   const sectionRefs  = useRef<Partial<Record<SectionId, HTMLDivElement>>>({});
   // Flag to suppress the IntersectionObserver while a programmatic scroll is running
   const scrollingRef = useRef(false);
-  const storageKey   = 'miu_doc_v2';
+  const storageKey =
+    Number.isFinite(projectId) && projectId > 0
+      ? `miu_doc_v2_project_${projectId}`
+      : 'miu_doc_v2';
 
   // ── Field persistence ─────────────────────────────────────────────────────
   const collectFields = useCallback((): FieldStore => {
@@ -347,10 +352,17 @@ const TechnicalDocEditor: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const raw = localStorage.getItem(storageKey);
+    let raw = localStorage.getItem(storageKey);
+    if (!raw && Number.isFinite(projectId) && projectId > 0) {
+      const legacy = localStorage.getItem('miu_doc_v2');
+      if (legacy) {
+        raw = legacy;
+        localStorage.setItem(storageKey, legacy);
+      }
+    }
     if (!raw) return;
     try { const store: FieldStore = JSON.parse(raw); requestAnimationFrame(() => applyFields(store)); } catch { /* ignore */ }
-  }, [storageKey, applyFields]);
+  }, [storageKey, projectId, applyFields]);
 
   useEffect(() => {
     const handler = () => localStorage.setItem(storageKey, JSON.stringify(collectFields()));
@@ -408,10 +420,21 @@ const TechnicalDocEditor: React.FC = () => {
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = useCallback(() => {
-    localStorage.setItem(storageKey, JSON.stringify(collectFields()));
+    const fields = collectFields();
+    localStorage.setItem(storageKey, JSON.stringify(fields));
     localStorage.setItem('miu_doc_last_saved', new Date().toISOString());
     setSaveOk(true);
     setTimeout(() => setSaveOk(false), 2200);
+  }, [storageKey, collectFields]);
+
+  useEffect(() => {
+    const flush = () => {
+      if (Object.keys(collectFields()).length > 0) {
+        localStorage.setItem(storageKey, JSON.stringify(collectFields()));
+      }
+    };
+    const id = window.setInterval(flush, 5000);
+    return () => window.clearInterval(id);
   }, [storageKey, collectFields]);
 
   // ── Export via new window ─────────────────────────────────────────────────

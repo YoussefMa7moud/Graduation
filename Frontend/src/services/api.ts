@@ -10,6 +10,19 @@ declare module 'axios' {
 import { API_BASE_URL } from '../config/api.config';
 import { getToken, clearAuth } from '../utils/auth.utils';
 
+/** Raw token for API calls when client-side expiry has passed but JWT may still be valid server-side. */
+function resolveBearerToken(): string | null {
+  const fromGet = getToken();
+  if (fromGet) {
+    return fromGet;
+  }
+  try {
+    return localStorage.getItem('auth_token');
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Create axios instance with base configuration
  */
@@ -29,11 +42,15 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     try {
-      const token = getToken();
-      
-      // Add token to request headers if available
+      const token = resolveBearerToken();
+
       if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
+        const h = config.headers as { set?: (k: string, v: string) => void } & Record<string, string>;
+        if (typeof h.set === 'function') {
+          h.set('Authorization', `Bearer ${token}`);
+        } else {
+          h.Authorization = `Bearer ${token}`;
+        }
       }
     } catch (error) {
       // If token retrieval fails, continue without token

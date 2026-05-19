@@ -1,0 +1,75 @@
+/** localStorage key for technical document editor fields (per project). */
+export const LEGACY_TECH_DOC_KEY = 'miu_doc_v2';
+
+export function getTechnicalDocStorageKey(projectId: number): string {
+  return `miu_doc_v2_project_${projectId}`;
+}
+
+/** Preserve paragraph/line breaks; only collapse repeated spaces on the same line. */
+function stripHtml(html: string): string {
+  if (!html) return '';
+  let text: string;
+  try {
+    const d = document.createElement('div');
+    d.innerHTML = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<\/h[1-6]>/gi, '\n\n');
+    text = d.textContent || d.innerText || '';
+  } catch {
+    text = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '\n')
+      .replace(/&nbsp;/gi, ' ');
+  }
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Reads saved editor fields for a project and returns concatenated plain text
+ * with field boundaries preserved (helps validation find content in long sections).
+ */
+export function collectTechnicalDocumentPlainText(projectId: number): string {
+  if (typeof window === 'undefined') return '';
+  const key = getTechnicalDocStorageKey(projectId);
+  let raw = localStorage.getItem(key);
+  if (!raw) {
+    raw = localStorage.getItem(LEGACY_TECH_DOC_KEY);
+  }
+  if (!raw) return '';
+  try {
+    const obj = JSON.parse(raw) as Record<string, string>;
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      const parts: string[] = [];
+      for (const [fieldId, html] of Object.entries(obj)) {
+        const plain = stripHtml(String(html ?? ''));
+        if (!plain) continue;
+        const label = fieldId.replace(/^tde-/, '').replace(/-/g, ' ');
+        parts.push(`[${label}]\n${plain}`);
+      }
+      return parts.join('\n\n');
+    }
+  } catch {
+    return stripHtml(raw);
+  }
+  return stripHtml(raw);
+}
+
+/** Force-save current editor fields from the DOM (call before validation if editor is open). */
+export function saveTechnicalDocumentFromDom(projectId: number): void {
+  if (typeof document === 'undefined' || !Number.isFinite(projectId) || projectId <= 0) return;
+  const store: Record<string, string> = {};
+  document.querySelectorAll<HTMLElement>('[id^="tde-"]').forEach(el => {
+    store[el.id] = el.innerHTML;
+  });
+  if (Object.keys(store).length > 0) {
+    localStorage.setItem(getTechnicalDocStorageKey(projectId), JSON.stringify(store));
+    localStorage.setItem('miu_doc_last_saved', new Date().toISOString());
+  }
+}

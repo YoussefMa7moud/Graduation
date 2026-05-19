@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from 'axios';
 import { getContractRecords, verifyContract, revealContractPassword } from '../../services/Contract/ContractRepo';
 import type { ContractVerifyResponse } from '../../services/Contract/ContractRepo';
-import { assignProjectToPM } from '../../services/CompanyProjectRepo';
-import { askGroq } from '../../services/geminiService';
+import { assignProjectToPM, extractClauseOclFromContract } from '../../services/CompanyProjectRepo';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import './ContractRepository.css';
@@ -269,31 +268,19 @@ const ContractRepository: React.FC = () => {
   const confirmAssignment = async () => {
     if (!selected || selectedPmId === '') return;
     setIsAssigning(true);
-    let oclRules = "No rules extracted.";
-    let guidelines = "No guidelines generated.";
+    let oclRules = JSON.stringify({ version: 1, constraints: [] });
 
     try {
-      setAssignProgress("Fetching Contract Details...");
-      const token = localStorage.getItem('auth_token');
-      const payloadRes = await axios.get(`/api/contracts/records/${selected.id}/payload`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const contractPayload = payloadRes.data;
-
       try {
-        setAssignProgress("AI is extracting OCL rules from the contract...");
-        const oclPrompt = `You are a Legal AI. Extract strict OCL (Object Constraint Language) rules from the following JSON contract. Return ONLY the OCL rules as plain text.\n\nContract:\n${JSON.stringify(contractPayload)}`;
-        oclRules = await askGroq(oclPrompt);
+        setAssignProgress("Converting each contract clause to OCL constraints...");
+        const oclExtraction = await extractClauseOclFromContract(selected.id);
+        oclRules = oclExtraction.oclRulesJson;
+        if (!oclExtraction.constraints?.length) {
+          toast.warn("No clauses with enough text were found for OCL extraction.");
+        }
       } catch (aiErr) {
-        console.warn("OCL extraction failed, using fallback.", aiErr);
-      }
-
-      try {
-        setAssignProgress("AI is generating PM guidelines for SRS/SDD...");
-        const guidelinesPrompt = `You are a Technical AI. Based on the following contract and OCL rules, generate a concise set of guidelines for the Project Manager to follow when creating the SRS and SDD documents. Format as Markdown.\n\nContract:\n${JSON.stringify(contractPayload)}\n\nOCL Rules:\n${oclRules}`;
-        guidelines = await askGroq(guidelinesPrompt);
-      } catch (aiErr) {
-        console.warn("Guidelines generation failed, using fallback.", aiErr);
+        console.warn("Per-clause OCL extraction failed.", aiErr);
+        toast.warn("OCL extraction failed. Assigning without clause constraints.");
       }
 
       setAssignProgress("Finalizing assignment...");
@@ -301,7 +288,7 @@ const ContractRepository: React.FC = () => {
         contractRecordId: selected.id,
         projectManagerId: Number(selectedPmId),
         oclRules,
-        guidelines,
+        guidelines: '',
       });
 
       const pm = pms.find(p => p.id === selectedPmId);

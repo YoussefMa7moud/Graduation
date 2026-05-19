@@ -118,11 +118,10 @@ public class CompanyProjectService {
         AiGuidelinesResponseDTO ai = projectGuidelinesAiService.generate(dto);
 
         project.setProjectSummary(ai.getProjectSummary().trim());
-        project.setGuidelines(ai.getGuidelines().trim());
         companyProjectRepository.save(project);
 
         return GenerateGuidelinesResponse.builder()
-                .message("Guidelines and project summary generated successfully")
+                .message("Project summary generated successfully")
                 .projectSummary(project.getProjectSummary())
                 .guidelines(project.getGuidelines())
                 .build();

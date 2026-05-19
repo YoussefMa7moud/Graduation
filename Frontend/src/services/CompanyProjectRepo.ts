@@ -22,12 +22,36 @@ export interface CompanyProjectDTO {
   createdAt: string;
 }
 
+export interface ClauseOclConstraint {
+  clauseId: string;
+  sectionTitle: string;
+  clauseText: string;
+  oclCode: string;
+  explanation: string;
+}
+
+export interface ExtractClauseOclResponse {
+  constraints: ClauseOclConstraint[];
+  oclRulesJson: string;
+}
+
 export interface AssignProjectRequest {
   contractRecordId: number;
   projectManagerId: number;
   oclRules: string;
   guidelines: string;
 }
+
+export const extractClauseOclFromContract = async (
+  contractRecordId: number
+): Promise<ExtractClauseOclResponse> => {
+  const response = await api.post<ExtractClauseOclResponse>(
+    `/api/company-projects/contracts/${contractRecordId}/extract-clause-ocl`,
+    {},
+    { timeout: 300000, skipAuthRedirect: true }
+  );
+  return response.data;
+};
 
 export const assignProjectToPM = async (request: AssignProjectRequest): Promise<CompanyProjectDTO> => {
   const response = await api.post<CompanyProjectDTO>("/api/company-projects/assign", request);

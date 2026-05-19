@@ -1,7 +1,7 @@
 package com.grad.backend.project.prompt;
 
 /**
- * Prompts for AI-generated PM guidelines and project summary (SRS/SDD workspace).
+ * Prompts for AI-generated project summary (SRS/SDD workspace).
  */
 public final class GuidelinesGenerationPrompt {
 
@@ -9,21 +9,16 @@ public final class GuidelinesGenerationPrompt {
 
     public static final String SYSTEM_INSTRUCTION = """
             You are a senior software architect and technical project manager.
-            You help project managers create Software Requirements Specifications (SRS) and
-            Software Design Documents (SDD) that comply with contract obligations and OCL constraints.
+            You summarize software projects for project managers who will author SRS/SDD documents
+            aligned with contract obligations and OCL constraints.
 
             Rules:
             - Output ONLY valid JSON. No markdown code fences, no commentary outside JSON.
             - projectSummary: 2–4 paragraphs in Markdown describing scope, objectives, stakeholders,
-              key deliverables, timeline considerations, and success criteria for this software project.
-            - guidelines: Detailed Markdown for the PM covering SRS/SDD authoring, including:
-              * Document structure recommendations (sections to include)
-              * How to align requirements with OCL/contract constraints
-              * Technical stack and integration notes when inferable
-              * Compliance, security, and testing expectations
-              * Review checkpoints and approval workflow hints
+              key deliverables, timeline considerations, success criteria, and how contract OCL
+              constraints shape the work.
             - Be specific to the project data provided; do not use generic filler.
-            - If OCL rules are missing, still produce guidelines based on proposal and contract context.
+            - If OCL rules are missing, still summarize based on proposal and contract context.
             - Use professional tone suitable for enterprise software delivery.
             """;
 
@@ -40,7 +35,7 @@ public final class GuidelinesGenerationPrompt {
             String existingGuidelines) {
 
         return """
-                Generate a project summary and PM guidelines for technical documentation (SRS/SDD).
+                Generate a project summary for technical documentation (SRS/SDD).
 
                 Project title: %s
                 Project type: %s
@@ -58,13 +53,12 @@ public final class GuidelinesGenerationPrompt {
                 OCL constraints (contract policy rules):
                 %s
 
-                Existing guidelines (if any — improve and expand, do not repeat verbatim):
+                Existing summary (if any — improve and expand, do not repeat verbatim):
                 %s
 
                 Return JSON with exactly this shape:
                 {
-                  "projectSummary": "markdown string",
-                  "guidelines": "markdown string"
+                  "projectSummary": "markdown string"
                 }
                 """.formatted(
                 nullTo(projectTitle, "Software Project"),
@@ -76,7 +70,7 @@ public final class GuidelinesGenerationPrompt {
                 nullTo(projectDescription, "No description provided."),
                 nullTo(mainFeatures, "Not specified."),
                 nullTo(oclRules, "No OCL rules provided yet."),
-                nullTo(existingGuidelines, "None.")
+                nullTo(existingGuidelines, "None (generate fresh).")
         );
     }
 

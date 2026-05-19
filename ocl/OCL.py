@@ -548,6 +548,96 @@ def normalize_ocl_for_python(ocl_expr: str) -> str:
     ocl_expr = re.sub(r"=\s*'([^']*)'", r'= "\1"', ocl_expr)
     return ocl_expr
 
+def sanitize_ocl_inv_name(clause_id: str) -> str:
+    """Build a valid OCL invariant name from a clause id."""
+    name = re.sub(r"[^a-zA-Z0-9_]", "_", (clause_id or "clause").strip())
+    if not name or name[0].isdigit():
+        name = f"clause_{name or 'rule'}"
+    return name[:48]
+
+
+def wrap_clause_ocl(clause_id: str, expression: str) -> str:
+    """Wrap a bare OCL expression in context/inv for contract clauses."""
+    expr = (expression or "").strip()
+    if not expr:
+        return ""
+    if re.search(r"\bcontext\b", expr, re.IGNORECASE) and re.search(r"\binv\b", expr, re.IGNORECASE):
+        return expr
+    inv_name = sanitize_ocl_inv_name(clause_id)
+    return f"context ContractClause\ninv {inv_name}: {expr}"
+
+
+def generate_clause_explanation(clause_text: str, ocl_code: str, client: Groq) -> str:
+    """Plain-language explanation of a contract clause OCL constraint."""
+    prompt = f"""
+You explain contract rules to a project manager writing SRS/SDD documents.
+Given the contract clause and its OCL constraint, write 1-2 clear sentences explaining
+what the constraint requires in business terms. No code blocks.
+
+Contract clause:
+"{clause_text}"
+
+OCL constraint:
+"{ocl_code}"
+"""
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+        )
+        text = (response.choices[0].message.content or "").strip()
+        return text if text else "This constraint captures an obligation from the contract clause."
+    except Exception as e:
+        logger.warning(f"Clause explanation generation failed: {e}")
+        return "This constraint captures an obligation from the contract clause."
+
+
+def extract_ocl_from_contract_payload(payload: dict, client: Groq, min_clause_len: int = 10) -> List[Dict]:
+    """
+    For each non-empty contract clause, generate OCL + explanation.
+    Returns a list of constraint dicts for PM / storage.
+    """
+    results: List[Dict] = []
+    sections = payload.get("sections") or []
+    if not isinstance(sections, list):
+        return results
+
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        section_title = (section.get("title") or section.get("sectionTitle") or "Section").strip()
+        clauses = section.get("clauses") or []
+        if not isinstance(clauses, list):
+            continue
+        for clause in clauses:
+            if not isinstance(clause, dict):
+                continue
+            clause_id = str(clause.get("id") or f"clause_{len(results) + 1}")
+            clause_text = str(clause.get("text") or "").strip()
+            if len(clause_text) < min_clause_len:
+                continue
+
+            ocl_expr = generate_ocl_with_retry(
+                f"Contract clause ({section_title}): {clause_text}",
+                client,
+            )
+            if not ocl_expr:
+                ocl_expr = "self.compliant = true"
+            full_ocl = wrap_clause_ocl(clause_id, ocl_expr)
+            explanation = generate_clause_explanation(clause_text, full_ocl, client)
+
+            results.append({
+                "clauseId": clause_id,
+                "sectionTitle": section_title,
+                "clauseText": clause_text,
+                "oclCode": full_ocl,
+                "explanation": explanation,
+            })
+
+    return results
+
+
 def generate_ocl_with_retry(user_policy, client, max_retries=3):
     last_error = ""
     ocl_expr = ""

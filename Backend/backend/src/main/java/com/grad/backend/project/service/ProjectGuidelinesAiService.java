@@ -31,7 +31,7 @@ public class ProjectGuidelinesAiService {
                 project.getClientName(),
                 project.getContractName(),
                 project.getOclRules(),
-                project.getGuidelines()
+                project.getProjectSummary()
         );
 
         try {
@@ -47,16 +47,13 @@ public class ProjectGuidelinesAiService {
             if (parsed.getProjectSummary() == null || parsed.getProjectSummary().isBlank()) {
                 throw new RuntimeException("AI response missing projectSummary");
             }
-            if (parsed.getGuidelines() == null || parsed.getGuidelines().isBlank()) {
-                throw new RuntimeException("AI response missing guidelines");
-            }
 
             return parsed;
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
             log.error("Guidelines generation failed: {}", e.getMessage());
-            throw new RuntimeException("Failed to generate guidelines: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to generate project summary: " + e.getMessage(), e);
         }
     }
 }

@@ -26,7 +26,8 @@ from OCL import (
     get_or_create_company_id,
     insert_policy,
     setup_database,
-    validate_clauses_against_policies
+    validate_clauses_against_policies,
+    extract_ocl_from_contract_payload,
 )
 
 # Load environment variables
@@ -110,6 +111,19 @@ class Violation(BaseModel):
 class ValidationResponse(BaseModel):
     violations: List[Violation]
     isValid: bool
+
+class ClauseOclConstraint(BaseModel):
+    clauseId: str
+    sectionTitle: str
+    clauseText: str
+    oclCode: str
+    explanation: str
+
+class ExtractClausesOclRequest(BaseModel):
+    contractPayload: dict
+
+class ExtractClausesOclResponse(BaseModel):
+    constraints: List[ClauseOclConstraint]
 
 @app.get("/")
 def root():
@@ -220,6 +234,23 @@ async def generate_file(
         raise HTTPException(
             status_code=500,
             detail=f"Error generating file: {str(e)}"
+        )
+
+@app.post("/extract-clauses-ocl", response_model=ExtractClausesOclResponse)
+async def extract_clauses_ocl(request: ExtractClausesOclRequest):
+    """
+    Convert each contract clause into an OCL constraint with a plain-language explanation.
+    """
+    try:
+        client = get_groq_client()
+        raw = extract_ocl_from_contract_payload(request.contractPayload, client)
+        constraints = [ClauseOclConstraint(**item) for item in raw]
+        return ExtractClausesOclResponse(constraints=constraints)
+    except Exception as e:
+        logger.error(f"Error extracting clause OCL: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error extracting clause OCL: {str(e)}"
         )
 
 @app.post("/validate-clauses", response_model=ValidationResponse)

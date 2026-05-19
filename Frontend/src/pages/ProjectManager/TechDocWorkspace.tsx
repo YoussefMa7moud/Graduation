@@ -7,6 +7,7 @@ import {
 } from '../../services/CompanyProjectRepo';
 import { getProjectTasks } from '../../services/pmTasks.service';
 import { toast } from 'react-toastify';
+import { parseOclRulesForDisplay } from '../../utils/oclRulesParser';
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
@@ -144,32 +145,22 @@ const CSS = `
 .pd-nda-badge--signed { background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; }
 .pd-nda-badge--unsigned { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
 
-/* ── Guidelines & Summary ── */
-.pd-guidelines-actions { display:flex; align-items:center; gap:10px; margin-left:auto; }
-.pd-gen-guidelines-btn {
+/* ── Project Summary ── */
+.pd-summary-actions { display:flex; align-items:center; gap:10px; margin-left:auto; }
+.pd-gen-summary-btn {
   display:inline-flex; align-items:center; gap:6px;
   padding:7px 14px; border-radius:9px; border:none; cursor:pointer;
   background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff;
   font-size:12px; font-weight:600; font-family:inherit;
   box-shadow:0 2px 8px rgba(245,158,11,0.3); transition:opacity .15s,transform .1s;
 }
-.pd-gen-guidelines-btn:hover:not(:disabled) { transform:translateY(-1px); }
-.pd-gen-guidelines-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-.pd-guidelines-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-@media(max-width:768px) { .pd-guidelines-grid { grid-template-columns:1fr; } }
-.pd-guidelines-block {
-  background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;
-  padding:16px 18px; min-height:120px;
-}
-.pd-guidelines-block-title {
-  font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;
-  letter-spacing:.05em; margin-bottom:10px; display:flex; align-items:center; gap:6px;
-}
-.pd-guidelines-content {
+.pd-gen-summary-btn:hover:not(:disabled) { transform:translateY(-1px); }
+.pd-gen-summary-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+.pd-summary-content {
   font-size:13px; line-height:1.75; color:#334155;
-  white-space:pre-wrap; max-height:280px; overflow-y:auto;
+  white-space:pre-wrap; max-height:320px; overflow-y:auto;
 }
-.pd-guidelines-empty {
+.pd-summary-empty {
   font-size:13px; color:#94a3b8; line-height:1.6; text-align:center; padding:24px 12px;
 }
 
@@ -210,39 +201,6 @@ const CSS = `
 }
 `;
 
-// ─── OCL Parser ───────────────────────────────────────────────────────────────
-interface ParsedRule { name: string; code: string; explanation: string }
-
-function parseOclRules(raw: string): ParsedRule[] {
-  if (!raw || !raw.trim()) return [];
-  // Split by 'context' keyword (each rule starts with 'context')
-  const chunks = raw.split(/(?=context\s)/gi).filter(s => s.trim());
-  return chunks.map((chunk, i) => {
-    // Try to extract rule name from 'inv <name>:' pattern
-    const invMatch = chunk.match(/inv\s+([\w]+)\s*:/i);
-    const name = invMatch ? invMatch[1] : `Rule ${i + 1}`;
-    // Generate a simple English explanation from the OCL
-    const explanation = generateExplanation(chunk.trim());
-    return { name, code: chunk.trim(), explanation };
-  });
-}
-
-function generateExplanation(ocl: string): string {
-  // Simple heuristic explanations based on common OCL patterns
-  const explanations: string[] = [];
-  if (/->forAll/i.test(ocl)) explanations.push('This rule checks that ALL items in a collection satisfy a condition.');
-  if (/->exists/i.test(ocl)) explanations.push('This rule verifies that at least one item meets the specified criteria.');
-  if (/->size\(\)/i.test(ocl)) explanations.push('This rule validates the count/size of a collection.');
-  if (/->isUnique/i.test(ocl)) explanations.push('This rule ensures uniqueness of values within a collection.');
-  if (/->select/i.test(ocl)) explanations.push('This rule filters elements based on a condition.');
-  if (/->includes/i.test(ocl)) explanations.push('This rule checks that a collection contains a specific element.');
-  if (/implies/i.test(ocl)) explanations.push('This rule defines a conditional requirement (if A then B).');
-  if (/not |<>|!=|oclIsUndefined/i.test(ocl)) explanations.push('This rule enforces that certain values must not be empty or invalid.');
-  if (/>=|<=|>|</i.test(ocl) && !/->/.test(ocl.split(/>=|<=|>|</)[0].slice(-3))) explanations.push('This rule enforces a numeric boundary constraint.');
-  if (explanations.length === 0) explanations.push('This constraint enforces a business rule defined in the contract policy.');
-  return explanations.join(' ');
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 const TechnicalDocWorkspace: React.FC = () => {
   const navigate = useNavigate();
@@ -251,7 +209,7 @@ const TechnicalDocWorkspace: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [validationState, setValidationState] = useState<'idle' | 'running' | 'pass' | 'fail'>('idle');
   const [violations, setViolations] = useState<string[]>([]);
-  const [generatingGuidelines, setGeneratingGuidelines] = useState(false);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
   const [taskDone, setTaskDone] = useState(0);
   const [taskTotal, setTaskTotal] = useState(0);
 
@@ -276,17 +234,15 @@ const TechnicalDocWorkspace: React.FC = () => {
     })();
   }, [id, navigate]);
 
-  const handleGenerateGuidelines = async () => {
-    if (!project || generatingGuidelines) return;
-    setGeneratingGuidelines(true);
+  const handleGenerateSummary = async () => {
+    if (!project || generatingSummary) return;
+    setGeneratingSummary(true);
     try {
       const res = await generateProjectGuidelines(project.id);
       setProject(prev =>
-        prev
-          ? { ...prev, projectSummary: res.projectSummary, guidelines: res.guidelines }
-          : prev
+        prev ? { ...prev, projectSummary: res.projectSummary } : prev
       );
-      toast.success('Guidelines and project summary generated.');
+      toast.success('Project summary generated.');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { status?: number; data?: { error?: string } }; message?: string };
       const status = axiosErr.response?.status;
@@ -295,12 +251,12 @@ const TechnicalDocWorkspace: React.FC = () => {
         if (status === 503) {
           msg = 'AI is not configured. Add GROQ_API_KEY to Backend/backend/.env and restart the backend.';
         } else {
-          msg = axiosErr.message ?? 'Failed to generate guidelines.';
+          msg = axiosErr.message ?? 'Failed to generate project summary.';
         }
       }
       toast.error(msg);
     } finally {
-      setGeneratingGuidelines(false);
+      setGeneratingSummary(false);
     }
   };
 
@@ -329,7 +285,8 @@ const TechnicalDocWorkspace: React.FC = () => {
     </>
   );
 
-  const hasGuidelinesContent = Boolean(project.projectSummary?.trim() || project.guidelines?.trim());
+  const oclDisplayRules = parseOclRulesForDisplay(project.oclRules);
+  const hasSummary = Boolean(project.projectSummary?.trim());
 
   return (
     <>
@@ -486,25 +443,25 @@ const TechnicalDocWorkspace: React.FC = () => {
             <div className="pd-card-head">
               <div className="pd-card-head-icon pd-card-head-icon--blue"><i className="bi bi-code-square" /></div>
               <span className="pd-card-head-title">OCL Constraints</span>
-              {project.oclRules && (
+              {oclDisplayRules.length > 0 && (
                 <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: 12 }}>
-                  {parseOclRules(project.oclRules).length} rule{parseOclRules(project.oclRules).length !== 1 ? 's' : ''}
+                  {oclDisplayRules.length} clause{oclDisplayRules.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
             <div className="pd-card-body" style={{ padding: 0 }}>
-              {!project.oclRules ? (
+              {oclDisplayRules.length === 0 ? (
                 <div className="pd-ocl-empty">
                   <i className="bi bi-code-slash" style={{ fontSize: 24, display: 'block', marginBottom: 8, opacity: 0.4 }} />
                   No OCL constraints have been extracted for this project yet.
                 </div>
               ) : (
                 <div className="pd-ocl-list">
-                  {parseOclRules(project.oclRules).map((rule, i) => (
+                  {oclDisplayRules.map((rule, i) => (
                     <div key={i} className="pd-ocl-rule">
                       <div className="pd-ocl-rule-head">
                         <span className="pd-ocl-rule-num">{i + 1}</span>
-                        {rule.name}
+                        <span>{rule.sectionTitle ? `${rule.sectionTitle} · ${rule.name}` : rule.name}</span>
                       </div>
                       <pre className="pd-ocl-code">{rule.code}</pre>
                       <div className="pd-ocl-explain">
@@ -518,19 +475,20 @@ const TechnicalDocWorkspace: React.FC = () => {
             </div>
           </div>
 
-          {/* ── AI Guidelines / Summary ── */}
+
+          {/* ── AI Project Summary ── */}
           <div className="pd-card" style={{ gridColumn: '1 / -1' }}>
             <div className="pd-card-head">
-              <div className="pd-card-head-icon pd-card-head-icon--amber"><i className="bi bi-stars" /></div>
-              <span className="pd-card-head-title">AI-Generated Guidelines & Project Summary</span>
-              <div className="pd-guidelines-actions">
+              <div className="pd-card-head-icon pd-card-head-icon--amber"><i className="bi bi-file-text" /></div>
+              <span className="pd-card-head-title">AI Project Summary</span>
+              <div className="pd-summary-actions">
                 <button
                   type="button"
-                  className="pd-gen-guidelines-btn"
-                  onClick={handleGenerateGuidelines}
-                  disabled={generatingGuidelines}
+                  className="pd-gen-summary-btn"
+                  onClick={handleGenerateSummary}
+                  disabled={generatingSummary}
                 >
-                  {generatingGuidelines ? (
+                  {generatingSummary ? (
                     <>
                       <span className="spinner-border spinner-border-sm" role="status" />
                       Generating…
@@ -538,45 +496,26 @@ const TechnicalDocWorkspace: React.FC = () => {
                   ) : (
                     <>
                       <i className="bi bi-stars" />
-                      {hasGuidelinesContent ? 'Regenerate' : 'Generate with AI'}
+                      {hasSummary ? 'Regenerate Summary' : 'Generate Summary'}
                     </>
                   )}
                 </button>
               </div>
             </div>
             <div className="pd-card-body">
-              {!hasGuidelinesContent && !generatingGuidelines ? (
-                <div className="pd-guidelines-empty">
+              {!hasSummary && !generatingSummary ? (
+                <div className="pd-summary-empty">
                   <i className="bi bi-journal-text" style={{ fontSize: 28, display: 'block', marginBottom: 10, opacity: 0.5 }} />
-                  No guidelines yet. Click <strong>Generate with AI</strong> to create a project summary and SRS/SDD
-                  authoring guidelines from the proposal, contract context, and OCL rules.
+                  No summary yet. Click <strong>Generate Summary</strong> to create an overview from the
+                  proposal, contract, and OCL constraints.
                 </div>
               ) : (
-                <div className="pd-guidelines-grid">
-                  <div className="pd-guidelines-block">
-                    <div className="pd-guidelines-block-title">
-                      <i className="bi bi-file-text" /> Project Summary
-                    </div>
-                    <div className="pd-guidelines-content">
-                      {generatingGuidelines && !project.projectSummary ? (
-                        <span style={{ color: '#94a3b8' }}>Generating summary…</span>
-                      ) : (
-                        project.projectSummary || '—'
-                      )}
-                    </div>
-                  </div>
-                  <div className="pd-guidelines-block">
-                    <div className="pd-guidelines-block-title">
-                      <i className="bi bi-list-check" /> PM Guidelines (SRS / SDD)
-                    </div>
-                    <div className="pd-guidelines-content">
-                      {generatingGuidelines && !project.guidelines ? (
-                        <span style={{ color: '#94a3b8' }}>Generating guidelines…</span>
-                      ) : (
-                        project.guidelines || '—'
-                      )}
-                    </div>
-                  </div>
+                <div className="pd-summary-content">
+                  {generatingSummary && !project.projectSummary ? (
+                    <span style={{ color: '#94a3b8' }}>Generating summary…</span>
+                  ) : (
+                    project.projectSummary || '—'
+                  )}
                 </div>
               )}
             </div>

@@ -82,9 +82,7 @@ The project follows a modular architecture consisting of:
 ## 🛠️ Technologies Used
 
 ### Frontend
-- HTML
-- CSS
-- JavaScript
+- React/Vite
 - Bootstrap
 
 ### Backend

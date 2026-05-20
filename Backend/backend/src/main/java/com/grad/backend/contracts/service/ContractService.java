@@ -15,6 +15,7 @@ import com.grad.backend.config.InternalApiConfig;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
 import com.grad.backend.contracts.dto.SignedProjectDTO;
 import com.lowagie.text.*;
+import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
@@ -201,14 +202,19 @@ public class ContractService {
             String dispute = root.has("disputeResolution") ? root.get("disputeResolution").asText("") : "";
             String provisions = root.has("provisions") ? root.get("provisions").asText("") : "";
 
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+            byte[] arialBytes = new org.springframework.core.io.ClassPathResource("fonts/arial.ttf").getContentAsByteArray();
+            byte[] arialBdBytes = new org.springframework.core.io.ClassPathResource("fonts/arialbd.ttf").getContentAsByteArray();
+            BaseFont arialNormal = BaseFont.createFont("arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, arialBytes, null);
+            BaseFont arialBold = BaseFont.createFont("arialbd.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, arialBdBytes, null);
 
-            doc.add(new Paragraph("Mutual Non-Disclosure Agreement", titleFont));
+            Font titleFont = new Font(arialBold, 16, Font.NORMAL);
+            Font boldFont = new Font(arialBold, 10, Font.NORMAL);
+            Font normalFont = new Font(arialNormal, 10, Font.NORMAL);
+
+            addBidiParagraph(doc, "Mutual Non-Disclosure Agreement", titleFont);
             doc.add(Chunk.NEWLINE);
 
-            doc.add(new Paragraph("PARTIES AND EXECUTION", boldFont));
+            addBidiParagraph(doc, "PARTIES AND EXECUTION", boldFont);
             PdfPTable table = new PdfPTable(2);
             table.setWidthPercentage(100);
             table.addCell(cell(partyA, draft.getCompanySignatureBase64(), boldFont, normalFont));
@@ -216,20 +222,18 @@ public class ContractService {
             doc.add(table);
             doc.add(Chunk.NEWLINE);
 
-            doc.add(new Paragraph("VARIABLES", boldFont));
-            doc.add(new Paragraph("Purpose: " + purpose, normalFont));
-            doc.add(new Paragraph("Confidentiality period: " + duration, normalFont));
-            doc.add(new Paragraph("Dispute Resolution: " + dispute, normalFont));
-            doc.add(new Paragraph("Special Provisions: " + provisions, normalFont));
+            addBidiParagraph(doc, "VARIABLES", boldFont);
+            addBidiParagraph(doc, "Purpose: " + purpose, normalFont);
+            addBidiParagraph(doc, "Confidentiality period: " + duration, normalFont);
+            addBidiParagraph(doc, "Dispute Resolution: " + dispute, normalFont);
+            addBidiParagraph(doc, "Special Provisions: " + provisions, normalFont);
             doc.add(Chunk.NEWLINE);
 
-            doc.add(new Paragraph("TERMS", boldFont));
-            doc.add(new Paragraph("1. Confidential Information: Information disclosed in connection with the Purpose.",
-                    normalFont));
-            doc.add(new Paragraph("2. Permitted Receivers: Need-to-know basis only.", normalFont));
-            doc.add(new Paragraph("3. Obligations: Use for Purpose only; keep secure; destroy on request.",
-                    normalFont));
-            doc.add(new Paragraph("4. Governing Law: Arab Republic of Egypt.", normalFont));
+            addBidiParagraph(doc, "TERMS", boldFont);
+            addBidiParagraph(doc, "1. Confidential Information: Information disclosed in connection with the Purpose.", normalFont);
+            addBidiParagraph(doc, "2. Permitted Receivers: Need-to-know basis only.", normalFont);
+            addBidiParagraph(doc, "3. Obligations: Use for Purpose only; keep secure; destroy on request.", normalFont);
+            addBidiParagraph(doc, "4. Governing Law: Arab Republic of Egypt.", normalFont);
 
             // Add QR Code for verification
             try {
@@ -261,9 +265,21 @@ public class ContractService {
         }
     }
 
+    private void addBidiParagraph(Document doc, String text, Font font) throws Exception {
+        if (text == null) text = "";
+        PdfPTable table = new PdfPTable(1);
+        table.setWidthPercentage(100);
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setRunDirection(PdfWriter.RUN_DIRECTION_LTR);
+        table.addCell(cell);
+        doc.add(table);
+    }
+
     private PdfPCell cell(JsonNode party, String sigBase64, Font bold, Font normal) throws Exception {
         PdfPCell c = new PdfPCell();
         c.setPadding(8);
+        c.setRunDirection(PdfWriter.RUN_DIRECTION_LTR);
         if (party != null) {
             c.addElement(new Paragraph(
                     "Entity details: " + (party.has("details") ? party.get("details").asText("") : ""), normal));

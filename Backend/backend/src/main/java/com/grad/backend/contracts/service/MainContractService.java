@@ -26,6 +26,7 @@ import com.grad.backend.project.enums.ClientType;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
 import com.grad.backend.service.TranslationService;
 import com.lowagie.text.*;
+import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
@@ -839,14 +840,19 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
             JsonNode partyA = root.has("partyA") ? root.get("partyA") : null;
             JsonNode partyB = root.has("partyB") ? root.get("partyB") : null;
 
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+            byte[] arialBytes = new org.springframework.core.io.ClassPathResource("fonts/arial.ttf").getContentAsByteArray();
+            byte[] arialBdBytes = new org.springframework.core.io.ClassPathResource("fonts/arialbd.ttf").getContentAsByteArray();
+            BaseFont arialNormal = BaseFont.createFont("arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, arialBytes, null);
+            BaseFont arialBold = BaseFont.createFont("arialbd.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, arialBdBytes, null);
 
-            doc.add(new Paragraph("Software Development Agreement", titleFont));
+            Font titleFont = new Font(arialBold, 16, Font.NORMAL);
+            Font boldFont = new Font(arialBold, 10, Font.NORMAL);
+            Font normalFont = new Font(arialNormal, 10, Font.NORMAL);
+
+            addBidiParagraph(doc, "Software Development Agreement", titleFont);
             doc.add(Chunk.NEWLINE);
 
-            doc.add(new Paragraph("PARTIES AND EXECUTION", boldFont));
+            addBidiParagraph(doc, "PARTIES AND EXECUTION", boldFont);
             PdfPTable table = new PdfPTable(2);
             table.setWidthPercentage(100);
             table.addCell(cell(partyA, draft.getCompanySignatureBase64(), boldFont, normalFont));
@@ -856,16 +862,16 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
 
             // Add contract sections if available
             if (root.has("sections")) {
-                doc.add(new Paragraph("CONTRACT TERMS", boldFont));
+                addBidiParagraph(doc, "CONTRACT TERMS", boldFont);
                 JsonNode sections = root.get("sections");
                 if (sections.isArray()) {
                     for (JsonNode section : sections) {
                         String title = section.has("title") ? section.get("title").asText() : "";
-                        doc.add(new Paragraph(title, boldFont));
+                        addBidiParagraph(doc, title, boldFont);
                         if (section.has("clauses") && section.get("clauses").isArray()) {
                             for (JsonNode clause : section.get("clauses")) {
                                 String clauseText = clause.has("text") ? clause.get("text").asText() : "";
-                                doc.add(new Paragraph(clauseText, normalFont));
+                                addBidiParagraph(doc, clauseText, normalFont);
                             }
                         }
                     }
@@ -902,9 +908,21 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         }
     }
 
+    private void addBidiParagraph(Document doc, String text, Font font) throws Exception {
+        if (text == null) text = "";
+        PdfPTable table = new PdfPTable(1);
+        table.setWidthPercentage(100);
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setBorder(Rectangle.NO_BORDER);
+        cell.setRunDirection(PdfWriter.RUN_DIRECTION_LTR);
+        table.addCell(cell);
+        doc.add(table);
+    }
+
     private PdfPCell cell(JsonNode party, String sigBase64, Font bold, Font normal) throws Exception {
         PdfPCell c = new PdfPCell();
         c.setPadding(8);
+        c.setRunDirection(PdfWriter.RUN_DIRECTION_LTR);
         if (party != null) {
             c.addElement(new Paragraph(
                     "Entity details: " + (party.has("details") ? party.get("details").asText("") : ""), normal));

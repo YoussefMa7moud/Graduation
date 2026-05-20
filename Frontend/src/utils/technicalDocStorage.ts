@@ -5,6 +5,31 @@ export function getTechnicalDocStorageKey(projectId: number): string {
   return `miu_doc_v2_project_${projectId}`;
 }
 
+/** True when a contenteditable field has no real user text (only <br>, whitespace, etc.). */
+export function isEmptyEditorHtml(html: string | null | undefined): boolean {
+  return stripHtml(String(html ?? '')) === '';
+}
+
+/** Old ch1 intro hint text that was saved as real content in some drafts. */
+const LEGACY_CH1_INTRO_PLACEHOLDER =
+  'Setting out the aims and objectives of your project, explaining the overall intention and specific steps that will be taken to achieve it.';
+
+/** Drop empty fields and legacy placeholder text mistaken for saved content. */
+export function normalizeTechnicalDocFieldStore(
+  store: Record<string, string>
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [id, html] of Object.entries(store)) {
+    if (id === 'tde-ch1_intro' && stripHtml(html) === LEGACY_CH1_INTRO_PLACEHOLDER) {
+      continue;
+    }
+    if (!isEmptyEditorHtml(html)) {
+      out[id] = html;
+    }
+  }
+  return out;
+}
+
 /** Preserve paragraph/line breaks; only collapse repeated spaces on the same line. */
 function stripHtml(html: string): string {
   if (!html) return '';
@@ -83,7 +108,9 @@ export function saveTechnicalDocumentFromDom(projectId: number): void {
   if (typeof document === 'undefined' || !Number.isFinite(projectId) || projectId <= 0) return;
   const store: Record<string, string> = {};
   document.querySelectorAll<HTMLElement>('[id^="tde-"]').forEach(el => {
-    store[el.id] = el.innerHTML;
+    if (!isEmptyEditorHtml(el.innerHTML)) {
+      store[el.id] = el.innerHTML;
+    }
   });
   if (Object.keys(store).length > 0) {
     localStorage.setItem(getTechnicalDocStorageKey(projectId), JSON.stringify(store));

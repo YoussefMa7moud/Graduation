@@ -56,7 +56,7 @@ public class ProjectTechDocValidationService {
                     .valid(false)
                     .violations(List.of(systemViolation(
                             "Setup",
-                            "No OCL constraints are stored for this project. Re-assign the contract with clause OCL extraction, or contact the company.")))
+                            "No OCL constraints are stored for this project. They are created when the client signs the contract; contact the company if this project was assigned before that step completed.")))
                     .build();
             persistTechDocAfterValidation(project, documentFieldsJson, response);
             return response;

@@ -20,6 +20,7 @@ import com.grad.backend.contracts.repository.ContractDraftRepository;
 import com.grad.backend.contracts.repository.ContractRecordRepository;
 import com.grad.backend.config.InternalApiConfig;
 import com.grad.backend.project.DTO.NdaPartiesDTO;
+import com.grad.backend.project.service.ContractClauseOclService;
 import com.grad.backend.project.entity.ProposalSubmission;
 import com.grad.backend.project.enums.ClientType;
 import com.grad.backend.project.repository.ProposalSubmissionRepository;
@@ -69,6 +70,7 @@ public class MainContractService {
     private final ClientCompanyRepository clientCompanyRepo;
     private final ClientPersonRepository clientPersonRepo;
     private final PolicyRepository policyRepository;
+    private final ContractClauseOclService contractClauseOclService;
     private final RestTemplate restTemplate;
     private final InternalApiConfig internalApiConfig;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -649,6 +651,20 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
         if (contractPayloadJson != null && !contractPayloadJson.isBlank()) {
             draft.setContractPayloadJson(contractPayloadJson);
         }
+
+        try {
+            ContractClauseOclService.ExtractionResult extraction =
+                    contractClauseOclService.extractAndEnrichPayload(draft.getContractPayloadJson());
+            draft.setOclRules(extraction.oclRulesJson());
+            draft.setContractPayloadJson(extraction.enrichedPayload());
+            log.info("Extracted {} OCL constraints after client sign for submission {}",
+                    extraction.constraintCount(), submissionId);
+        } catch (Exception e) {
+            log.warn("OCL extraction after client sign failed for submission {}: {}",
+                    submissionId, e.getMessage());
+            draft.setOclRules(ContractClauseOclService.emptyOclRulesBundle(objectMapper));
+        }
+
         draft = draftRepository.save(draft);
 
         return toDraftResponse(draft);
@@ -707,6 +723,7 @@ public ContractValidationResponse validateWithAI(Long submissionId, Long userId)
                 .clientSignatoryName(clientName)
                 .companySignatoryName(companyName)
                 .contractPayloadJson(draft.getContractPayloadJson())
+                .oclRules(draft.getOclRules())
                 .contractHash(hash)
                 .contractPassword(Contracthashutil.encrypt(pdfPassword, contractPasswordKey))
                 .build();

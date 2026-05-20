@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from 'axios';
 import { getContractRecords, verifyContract, revealContractPassword } from '../../services/Contract/ContractRepo';
 import type { ContractVerifyResponse } from '../../services/Contract/ContractRepo';
-import { assignProjectToPM, extractClauseOclFromContract } from '../../services/CompanyProjectRepo';
+import { assignProjectToPM } from '../../services/CompanyProjectRepo';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import './ContractRepository.css';
@@ -268,26 +268,12 @@ const ContractRepository: React.FC = () => {
   const confirmAssignment = async () => {
     if (!selected || selectedPmId === '') return;
     setIsAssigning(true);
-    let oclRules = JSON.stringify({ version: 1, constraints: [] });
 
     try {
-      try {
-        setAssignProgress("Converting each contract clause to OCL constraints...");
-        const oclExtraction = await extractClauseOclFromContract(selected.id);
-        oclRules = oclExtraction.oclRulesJson;
-        if (!oclExtraction.constraints?.length) {
-          toast.warn("No clauses with enough text were found for OCL extraction.");
-        }
-      } catch (aiErr) {
-        console.warn("Per-clause OCL extraction failed.", aiErr);
-        toast.warn("OCL extraction failed. Assigning without clause constraints.");
-      }
-
-      setAssignProgress("Finalizing assignment...");
+      setAssignProgress("Assigning project manager…");
       await assignProjectToPM({
         contractRecordId: selected.id,
         projectManagerId: Number(selectedPmId),
-        oclRules,
         guidelines: '',
       });
 

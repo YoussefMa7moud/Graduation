@@ -60,6 +60,11 @@ public class ContractRecord {
     @Column(name = "contract_payload_json", columnDefinition = "LONGTEXT")
     private String contractPayloadJson;
 
+    /** OCL constraints bundle (JSON, no clause text), copied from draft when the company finalizes signing. */
+    @Lob
+    @Column(name = "ocl_rules", columnDefinition = "LONGTEXT")
+    private String oclRules;
+
     @Column(name = "contract_hash", length = 64)
     private String contractHash;
 

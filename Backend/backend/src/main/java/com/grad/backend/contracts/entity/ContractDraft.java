@@ -56,6 +56,13 @@ public class ContractDraft {
     @Column(name = "validation_results_json", columnDefinition = "LONGTEXT")
     private String validationResultsJson;
 
+    /**
+     * OCL constraints bundle (JSON, no clause text) generated after the client signs.
+     */
+    @Lob
+    @Column(name = "ocl_rules", columnDefinition = "LONGTEXT")
+    private String oclRules;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

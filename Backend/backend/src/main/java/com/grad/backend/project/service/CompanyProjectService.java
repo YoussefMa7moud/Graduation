@@ -71,11 +71,20 @@ public class CompanyProjectService {
             throw new RuntimeException("Unauthorized: Project Manager does not belong to this company");
         }
 
+        if (record.getClientSignedAt() == null) {
+            throw new RuntimeException("The client must sign the contract before assigning a project manager.");
+        }
+
+        String oclRules = record.getOclRules();
+        if (oclRules == null || oclRules.isBlank()) {
+            oclRules = ContractClauseOclService.emptyOclRulesBundle(JSON);
+        }
+
         CompanyProject project = CompanyProject.builder()
                 .contractRecord(record)
                 .projectManager(pm)
                 .companyId(company.getId())
-                .oclRules(request.getOclRules())
+                .oclRules(oclRules)
                 .guidelines(request.getGuidelines())
                 .status("ASSIGNED")
                 .build();

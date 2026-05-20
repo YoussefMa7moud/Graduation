@@ -4,7 +4,11 @@ import {
   getProjectById,
   saveTechnicalDocumentToServer,
 } from '../../services/CompanyProjectRepo';
-import { getTechnicalDocStorageKey } from '../../utils/technicalDocStorage';
+import {
+  getTechnicalDocStorageKey,
+  isEmptyEditorHtml,
+  normalizeTechnicalDocFieldStore,
+} from '../../utils/technicalDocStorage';
 import { toast } from 'react-toastify';
 import {
   ArrowLeft,
@@ -42,14 +46,17 @@ const tk = {
 
 // ─── Global CSS ───────────────────────────────────────────────────────────────
 const GLOBAL_CSS = `
-  .tde-field[contenteditable]:empty:before { content:attr(data-ph); color:#a5b4fc; font-style:italic; pointer-events:none; }
+  .tde-field[contenteditable]:empty:before,
+  .tde-field[contenteditable].tde-empty:before { content:attr(data-ph); color:#a5b4fc; font-style:italic; pointer-events:none; }
   .tde-field[contenteditable]:focus { border-color:#3b82f6 !important; background:#eff6ff !important; outline:none; }
-  .tde-inline[contenteditable]:empty:before { content:attr(data-ph); color:#a5b4fc; font-style:italic; }
+  .tde-inline[contenteditable]:empty:before,
+  .tde-inline[contenteditable].tde-empty:before { content:attr(data-ph); color:#a5b4fc; font-style:italic; }
   .tde-inline[contenteditable]:focus { border-bottom-color:#3b82f6 !important; background:#eff6ff; outline:none; }
   .doc-table { width:100%; border-collapse:collapse; font-size:12px; margin:10px 0; }
   .doc-table th { background:#1e293b; color:#f1f5f9; padding:7px 10px; text-align:left; font-weight:500; font-size:11px; font-family:${tk.sansFont}; }
   .doc-table td { border:0.5px solid #e2e8f0; padding:6px 10px; vertical-align:top; color:#334155; font-size:12px; }
-  .doc-table td[contenteditable]:empty:before { content:attr(data-ph); color:#a5b4fc; font-style:italic; }
+  .doc-table td[contenteditable]:empty:before,
+  .doc-table td[contenteditable].tde-empty:before { content:attr(data-ph); color:#a5b4fc; font-style:italic; }
   .doc-table td[contenteditable]:focus { background:#eff6ff; outline:none; }
   .toc-row  { display:flex; justify-content:space-between; align-items:baseline; font-size:13px; padding:3px 0; color:#222; border-bottom:0.5px dotted #ddd; font-family:${tk.sansFont}; }
   .toc-sub  { padding-left:20px; font-size:12px; color:#555; }
@@ -91,12 +98,12 @@ type FieldStore = Record<string, string>;
 interface FieldProps { fieldId: string; placeholder: string; style?: React.CSSProperties; oneLine?: boolean }
 
 const Field: React.FC<FieldProps> = ({ fieldId, placeholder, style, oneLine }) => (
-  <div id={`tde-${fieldId}`} className="tde-field" contentEditable suppressContentEditableWarning data-ph={placeholder}
+  <div id={`tde-${fieldId}`} className="tde-field tde-empty" contentEditable suppressContentEditableWarning data-ph={placeholder}
     style={{ background:tk.fieldBg, border:`0.5px dashed ${tk.dashBorder}`, borderRadius:tk.radiusSm, padding:'10px 14px', margin:'8px 0', minHeight:oneLine?36:64, fontSize:13, lineHeight:1.7, color:'#1e293b', fontFamily:tk.serifFont, whiteSpace:'pre-wrap', ...style }} />
 );
 
 const Inline: React.FC<{ fieldId:string; placeholder:string; style?: React.CSSProperties }> = ({ fieldId, placeholder, style }) => (
-  <span id={`tde-${fieldId}`} className="tde-inline" contentEditable suppressContentEditableWarning data-ph={placeholder}
+  <span id={`tde-${fieldId}`} className="tde-inline tde-empty" contentEditable suppressContentEditableWarning data-ph={placeholder}
     style={{ borderBottom:`1px dashed ${tk.dashBorder}`, minWidth:80, display:'inline', color:'inherit', fontFamily:'inherit', fontSize:'inherit', ...style }} />
 );
 
@@ -189,7 +196,7 @@ const SectionTOC: React.FC = () => {
 const SectionCh1: React.FC = () => (
   <DocPage label="Chapter 1 — Introduction" pageNum="1–2">
     <div style={ds.chNum}>Chapter 1</div><div style={ds.chHead}>Introduction</div>
-    <Field fieldId="ch1_intro" placeholder="Setting out the aims and objectives of your project, explaining the overall intention and specific steps that will be taken to achieve it." />
+    <Field fieldId="ch1_intro" placeholder="Brief introduction to this chapter." />
     <div style={ds.secHead}>1.1  Motivation</div><Field fieldId="ch1_motivation" placeholder="Explain the problem being solved and why it matters." />
     <div style={ds.subHead}>1.1.1  Problem statement</div><Field fieldId="ch1_problem" placeholder="Lead the reader from a shared context to the perception of a problem, and on to a proposed solution." />
     <div style={ds.secHead}>1.2  Aims and objectives</div><Field fieldId="ch1_aims" placeholder="List the aims and objectives of your project clearly." />
@@ -349,26 +356,43 @@ const TechnicalDocEditor: React.FC = () => {
   // ── Field persistence ─────────────────────────────────────────────────────
   const collectFields = useCallback((): FieldStore => {
     const store: FieldStore = {};
-    document.querySelectorAll<HTMLElement>('[id^="tde-"]').forEach(el => { store[el.id] = el.innerHTML; });
+    document.querySelectorAll<HTMLElement>('[id^="tde-"]').forEach(el => {
+      if (!isEmptyEditorHtml(el.innerHTML)) {
+        store[el.id] = el.innerHTML;
+      }
+    });
     return store;
   }, []);
 
   const applyFields = useCallback((store: FieldStore) => {
-    Object.entries(store).forEach(([id, html]) => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+    const normalized = normalizeTechnicalDocFieldStore(store);
+    document.querySelectorAll<HTMLElement>('[id^="tde-"]').forEach(el => {
+      el.innerHTML = '';
+    });
+    Object.entries(normalized).forEach(([id, html]) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+    requestAnimationFrame(() => {
+      document.querySelectorAll<HTMLElement>('[id^="tde-"]').forEach(el => {
+        if (isEmptyEditorHtml(el.innerHTML)) {
+          el.innerHTML = '';
+          el.classList.add('tde-empty');
+        } else {
+          el.classList.remove('tde-empty');
+        }
+      });
+    });
   }, []);
 
   useEffect(() => {
-    let raw = localStorage.getItem(storageKey);
-    if (!raw && Number.isFinite(projectId) && projectId > 0) {
-      const legacy = localStorage.getItem('miu_doc_v2');
-      if (legacy) {
-        raw = legacy;
-        localStorage.setItem(storageKey, legacy);
-      }
-    }
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return;
-    try { const store: FieldStore = JSON.parse(raw); requestAnimationFrame(() => applyFields(store)); } catch { /* ignore */ }
-  }, [storageKey, projectId, applyFields]);
+    try {
+      const store: FieldStore = JSON.parse(raw);
+      requestAnimationFrame(() => applyFields(store));
+    } catch { /* ignore */ }
+  }, [storageKey, applyFields]);
 
   useEffect(() => {
     if (!Number.isFinite(projectId) || projectId <= 0) return;
@@ -382,8 +406,9 @@ const TechnicalDocEditor: React.FC = () => {
         if (!fromServer) return;
         if (localStorage.getItem(key)?.trim()) return;
         const store: FieldStore = JSON.parse(fromServer);
-        requestAnimationFrame(() => applyFields(store));
-        localStorage.setItem(key, fromServer);
+        const normalized = normalizeTechnicalDocFieldStore(store);
+        requestAnimationFrame(() => applyFields(normalized));
+        localStorage.setItem(key, JSON.stringify(normalized));
       } catch {
         /* ignore: session or network */
       }
@@ -391,11 +416,34 @@ const TechnicalDocEditor: React.FC = () => {
     return () => { cancelled = true; };
   }, [projectId, applyFields]);
 
+  const syncEmptyFieldClasses = useCallback(() => {
+    document.querySelectorAll<HTMLElement>('[id^="tde-"].tde-field, [id^="tde-"].tde-inline').forEach(el => {
+      el.classList.toggle('tde-empty', isEmptyEditorHtml(el.innerHTML));
+    });
+    document.querySelectorAll<HTMLElement>('.doc-table [id^="tde-"]').forEach(el => {
+      el.classList.toggle('tde-empty', isEmptyEditorHtml(el.innerHTML));
+    });
+  }, []);
+
   useEffect(() => {
-    const handler = () => localStorage.setItem(storageKey, JSON.stringify(collectFields()));
+    const onEdit = (e: Event) => {
+      const t = e.target;
+      if (t instanceof HTMLElement && t.id?.startsWith('tde-')) {
+        t.classList.toggle('tde-empty', isEmptyEditorHtml(t.innerHTML));
+      }
+    };
+    const handler = () => {
+      syncEmptyFieldClasses();
+      localStorage.setItem(storageKey, JSON.stringify(collectFields()));
+    };
+    document.addEventListener('input', onEdit);
     document.addEventListener('focusout', handler);
-    return () => document.removeEventListener('focusout', handler);
-  }, [storageKey, collectFields]);
+    requestAnimationFrame(syncEmptyFieldClasses);
+    return () => {
+      document.removeEventListener('input', onEdit);
+      document.removeEventListener('focusout', handler);
+    };
+  }, [storageKey, collectFields, syncEmptyFieldClasses]);
 
   // ── IntersectionObserver — update active sidebar item as user scrolls ─────
   useEffect(() => {

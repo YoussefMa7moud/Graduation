@@ -27,7 +27,7 @@ export interface CompanyProjectDTO {
 export interface ClauseOclConstraint {
   clauseId: string;
   sectionTitle: string;
-  clauseText: string;
+  clauseText?: string;
   oclCode: string;
   explanation: string;
 }
@@ -40,7 +40,8 @@ export interface ExtractClauseOclResponse {
 export interface AssignProjectRequest {
   contractRecordId: number;
   projectManagerId: number;
-  oclRules: string;
+  /** Optional; OCL rules are copied from the signed contract record (generated when the client signed). */
+  oclRules?: string;
   guidelines: string;
 }
 

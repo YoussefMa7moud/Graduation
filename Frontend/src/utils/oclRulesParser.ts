@@ -1,7 +1,8 @@
 export interface ClauseOclConstraint {
   clauseId: string;
   sectionTitle: string;
-  clauseText: string;
+  /** Not stored in project ocl_rules after client sign — only used during extraction API responses. */
+  clauseText?: string;
   oclCode: string;
   explanation: string;
 }

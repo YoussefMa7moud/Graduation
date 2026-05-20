@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +42,25 @@ public class ContractClauseOclService {
 
     @Value("${app.ocl.api.url:http://localhost:5001}")
     private String oclApiUrl;
+
+    /**
+     * Runs clause→OCL extraction on a signed contract payload and returns a storage-safe bundle
+     * (constraints without clause text).
+     */
+    public String extractOclRulesBundleFromPayload(String payloadJson) {
+        List<ClauseOclConstraintDTO> constraints = callOclExtractApi(payloadJson);
+        return buildOclRulesBundle(constraints);
+    }
+
+    /**
+     * After client signs: extract OCL from payload, optionally enrich payload with oclCode on clauses.
+     */
+    public ExtractionResult extractAndEnrichPayload(String payloadJson) {
+        List<ClauseOclConstraintDTO> constraints = callOclExtractApi(payloadJson);
+        String oclRulesJson = buildOclRulesBundle(constraints);
+        String enrichedPayload = mergeOclIntoPayload(payloadJson, constraints);
+        return new ExtractionResult(oclRulesJson, enrichedPayload, constraints.size());
+    }
 
     @Transactional
     public ExtractClauseOclResponse extractFromContractRecord(Long contractRecordId, Long companyUserId) {
@@ -60,32 +80,82 @@ public class ContractClauseOclService {
             throw new RuntimeException("OCL extraction is only supported for main contracts");
         }
 
+        if (record.getOclRules() != null && !record.getOclRules().isBlank()) {
+            List<ClauseOclConstraintDTO> existing = parseConstraintsFromBundle(record.getOclRules());
+            return ExtractClauseOclResponse.builder()
+                    .constraints(existing)
+                    .oclRulesJson(record.getOclRules())
+                    .build();
+        }
+
         String payloadJson = record.getContractPayloadJson();
         if (payloadJson == null || payloadJson.isBlank()) {
             throw new RuntimeException("Contract has no payload to extract clauses from");
         }
 
-        List<ClauseOclConstraintDTO> constraints = callOclExtractApi(payloadJson);
-        String enrichedPayload = mergeOclIntoPayload(payloadJson, constraints);
-        record.setContractPayloadJson(enrichedPayload);
+        ExtractionResult result = extractAndEnrichPayload(payloadJson);
+        record.setContractPayloadJson(result.enrichedPayload());
+        record.setOclRules(result.oclRulesJson());
         contractRecordRepository.save(record);
 
-        String oclRulesJson = buildOclRulesBundle(constraints);
+        List<ClauseOclConstraintDTO> stored = parseConstraintsFromBundle(result.oclRulesJson());
         return ExtractClauseOclResponse.builder()
-                .constraints(constraints)
-                .oclRulesJson(oclRulesJson)
+                .constraints(stored)
+                .oclRulesJson(result.oclRulesJson())
                 .build();
     }
 
     public String buildOclRulesBundle(List<ClauseOclConstraintDTO> constraints) {
         try {
+            List<ClauseOclConstraintDTO> stored = sanitizeForStorage(constraints);
             Map<String, Object> bundle = new HashMap<>();
             bundle.put("version", 1);
-            bundle.put("constraints", constraints);
+            bundle.put("constraints", stored);
             return objectMapper.writeValueAsString(bundle);
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize OCL rules bundle", e);
         }
+    }
+
+    public static String emptyOclRulesBundle(ObjectMapper mapper) {
+        try {
+            Map<String, Object> bundle = new HashMap<>();
+            bundle.put("version", 1);
+            bundle.put("constraints", List.of());
+            return mapper.writeValueAsString(bundle);
+        } catch (Exception e) {
+            return "{\"version\":1,\"constraints\":[]}";
+        }
+    }
+
+    private List<ClauseOclConstraintDTO> parseConstraintsFromBundle(String oclRulesJson) {
+        try {
+            JsonNode root = objectMapper.readTree(oclRulesJson);
+            if (!root.has("constraints") || !root.get("constraints").isArray()) {
+                return List.of();
+            }
+            return objectMapper.convertValue(
+                    root.get("constraints"),
+                    new TypeReference<List<ClauseOclConstraintDTO>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    /** Persist only ids, section, OCL code, and explanation — never clause text. */
+    private List<ClauseOclConstraintDTO> sanitizeForStorage(List<ClauseOclConstraintDTO> constraints) {
+        if (constraints == null) {
+            return List.of();
+        }
+        return constraints.stream()
+                .filter(c -> c.getOclCode() != null && !c.getOclCode().isBlank())
+                .map(c -> ClauseOclConstraintDTO.builder()
+                        .clauseId(c.getClauseId())
+                        .sectionTitle(c.getSectionTitle())
+                        .oclCode(c.getOclCode())
+                        .explanation(c.getExplanation())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private List<ClauseOclConstraintDTO> callOclExtractApi(String payloadJson) {
@@ -121,7 +191,7 @@ public class ContractClauseOclService {
         }
     }
 
-    private String mergeOclIntoPayload(String payloadJson, List<ClauseOclConstraintDTO> constraints) {
+    public String mergeOclIntoPayload(String payloadJson, List<ClauseOclConstraintDTO> constraints) {
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(payloadJson);
             if (!root.has("sections") || !root.get("sections").isArray()) {
@@ -164,4 +234,6 @@ public class ContractClauseOclService {
             return payloadJson;
         }
     }
+
+    public record ExtractionResult(String oclRulesJson, String enrichedPayload, int constraintCount) {}
 }

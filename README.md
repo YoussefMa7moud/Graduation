@@ -63,7 +63,7 @@ The goal is to reduce legal risks, improve contract quality, and simplify legal 
 
 The AI model and RAG-based clause extraction system used in this project can be found here:
 
-➡️ :contentReference[oaicite:0]{index=0}
+➡️ https://github.com/Marwan-Mohamed14/rag_contract_clause_extraction.git
 
 ---
 

@@ -2,8 +2,8 @@ package com.grad.backend.project.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.grad.backend.project.DTO.TechDocValidationRequest;
 import com.grad.backend.project.DTO.TechDocValidationResponse;
 import com.grad.backend.project.DTO.TechDocViolationDTO;
 import com.grad.backend.project.DTO.ai.AiSingleConstraintCheckDTO;
@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,32 +37,41 @@ public class ProjectTechDocValidationService {
     private final GroqApiClient groqApiClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Transactional(readOnly = true)
-    public TechDocValidationResponse validate(Long projectId, Long pmUserId, String documentText) {
+    @Transactional
+    public TechDocValidationResponse validate(Long projectId, Long pmUserId, TechDocValidationRequest request) {
+        String documentText = request != null ? request.getDocumentText() : null;
+        String documentFieldsJson = request != null ? request.getDocumentFieldsJson() : null;
+
         CompanyProject project = companyProjectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
         if (!project.getProjectManager().getId().equals(pmUserId)) {
             throw new RuntimeException("Unauthorized");
         }
 
+        TechDocValidationResponse response;
+
         String oclRules = project.getOclRules();
         if (oclRules == null || oclRules.isBlank()) {
-            return TechDocValidationResponse.builder()
+            response = TechDocValidationResponse.builder()
                     .valid(false)
                     .violations(List.of(systemViolation(
                             "Setup",
                             "No OCL constraints are stored for this project. Re-assign the contract with clause OCL extraction, or contact the company.")))
                     .build();
+            persistTechDocAfterValidation(project, documentFieldsJson, response);
+            return response;
         }
 
         String doc = documentText == null ? "" : documentText.trim();
         if (doc.isBlank()) {
-            return TechDocValidationResponse.builder()
+            response = TechDocValidationResponse.builder()
                     .valid(false)
                     .violations(List.of(systemViolation(
                             "Document",
                             "The technical document is empty. Open the Document Editor, fill in the sections, save, then run validation again.")))
                     .build();
+            persistTechDocAfterValidation(project, documentFieldsJson, response);
+            return response;
         }
 
         if (doc.length() > MAX_TOTAL_DOC_CHARS) {
@@ -74,12 +84,14 @@ public class ProjectTechDocValidationService {
 
         List<BundleConstraint> constraints = loadConstraints(oclRules);
         if (constraints.isEmpty()) {
-            return TechDocValidationResponse.builder()
+            response = TechDocValidationResponse.builder()
                     .valid(false)
                     .violations(List.of(systemViolation(
                             "Setup",
                             "No parseable OCL constraints found in this project.")))
                     .build();
+            persistTechDocAfterValidation(project, documentFieldsJson, response);
+            return response;
         }
 
         List<String> docChunks = splitIntoOverlappingChunks(doc);
@@ -97,7 +109,7 @@ public class ProjectTechDocValidationService {
                 }
             }
 
-            return TechDocValidationResponse.builder()
+            response = TechDocValidationResponse.builder()
                     .valid(violations.isEmpty())
                     .violations(violations)
                     .build();
@@ -106,6 +118,37 @@ public class ProjectTechDocValidationService {
         } catch (Exception e) {
             log.error("Tech doc validation failed: {}", e.getMessage());
             throw new RuntimeException("Failed to validate technical document: " + e.getMessage(), e);
+        }
+
+        persistTechDocAfterValidation(project, documentFieldsJson, response);
+        return response;
+    }
+
+    /**
+     * Stores the structured document as JSON when provided, and when validation reports violations
+     * stores a JSON snapshot of the outcome for traceability while the PM iterates on fixes.
+     */
+    private void persistTechDocAfterValidation(
+            CompanyProject project,
+            String documentFieldsJson,
+            TechDocValidationResponse response) {
+        try {
+            if (documentFieldsJson != null && !documentFieldsJson.isBlank()) {
+                project.setTechnicalDocumentJson(
+                        CompanyProjectService.normalizeDocumentFieldsJson(documentFieldsJson));
+            }
+            if (!response.isValid()) {
+                ObjectNode meta = objectMapper.createObjectNode();
+                meta.put("validatedAt", Instant.now().toString());
+                meta.put("valid", false);
+                meta.set("violations", objectMapper.valueToTree(response.getViolations()));
+                project.setTechnicalDocumentValidationJson(objectMapper.writeValueAsString(meta));
+            } else {
+                project.setTechnicalDocumentValidationJson(null);
+            }
+            companyProjectRepository.save(project);
+        } catch (Exception e) {
+            log.warn("Could not persist technical document / validation JSON: {}", e.getMessage());
         }
     }
 

@@ -7,8 +7,11 @@ import com.grad.backend.Auth.repository.CompanyEmployeeRepository;
 import com.grad.backend.Auth.repository.ProjectManagerRepository;
 import com.grad.backend.contracts.entity.ContractRecord;
 import com.grad.backend.contracts.repository.ContractRecordRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grad.backend.project.DTO.AssignProjectRequest;
 import com.grad.backend.project.DTO.CompanyProjectDTO;
+import com.grad.backend.project.DTO.SaveTechnicalDocumentRequest;
 import com.grad.backend.project.entity.CompanyProject;
 import com.grad.backend.project.entity.ProjectProposal;
 import com.grad.backend.project.entity.ProposalSubmission;
@@ -27,6 +30,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CompanyProjectService {
+
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     private final CompanyProjectRepository companyProjectRepository;
     private final ContractRecordRepository contractRecordRepository;
@@ -107,6 +112,38 @@ public class CompanyProjectService {
     }
 
     @Transactional
+    public void saveTechnicalDocumentJson(Long projectId, Long pmUserId, SaveTechnicalDocumentRequest request) {
+        if (request == null || request.getDocumentFieldsJson() == null || request.getDocumentFieldsJson().isBlank()) {
+            throw new RuntimeException("documentFieldsJson is required");
+        }
+        String normalized = normalizeDocumentFieldsJson(request.getDocumentFieldsJson());
+        CompanyProject project = companyProjectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (!project.getProjectManager().getId().equals(pmUserId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        project.setTechnicalDocumentJson(normalized);
+        companyProjectRepository.save(project);
+    }
+
+    /**
+     * Ensures payload is a JSON object with string values (editor field id → HTML).
+     */
+    public static String normalizeDocumentFieldsJson(String raw) {
+        try {
+            JsonNode root = JSON.readTree(raw);
+            if (!root.isObject()) {
+                throw new RuntimeException("documentFieldsJson must be a JSON object");
+            }
+            return JSON.writeValueAsString(root);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid documentFieldsJson: " + e.getMessage());
+        }
+    }
+
+    @Transactional
     public GenerateGuidelinesResponse generateGuidelinesAndSummary(Long projectId, Long pmUserId) {
         CompanyProject project = companyProjectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
@@ -165,6 +202,8 @@ public class CompanyProjectService {
                 .oclRules(entity.getOclRules())
                 .guidelines(entity.getGuidelines())
                 .projectSummary(entity.getProjectSummary())
+                .technicalDocumentJson(entity.getTechnicalDocumentJson())
+                .technicalDocumentValidationJson(entity.getTechnicalDocumentValidationJson())
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .build();

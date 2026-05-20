@@ -45,6 +45,16 @@ public class CompanyProject {
     @Column(name = "project_summary", columnDefinition = "LONGTEXT")
     private String projectSummary;
 
+    /** Per-field HTML from the technical document editor, stored as a JSON object string. */
+    @Lob
+    @Column(name = "technical_document_json", columnDefinition = "LONGTEXT")
+    private String technicalDocumentJson;
+
+    /** Last tech-doc validation outcome (violations, etc.) as JSON; written when validation reports issues. */
+    @Lob
+    @Column(name = "technical_document_validation_json", columnDefinition = "LONGTEXT")
+    private String technicalDocumentValidationJson;
+
     @Column(name = "status", nullable = false)
     private String status = "ASSIGNED";
 

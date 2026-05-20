@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  getProjectById,
+  saveTechnicalDocumentToServer,
+} from '../../services/CompanyProjectRepo';
+import { getTechnicalDocStorageKey } from '../../utils/technicalDocStorage';
+import { toast } from 'react-toastify';
+import {
   ArrowLeft,
   Save,
   ZoomIn,
   ZoomOut,
-  Download,
+  Printer,
   Loader2,
   CheckCircle2,
 } from 'lucide-react';
@@ -365,6 +371,27 @@ const TechnicalDocEditor: React.FC = () => {
   }, [storageKey, projectId, applyFields]);
 
   useEffect(() => {
+    if (!Number.isFinite(projectId) || projectId <= 0) return;
+    const key = getTechnicalDocStorageKey(projectId);
+    let cancelled = false;
+    (async () => {
+      try {
+        const p = await getProjectById(projectId);
+        if (cancelled) return;
+        const fromServer = p.technicalDocumentJson?.trim();
+        if (!fromServer) return;
+        if (localStorage.getItem(key)?.trim()) return;
+        const store: FieldStore = JSON.parse(fromServer);
+        requestAnimationFrame(() => applyFields(store));
+        localStorage.setItem(key, fromServer);
+      } catch {
+        /* ignore: session or network */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [projectId, applyFields]);
+
+  useEffect(() => {
     const handler = () => localStorage.setItem(storageKey, JSON.stringify(collectFields()));
     document.addEventListener('focusout', handler);
     return () => document.removeEventListener('focusout', handler);
@@ -419,13 +446,21 @@ const TechnicalDocEditor: React.FC = () => {
   }, []);
 
   // ── Save ──────────────────────────────────────────────────────────────────
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const fields = collectFields();
-    localStorage.setItem(storageKey, JSON.stringify(fields));
+    const json = JSON.stringify(fields);
+    localStorage.setItem(storageKey, json);
     localStorage.setItem('miu_doc_last_saved', new Date().toISOString());
+    if (Number.isFinite(projectId) && projectId > 0) {
+      try {
+        await saveTechnicalDocumentToServer(projectId, json);
+      } catch {
+        toast.error('Saved locally only — could not sync to the server.');
+      }
+    }
     setSaveOk(true);
     setTimeout(() => setSaveOk(false), 2200);
-  }, [storageKey, collectFields]);
+  }, [storageKey, collectFields, projectId]);
 
   useEffect(() => {
     const flush = () => {
@@ -521,7 +556,7 @@ const TechnicalDocEditor: React.FC = () => {
               {saveOk ? <><CheckCircle2 size={13} color="#86efac"/> Saved!</> : <><Save size={13}/> Save draft</>}
             </button>
             <button onClick={handleExport} disabled={isExporting} style={{ display:'flex', alignItems:'center', gap:6, padding:'0 14px', height:32, borderRadius:6, border:'none', background:tk.blue, cursor:isExporting?'not-allowed':'pointer', fontSize:12, fontWeight:500, color:'#fff', fontFamily:tk.sansFont, opacity:isExporting?0.7:1 }}>
-              {isExporting ? <><Loader2 size={13} style={{ animation:'tde-spin 1s linear infinite' }}/> Preparing…</> : <><Download size={13}/> Export PDF</>}
+              {isExporting ? <><Loader2 size={13} style={{ animation:'tde-spin 1s linear infinite' }}/> Preparing…</> : <><Printer size={13}/> Print</>}
             </button>
           </div>
         </header>

@@ -10,6 +10,7 @@ import {
 import {
   collectTechnicalDocumentPlainText,
   saveTechnicalDocumentFromDom,
+  getStoredTechnicalDocumentFieldsJson,
 } from '../../utils/technicalDocStorage';
 import { getProjectTasks } from '../../services/pmTasks.service';
 import { toast } from 'react-toastify';
@@ -227,6 +228,36 @@ const CSS = `
 }
 `;
 
+/** Parses `technicalDocumentValidationJson` from the API (saved when validation had violations). */
+function parseStoredTechDocViolations(
+  json: string | undefined
+): { violations: TechDocViolation[]; validatedAt?: string } | null {
+  if (!json?.trim()) return null;
+  try {
+    const o = JSON.parse(json) as {
+      valid?: boolean;
+      violations?: unknown[];
+      validatedAt?: string;
+    };
+    if (o.valid === true) return null;
+    if (!Array.isArray(o.violations) || o.violations.length === 0) return null;
+    const violations: TechDocViolation[] = o.violations.map(v => {
+      const x = v as Record<string, unknown>;
+      return {
+        clauseId: typeof x.clauseId === 'string' ? x.clauseId : undefined,
+        constraintName: typeof x.constraintName === 'string' ? x.constraintName : 'Constraint',
+        oclCode: typeof x.oclCode === 'string' ? x.oclCode : undefined,
+        oclExplanation: typeof x.oclExplanation === 'string' ? x.oclExplanation : undefined,
+        whyViolated: typeof x.whyViolated === 'string' ? x.whyViolated : 'Violation details unavailable.',
+        documentConflict: typeof x.documentConflict === 'string' ? x.documentConflict : undefined,
+      };
+    });
+    return { violations, validatedAt: typeof o.validatedAt === 'string' ? o.validatedAt : undefined };
+  } catch {
+    return null;
+  }
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const TechnicalDocWorkspace: React.FC = () => {
   const navigate = useNavigate();
@@ -235,6 +266,9 @@ const TechnicalDocWorkspace: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [validationState, setValidationState] = useState<'idle' | 'running' | 'pass' | 'fail'>('idle');
   const [violations, setViolations] = useState<TechDocViolation[]>([]);
+  /** True when the current violation list was restored from the server (last failed validation). */
+  const [violationsFromSavedSnapshot, setViolationsFromSavedSnapshot] = useState(false);
+  const [violationSnapshotAt, setViolationSnapshotAt] = useState<string | null>(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [taskDone, setTaskDone] = useState(0);
   const [taskTotal, setTaskTotal] = useState(0);
@@ -244,6 +278,18 @@ const TechnicalDocWorkspace: React.FC = () => {
       try {
         if (!id) { navigate('/ProjectManagerHome', { replace: true }); return; }
         const data = await getProjectById(Number(id));
+        const storedViolations = parseStoredTechDocViolations(data.technicalDocumentValidationJson);
+        if (storedViolations?.violations?.length) {
+          setValidationState('fail');
+          setViolations(storedViolations.violations);
+          setViolationsFromSavedSnapshot(true);
+          setViolationSnapshotAt(storedViolations.validatedAt ?? null);
+        } else {
+          setValidationState('idle');
+          setViolations([]);
+          setViolationsFromSavedSnapshot(false);
+          setViolationSnapshotAt(null);
+        }
         setProject(data);
         try {
           const tasks = await getProjectTasks(Number(id));
@@ -290,6 +336,8 @@ const TechnicalDocWorkspace: React.FC = () => {
     if (validationState === 'running' || !project) return;
     setValidationState('running');
     setViolations([]);
+    setViolationsFromSavedSnapshot(false);
+    setViolationSnapshotAt(null);
     try {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
@@ -299,7 +347,8 @@ const TechnicalDocWorkspace: React.FC = () => {
         window.setTimeout(() => resolve(), 150);
       });
       const plain = collectTechnicalDocumentPlainText(project.id);
-      const result = await validateTechnicalDocument(project.id, plain);
+      const fieldsJson = getStoredTechnicalDocumentFieldsJson(project.id);
+      const result = await validateTechnicalDocument(project.id, plain, fieldsJson);
       if (result.valid) {
         setValidationState('pass');
         setViolations([]);
@@ -423,6 +472,32 @@ const TechnicalDocWorkspace: React.FC = () => {
               <div style={{ textAlign: 'center', color: '#059669', padding: '16px 0' }}>
                 <i className="bi bi-patch-check-fill" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
                 No conflicts with contract OCL constraints were found in your document.
+              </div>
+            )}
+            {validationState === 'fail' && violationsFromSavedSnapshot && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: '#64748b',
+                  marginBottom: 4,
+                  paddingBottom: 14,
+                  borderBottom: '1px solid #f1f5f9',
+                  lineHeight: 1.55,
+                }}
+              >
+                {violationSnapshotAt
+                  ? (
+                    <>
+                      Showing violations from your last saved validation (
+                      {new Date(violationSnapshotAt).toLocaleString()}
+                      ). Use <strong>Re-validate</strong> after you edit the document to update this list.
+                    </>
+                  )
+                  : (
+                    <>
+                      Showing violations saved from your last validation run. Use <strong>Re-validate</strong> after you edit the document to update this list.
+                    </>
+                  )}
               </div>
             )}
             {validationState === 'fail' && violations.map((v, i) => (

@@ -18,6 +18,8 @@ export interface CompanyProjectDTO {
   oclRules: string;
   guidelines: string;
   projectSummary?: string;
+  technicalDocumentJson?: string;
+  technicalDocumentValidationJson?: string;
   status: string;
   createdAt: string;
 }
@@ -104,13 +106,23 @@ export interface TechDocValidationResponse {
   violations: TechDocViolation[];
 }
 
+export const saveTechnicalDocumentToServer = async (
+  projectId: number,
+  documentFieldsJson: string
+): Promise<void> => {
+  await api.put(`/api/company-projects/${projectId}/technical-document`, {
+    documentFieldsJson,
+  });
+};
+
 export const validateTechnicalDocument = async (
   projectId: number,
-  documentText: string
+  documentText: string,
+  documentFieldsJson?: string
 ): Promise<TechDocValidationResponse> => {
   const response = await api.post<TechDocValidationResponse>(
     `/api/company-projects/${projectId}/validate-tech-doc`,
-    { documentText },
+    { documentText, documentFieldsJson },
     { timeout: 600000, skipAuthRedirect: true }
   );
   return response.data;

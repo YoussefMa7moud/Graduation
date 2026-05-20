@@ -25,6 +25,10 @@ public class CompanyProjectDTO {
     private String oclRules;
     private String guidelines;
     private String projectSummary;
+    /** JSON object: editor field id → HTML (same as client localStorage payload). */
+    private String technicalDocumentJson;
+    /** JSON snapshot of the last failed validation (violations, timestamp). */
+    private String technicalDocumentValidationJson;
     private String status;
     private LocalDateTime createdAt;
 }

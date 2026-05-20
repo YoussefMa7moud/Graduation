@@ -61,6 +61,23 @@ export function collectTechnicalDocumentPlainText(projectId: number): string {
   return stripHtml(raw);
 }
 
+/** Returns canonical JSON string of stored editor fields, or undefined if none / invalid. */
+export function getStoredTechnicalDocumentFieldsJson(projectId: number): string | undefined {
+  if (typeof window === 'undefined' || !Number.isFinite(projectId) || projectId <= 0) return undefined;
+  const key = getTechnicalDocStorageKey(projectId);
+  let raw = localStorage.getItem(key) ?? localStorage.getItem(LEGACY_TECH_DOC_KEY);
+  if (!raw?.trim()) return undefined;
+  try {
+    const obj = JSON.parse(raw) as unknown;
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      return JSON.stringify(obj);
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
 /** Force-save current editor fields from the DOM (call before validation if editor is open). */
 export function saveTechnicalDocumentFromDom(projectId: number): void {
   if (typeof document === 'undefined' || !Number.isFinite(projectId) || projectId <= 0) return;

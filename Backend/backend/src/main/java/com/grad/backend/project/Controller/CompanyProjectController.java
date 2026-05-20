@@ -5,6 +5,7 @@ import com.grad.backend.project.DTO.AssignProjectRequest;
 import com.grad.backend.project.DTO.CompanyProjectDTO;
 import com.grad.backend.project.DTO.ExtractClauseOclResponse;
 import com.grad.backend.project.DTO.GenerateGuidelinesResponse;
+import com.grad.backend.project.DTO.SaveTechnicalDocumentRequest;
 import com.grad.backend.project.DTO.TechDocValidationRequest;
 import com.grad.backend.project.DTO.TechDocValidationResponse;
 import com.grad.backend.project.service.CompanyProjectService;
@@ -92,7 +93,7 @@ public class CompanyProjectController {
         }
         try {
             TechDocValidationResponse response = projectTechDocValidationService.validate(
-                    id, user.getId(), request != null ? request.getDocumentText() : null);
+                    id, user.getId(), request);
             return ResponseEntity.ok(response);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", e.getMessage()));
@@ -101,6 +102,26 @@ public class CompanyProjectController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
             }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/technical-document")
+    public ResponseEntity<?> saveTechnicalDocument(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user,
+            @RequestBody SaveTechnicalDocumentRequest request) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Not authenticated"));
+        }
+        try {
+            companyProjectService.saveTechnicalDocumentJson(id, user.getId(), request);
+            return ResponseEntity.ok(Map.of("ok", true));
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Unauthorized")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
     }
 

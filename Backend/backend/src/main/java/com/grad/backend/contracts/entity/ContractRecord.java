@@ -1,5 +1,6 @@
 package com.grad.backend.contracts.entity;
 
+import com.grad.backend.contracts.util.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -57,6 +58,7 @@ public class ContractRecord {
     @Column(name = "company_signatory_name")
     private String companySignatoryName;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "contract_payload_json", columnDefinition = "LONGTEXT")
     private String contractPayloadJson;
 

@@ -114,7 +114,7 @@ ContractGuardAI/
 ├── database/
 ├── docs/
 └── README.md
-
+```
 ⚙️ Installation
 1️⃣ Clone the Repository
 git clone YOUR_REPOSITORY_LINK
@@ -165,9 +165,6 @@ Deployment to cloud infrastructure
 
 This project is developed for educational and academic purposes as a Graduation Project.
 
-👨‍💻 Authors
-Youssef Mahmoud
-Team Members
 ⭐ Acknowledgment
 
 Special thanks to our supervisors, instructors, and everyone who contributed to the development of this project.
